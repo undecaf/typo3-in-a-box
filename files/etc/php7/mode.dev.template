@@ -1,0 +1,12 @@
+# Development mode PHP settings
+error_reporting="E_ALL"
+log_errors=On
+max_input_time=60
+output_buffering=4096
+register_argc_argv=Off
+request_order="GP"
+session.gc_divisor=1000
+session.sid_bits_per_character=5
+short_open_tag=Off
+track_errors=On
+variables_order="GPCS"
