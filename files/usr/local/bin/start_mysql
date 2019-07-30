@@ -34,7 +34,7 @@ GRANT ALL ON \`$T3_DB_NAME\`.* TO '$T3_DB_USER'@'%' IDENTIFIED BY '$T3_DB_PW';
 GRANT ALL ON \`$T3_DB_NAME\`.* TO '$T3_DB_USER'@'localhost' IDENTIFIED BY '$T3_DB_PW';
 EOF
 
-mysqld --user=mysql --bootstrap --verbose=0 --skip-networking=0 <$SQLFILE
+mysqld --datadir=$MYSQL_DATA --user=mysql --bootstrap --verbose=0 --skip-networking=0 <$SQLFILE
 
 # Start MariaDB
-mysqld --user=mysql --console --skip-networking=0 &
+mysqld --datadir=$MYSQL_DATA --user=mysql --console --skip-networking=0 &
