@@ -7,7 +7,8 @@ services:
 env:
   matrix:
     - TYPO3_VER=8.7
-    - TYPO3_VER=9.5 VERY_LAST=true
+    - TYPO3_VER=9.5
+    - TYPO3_VER=10.0 VERY_LAST=true
 
 before_script:
   - docker pull $TRAVIS_REPO_SLUG || true

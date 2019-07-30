@@ -3,10 +3,10 @@ FROM alpine:3.10
 ARG BUILD_DATE
 ARG COMMIT
 ARG IMAGE_VER=experimental
-ARG TYPO3_VER=9.5
+ARG TYPO3_VER=10.0
 
 LABEL \
-    org.opencontainers.image.title="All-in-one TYPO3 image" \
+    org.opencontainers.image.title="A ready-to-run TYPO3 8.7/9.5/10.0 image" \
 	org.opencontainers.image.description="TYPO3, Apache, PHP, Composer, ImageMagick; SQLite, MariaDB and PostgreSQL databases to choose from" \
 	org.opencontainers.image.version="${IMAGE_VER}" \
 	org.opencontainers.image.revision="${COMMIT}" \
