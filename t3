@@ -23,8 +23,7 @@
 #
 
 # Constants
-# TODO: T3_IMAGE=docker.io/undecaf/typo3-in-a-box
-T3_IMAGE=localhost/undecaf/typo3-in-a-box
+T3_IMAGE=undecaf/typo3-in-a-box
 T3_ROOTDIR=/var/www/localhost
 MYSQL_DATA=/var/lib/mysql
 PG_DATA=/var/lib/postgresql/data
@@ -806,7 +805,7 @@ esac
 case "$T3_DB_TYPE" in
     mariadb|postgresql)
         T3_DB_DATA=${T3_DB_DATA:-typo3-data}
-        DB_VOL_OPTION="--volume '$T3_DB_DATA:$DB_DATA'"
+        DB_VOL_OPTION="--volume $T3_DB_DATA:$DB_DATA"
         T3_DB_PORT=${T3_DB_PORT:-127.0.0.1:$DB_CONTAINER_PORT}
         DB_PORT_OPTION="--publish $T3_DB_PORT:$DB_CONTAINER_PORT"
         ENV_OPTIONS="$ENV_OPTIONS \
