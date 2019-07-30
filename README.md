@@ -1,42 +1,38 @@
-# Under construction: TYPO3 in a box
+# TYPO3 in a box ‒ a multi-purpose TYPO3 8.7/9.5/10.0 image
 
 [![Build Status](https://travis-ci.com/undecaf/typo3-in-a-box.svg?branch=master)](https://travis-ci.com/undecaf/typo3-in-a-box)
 [![Latest release](https://img.shields.io/github/release/undecaf/typo3-in-a-box.svg)](https://github.com/undecaf/typo3-in-a-box)
 ![Image Size](https://img.shields.io/microbadger/image-size/undecaf/typo3-in-a-box/latest.svg)
 
-This project provides a ready-to-run and complete
+This project provides a ready-to-run and extensive
 [TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.0 installation as a container image.
+It is widely configurable, and thus it addresses TYPO3 editors and administrators
+as well as integrators and extension developers.
 
-It is based on [Alpine Linux](https://alpinelinux.org/), comes
+The image is based on [Alpine Linux](https://alpinelinux.org/), comes
 with up-to-date versions of [Apache](https://httpd.apache.org/),
 [PHP](https://php.net/) and [ImageMagick](https://www.imagemagick.org/) 
 and has [SQLite](https://www.sqlite.org/), [MariaDB](https://mariadb.org/) and
-[PostgreSQL](https://www.postgresql.org/) built in to choose from.
-The image is available at
-[Docker Hub](https://hub.docker.com/r/undecaf/typo3-in-a-box), uses about
-450&nbsp;MB disk space and can run in
+[PostgreSQL](https://www.postgresql.org/) built in.
+It is available at [Docker Hub](https://hub.docker.com/r/undecaf/typo3-in-a-box),
+uses about 450&nbsp;MB disk space and can run in
 [Docker](https://www.docker.com/) and [Podman](https://podman.io/).
+No additional container is required.
 
-Usage scenarios simple -> extension development.
-a containerized TYPO3 installation equivalent to
-[`composer require typo3/cms`](https://packagist.org/packages/typo3/cms) with
-[ImageMagick](https://www.imagemagick.org/) installed and configured for
-[Composer Mode](https://getcomposer.org/#Composer_Mode).
+Setting up and managing usage scenarios is simplified by a
+[shell script](#t3-shell-script-reference) for Linux and macOS.
 
-The TYPO3 container can be combined with a database container such as
-[MySQL or PostgreSQL](#using-mariadb-or-postgresql)
-but also can be run independently due to the built-in SQLite database.
-Setting up and managing such scenarios is simplified by a shell script for Linux and macOS.
-
-You can use your favorite IDE on the host to
+You can use your favorite IDE at the host to
 [develop for TYPO3](#developing-for-typo3) in the container,
-including [remote debugging with XDebug](#debugging-with-xdebug).
-Your extension development directories can be
-[excluded from changes made by Composer](#preventing-composer-from-overwriting-your-changes).
+including [Composer Mode](https://getcomposer.org/#Composer_Mode),
+[remote debugging with XDebug](#debugging-with-xdebug) and database access.
+
+No special permissions are required to develop in TYPO3 directories
+[mapped from the container to the host](#using-an-ide). Your extension directories
+can be [excluded from updates made by Composer](#preventing-composer-from-overwriting-your-changes).
+
 PHP and Composer do not need to be installed on the host.
 
-File access rights, ownerships, UIDs and GIDs are transparently and consistently
-[mapped between host and container](#using-an-ide).
 
 ## What you get
 
@@ -55,7 +51,7 @@ File access rights, ownerships, UIDs and GIDs are transparently and consistently
     -   [Composer](#composer)
     -   [Debugging with XDebug](#debugging-with-xdebug)
     -   [Accessing the TYPO3 database](#accessing-the-typo3-database)
-    -   [Managing multiple TYPO3 instances](#managing-multiple-typo3-instances)
+-   [Managing multiple TYPO3 instances](#managing-multiple-typo3-instances)
 -   [`t3` shell script reference](#t3-shell-script-reference)
     -   [Getting help](#getting-help)
     -   [`t3 run`](#t3-run)
@@ -75,11 +71,13 @@ File access rights, ownerships, UIDs and GIDs are transparently and consistently
 
 ### Quick start
 
-To start a TYPO3 instance in a standalone container, enter this command:
+To start the latest TYPO3 version with an SQLite database in a container,
+enter this command:
 
 ```bash
 $ docker run \
     --volume typo3-root:/var/www/localhost \
+    --volume typo3-data:/var/lib/typo3 \
     --publish 127.0.0.1:8080:80 \
     undecaf/typo3-in-a-box
 ```
@@ -92,8 +90,8 @@ Next, browse to `http://localhost:8080`. This starts the TYPO3 installation wiza
 When asked to select a database, choose `Manually configured SQLite connection` and
 continue through the remaining dialogs to the TYPO3 login dialog.
 
-Volume `typo3-root` persists the state of the TYPO3 instance
-independently of container lifetime.
+Volumes `typo3-root` and `typo3-data` now persist the state of the TYPO3 instance
+across container lifecycles.
 
 
 #### Online documentation
@@ -104,8 +102,7 @@ the running TYPO3 instance, browse to `http://localhost:8080/readme.html`.
 
 ### `t3` shell script
 
-More complex setups (such as using an external database) require complex Docker
-or Podman command lines.
+More lifelike setups can require complex Docker or Podman command lines.
 
 In order to simplify usage, the
 [`t3` shell script](https://raw.githubusercontent.com/undecaf/typo3-in-a-box/master/t3)
@@ -113,9 +110,10 @@ has been provided for Linux and macOS.
 This script is
 [avaliable for download here](https://raw.githubusercontent.com/undecaf/typo3-in-a-box/master/t3).
  It lets you:
--   configure and run a TYPO3 container plus an optional database container;
--   stop these containers and optionally remove them;
--   map the TYPO3 root in the container to a working directory;
+-   configure and run a TYPO3 container;
+-   stop this container and optionally remove it;
+-   map the TYPO3 root to a working directory at the host;
+-   access the databases from the host; 
 -   modify the TYPO3 environment even while the container is running;
 -   run Composer within the TYPO3 container.
 
@@ -124,7 +122,7 @@ See the [`t3` reference](#t3-shell-script-reference) for a complete description.
 
 ### Quick start with `t3`
 
-To run a TYPO3 standalone container [as shown above](#quick-start) with `t3`,
+To run a TYPO3 container [as shown above](#quick-start) with `t3`,
 simply type:
 
 ```bash
@@ -141,16 +139,15 @@ To stop and remove the container, enter
 $ t3 stop --rm
 ```
 
-State is preserved in volume `typo3-root` so that a subsequent `t3 run --`
-command will resume from where you left off.
+State is preserved in volumes `typo3-root` and `typo3-data` so that a subsequent
+`t3 run --` command will resume from where you left off.
 
 
 ### MariaDB and PostgreSQL
 
-MariaDB or PostgreSQL is optional for TYPO3&nbsp;v9.5+ but is required for TYPO3&nbsp;v8.7.
+MariaDB or PostgreSQL is optional for TYPO3&nbsp;9.5+ but is required for TYPO3&nbsp;8.7.
 
-The following example starts a TYPO3 and a MariaDB container
-([`bitnami/mariadb`](https://hub.docker.com/r/bitnami/mariadb)) and connects them,
+The following example starts TYPO3 and MariaDB in the same container,
 preserves state in volumes `typo3-root` and `typo3-data` and exposes TYPO3 and 
 MariaDB on ports `127.0.0.1:8080` and `127.0.0.1:3306`, respectively:
 
@@ -158,9 +155,11 @@ MariaDB on ports `127.0.0.1:8080` and `127.0.0.1:3306`, respectively:
 $ t3 run -d maria
 ```
 
-For a PostgreSQL container
-([`bitnami/postgresql`](https://hub.docker.com/r/bitnami/postgresql))
-exposed on `127.0.0.1:5432`, replace `-d maria` with `-d postgres`.
+To use PostgreSQL as the TYPO3 database  and have it exposed on `127.0.0.1:5432`,
+replace `-d maria` with `-d postgres`.
+
+More [`t3 run` options ](#t3-run) are available to configure the container
+according to your needs.
 
 Enter
 
@@ -168,28 +167,28 @@ Enter
 $ t3 stop --
 ```
 
-to stop _both_ containers. If you wish to have the stopped containers removed, too,
-append `--rm` to `t3 run` or `t3 stop`.
+to stop the container. If you wish to have the stopped container removed, too,
+type `t3 stop --rm` instead.
 
 
 #### Database credentials
 
 Database credentials can be defined by [host environment variables](#host-environment-variables)
-`T3_DB_NAME`, `T3_DB_USER` and `T3_DB_PW`. If not set then the database name, user and password
-all default to `t3`.
+`T3_DB_NAME`, `T3_DB_USER`, `T3_DB_PW` and `T3_DB_ROOT_PW`. If not set then the database name, user and password all default to `t3` and `T3_DB_ROOT_PW` defaults
+to `toor`.
 
 
 ## Developing for TYPO3
 
-The following sections describes how this project can aid in customizing or 
-developing TYPO3 extensions or otherwise altering the source code of your TYPO3
-installation.
+This section addresses primarily integrators and extension developers.
+It describes how to use this TYPO3 image for customizing or developing
+TYPO3 extensions or otherwise altering the source code of your TYPO3 installation.
 
 ### Using an IDE
 
-In order to work on your TYPO3 installation in an IDE, the TYPO3 root directory needs to be
-exposed to a working directory where the current user has sufficient (read and write)
-permissions. At the container volume mount point, this is usually not the case.
+In order to work on your TYPO3 installation in an IDE, the TYPO3 root directory 
+needs to be exposed to a working directory at the host where the current user has 
+sufficient (read and write) permissions. This is usually not the case at the container volume mount point.
 
 `t3` uses the [bindfs](https://bindfs.org/) utility  (available for Debian-like and
 macOS hosts) to solve this problem. See below for what is happening [behind the scenes](#behind-the-scenes).
@@ -206,7 +205,7 @@ $ t3 run -v ~/ide-workspace/typo3-root
 ```
 
 This will
--   start the container(s),
+-   start the container,
 -   create a TYPO3 volume having the working directory basename
     (`typo3-root`) as its name,
 -   make the TYPO3 volume content appear in the working directory
@@ -217,6 +216,9 @@ creates and deletes will be passed in both directions between working directory
 and container with the current user's UID/GID mapped to container UIDs/GIDs.
 
 Stopping the TYPO3 container will unmount the working directory automatically.
+
+Working directories can be mounted and unmounted independenty of whether a container
+is running or even exists, see [`t3 mount`](#t3-mount) and [`t3 unmount`](#t3-unmount).
 
 __Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3.
 
@@ -231,7 +233,7 @@ working directory on top of the volume:
 $ t3 mount -m ~/ide-workspace/typo3-root
 ```
 
-As with [`t3 run -v`](#using-an-ide), the name of the volume is the working
+As with [`t3 run -v`](#using-an-ide), the name of the volume is equal to the working
 directory basename.
 
 When you are finished, unmount your working directory again:
@@ -244,8 +246,8 @@ $ t3 unmount -u ~/ide-workspace/typo3-root
 
 The TYPO3 root directory is accessible outside of the container at the volume mount
 point of e.g. `typo3-root` which can be obtained by `inspect`ing
-the container. The files, however, are owned by a system account and cannot be edited
-by the current user, e.g.:
+the container. The directory content, however, is owned by a system account and
+cannot be edited by the current user, e.g.:
 
 ```bash
 $ sudo ls -nA $(sudo docker volume inspect --format '{{.Mountpoint}}' typo3-root)
@@ -257,8 +259,8 @@ drwxrwsr-x  7 100 101   4096 Mai  3 23:02 var
 drwxr-xr-x 15 100 101   4096 Mai  3 23:01 vendor
 ```
 
-With Podman, files are owned by one of the current user's sub-UIDs which leads to
-the same problem.
+With Podman, the content os owned by one of the current user's sub-UIDs which 
+leads to the same situation.
 
 [bindfs](https://bindfs.org/) is a [FUSE](https://github.com/libfuse/libfuse#about)
 filesystem that resolves this situation. It can provide a bind-mounted _view_ of
@@ -270,7 +272,8 @@ container.
 ### Setting the container environment
 
 [Container environment variables](#container-environment-variables) control the
-time zone inside the container, TYPO3 mode, PHP settings and Composer operation.
+time zone and language inside the container, TYPO3 mode, PHP settings and 
+Composer operation.
 
 These variables can be set by `t3 run` option `--env`, e.g.
 
@@ -290,8 +293,15 @@ Container environment settings are lost when the container is stopped.
 
 ### Composer
 
-Command `t3 composer` lets you manage your TYPO3 installation. It accepts
-Composer command line options and is equivalent to running
+By default, the
+[TYPO3 Extension Manager](https://docs.typo3.org/m/typo3/tutorial-getting-started/master/en-us/ExtensionManager/Index.html)
+is responsible for adding/removing extensions.
+
+In [Composer Mode](https://getcomposer.org/#Composer_Mode), however,
+command `t3 composer` lets you add/remove TYPO3 extensions. To have TYPO3 operate
+in this mode, the `t3 run` option `-c on` must be specified.
+
+`t3 composer` accepts Composer command line options and is equivalent to running
 [Composer](https://getcomposer.org/) _inside the container_,
 e.g.
 
@@ -369,9 +379,9 @@ Now everything is ready to start a XDebug session.
 
 #### SQLite
 
-A working directory needs to be mounted as [described above](#using-an-ide).
-Point your database client at the file `var/sqlite/cms-*.sqlite`
-in that working directory.
+A host directory needs to be mounted at the _database volume_ as
+[described above](#using-an-ide).
+Point your database client at the file `cms-*.sqlite` in that directory.
 This is the TYPO3 SQLite database. The actual filename contains a random part.
 
 
@@ -385,7 +395,7 @@ The [database credentials](#database-credentials) are defined by host
 environment variables.
 
 
-### Managing multiple TYPO3 instances
+## Managing multiple TYPO3 instances
 
 To have multiple TYPO3 instances coexist, each instance must have
 -   a unique container name (`t3 run` option `-n`), and
@@ -457,7 +467,7 @@ $ t3 COMMAND -h
 
 ### `t3 run`
 
-Configures and runs a TYPO3 container plus an optional MariaDB/PostgreSQL container:
+Configures and runs a TYPO3 container:
 
 ```bash
 $ t3 run [option]... [--] [Docker/Podman option]...
@@ -509,29 +519,34 @@ For macOS, [osxfuse](https://osxfuse.github.io/) is needed beforehand.
 
 __Database:__ by default, the SQLite instance of the TYPO3 image is used (works only
 with TYPO3&nbsp;V9.5+). Option `-d` (or `T3_DB_TYPE`) lets
-you use `mariadb` or `postgresql`, pulling the `latest` image from
-[`docker.io/bitnami/mariadb`](https://hub.docker.com/r/bitnami/mariadb) or
-[`docker.io/bitnami/postgresql`](https://hub.docker.com/r/bitnami/postgresql),
-respectively.
+you use the built-in `mariadb` or `postgresql` servers.
 
-Database state is saved in persistent volumes: SQLite is part of the TYPO3
-volume, and MariaDB and PostgreSQL each use an additional volume named `typo3-data`.
-Option `-V` (or `T3_DB_DATA`) sets a different volume name.
-
-A new database is created whenever a database volume is used for the first time.
-MariaDB and PostgreSQL database name and credentials are determined by host environment variables
-`T3_DB_NAME`, `T3_DB_USER` and `T3_DB_PW`. If not set then they all default to `t3`.
-
-To access an SQLite database from the host, a TYPO3 working directory must be
-specified (see above). The database is located at `var/sqlite/cms-*.sqlite`
-in that working directory. The actual filename contains a random part.
+In any case, database state is saved in a persistent volume named `typo3-data`.
+Option `-V` (or `T3_DB_DATA`) sets a different volume name. The SQLite database
+can be accessed from the host if a _directory path_ (containing a `/`) is
+specified as described above for the TYPO3 volume.
 
 MariaDB and PostgreSQL databases are published to the host at `127.0.0.1:3306` and 
 `127.0.0.1:5432` by default. Use the `-P` option (or `T3_DB_PORT`) to set a different
 host interface and/or port.
 
+A new database is created whenever a database volume is used for the first time.
+MariaDB and PostgreSQL database name and credentials are determined by host environment variables
+`T3_DB_NAME`, `T3_DB_USER`, `T3_DB_PW` and `T3_DB_ROOT_PW`. If not set then they
+all default to `t3` except for `T3_DB_ROOT_PW` which defaults to `toor`.
+
+__Composer Mode:__
+To have TYPO3 operate in [Composer Mode](https://getcomposer.org/#Composer_Mode),
+option `-c on` (or `T3_COMPOSER_MODE`) must be specified.
+In this mode, [`t3 composer`](#t3-composer) lets you add/remove TYPO3 extensions.
+
+By default, Composer Mode is off and extensions are added/removed by the
+[TYPO3 Extension Manager](https://docs.typo3.org/m/typo3/tutorial-getting-started/master/en-us/ExtensionManager/Index.html).
+
 __Container environment variables:__
-control the time zone inside the container, TYPO3 mode, PHP settings and Composer operation; see [this table](#container-environment-variables) for details.
+control the time zone and language inside the container, TYPO3 mode, PHP settings
+and Composer operation; see [this table](#container-environment-variables)
+for details.
 
 Use option `--env NAME=VALUE` or the corresponding
 [host environment variable](#host-environment-variables) to assign an initial value to a container environment variable; `--env` takes precedence.
@@ -541,13 +556,6 @@ on the command line.
 
 The container environment can be changed at runtime by command [`t3 env`](#t3-env).
 
-__Remove stopped container(s):__
-add option `--rm` if the TYPO3 and the database container (if one exists) should be
-removed by [`t3 stop`](#t3-stop). This option can also be used with `t3 stop`.
-
-Please note: `t3` never removes _volumes_.
-You have to use `docker/podman volume rm` to do that.
-
 __Options to be passed to Docker/Podman:__
 must be placed at the end of the 
 command line and should be separated from `t3` options by `--`. Such options are
@@ -556,13 +564,13 @@ applied to both the TYPO3 and the database container (if one exists).
 
 ### `t3 stop`
 
-Stops a running TYPO3 (and the associated database) container:
+Stops a running TYPO3 container:
 
 ```bash
 $ t3 stop [option]...
 ```
 
-`t3 stop` will unmount a working directory mounted by [`t3 run`](#t3-run) or by
+`t3 stop` will unmount working directories mounted by [`t3 run`](#t3-run) or by
 [`t3 mount`](#t3-mount).
 
 Although all options are optional, at least one option must be set
@@ -576,9 +584,11 @@ __Container name:__
 the same container name as for the corresponding `t3 run` command.
 Use option `-n` (or `T3_NAME`) if necessary.
 
-__Remove stopped container(s):__
-add option `--rm` if the TYPO3 and the database container (if one exists) should be
-removed after being stopped. This option can also be used with [`t3 run`](#t3-run).
+__Remove stopped container:__
+add option `--rm` if the TYPO3 container should be removed after being stopped.
+
+Please note: `t3` never removes _volumes_.
+You have to use `docker/podman volume rm` to do that.
 
 
 ### `t3 env`
@@ -599,7 +609,7 @@ the same container name as for the corresponding `t3 run` command.
 Use option `-n` (or `T3_NAME`) if necessary.
 
 __Container environment variables:__
-control the time zone inside the container, TYPO3 mode, PHP settings and Composer operation; see [this table](#container-environment-variables) for details.
+control the time zone and language inside the container, TYPO3 mode, PHP settings and Composer operation; see [this table](#container-environment-variables) for details.
 
 Use option `NAME=VALUE` to assign a value to a container environment variable.
 This option may appear multiple times.
@@ -610,7 +620,7 @@ Initial values can be assigned by command [`t3 run`](#t3-run).
 ### `t3 composer`
 
 This command is applicable only in
-[Composer Mode](https://getcomposer.org/#Composer_Mode) (see option [`--composer-mode`](#options)
+[Composer Mode](https://getcomposer.org/#Composer_Mode) (see option [`-c`](#options)
 and host environment variable [`T3_COMPOSER_MODE`](#host-environment-variables)).
 It executes a [Composer](https://getcomposer.org/) command inside a running
 TYPO3 container:
@@ -648,7 +658,7 @@ $ t3 mount [--mount|-m] WORK_DIR [option]...
 ```
  
 This is equivalent to [`t3 run`](#t3-run) with a working directory path for `-v`
-except that the container does not need to be running (it does not even 
+or `-V` except that the container does not need to be running (it does not even 
 have to exist).
 
 This command will ask for `sudo` authorization unless there are cached credentials.
@@ -657,10 +667,10 @@ __Container engine:__
 the same engine as for the corresponding `t3 run` command.
 Use option `-e` (or `T3_ENGINE`) if necessary.
 
-__TYPO3 working directory:__
-specify the _working directory path_ (it _must_ contain a `/`) for option `-m`.
-The directory basename is taken as the volume name, and the working directory
-is bind-mounted at that volume. This is equivalent to the `-v` option of
+__TYPO3 working directory, database directory:__
+specify the _directory path_ (it _must_ contain a `/`) for option `-m`.
+The directory basename is taken as the volume name, and the directory
+is bind-mounted at that volume. This is equivalent to the `-v` or `-V` option of
 [`t3 run`](#t3-run) except that no container is needed for this operation.
 
 
@@ -697,7 +707,7 @@ that environment variable is not set.
 | `--name=NAME`<br>`-n NAME` | `run`<br>`stop`<br>`composer`<br>`env` | Container name. The database container name, if any, has `-db` appended to this name.<br>Default: `$T3_NAME`, or `typo3`. |
 | `--hostname=HOSTNAME`<br>`-h HOSTNAME` | `run` | Hostname assigned to the TYPO3 container and to Apache `ServerName` and `ServerAdmin`.<br>Default: `$T3_HOSTNAME`, or `typo3.$(hostname)`. |
 | `--tag=TAG`<br>`-t TAG` | `run` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`.<br>Default: `$T3_TAG`, or `latest`, i.e. the latest build for the most recent TYPO3 version. |
-| `--composer-mode=ON/OFF`<br>`-c ON/OFF` | `run` | If [Composer Mode](https://getcomposer.org/#Composer_Mode) is `on` then [Composer](#t3-composer) is responsible for installing/removing TYPO3 extensions. If set to `off` then this is handled by the TYPO3 Extension Manager.<br>Default: `$T3_COMPOSER_MODE`, or `off`. |
+| `--composer-mode=ON/OFF`<br>`-c ON/OFF` | `run` | If set to `on` then Composer is responsible for installing/removing TYPO3 extensions. If set to `off` then this is handled by the TYPO3 Extension Manager.<br>Default: `$T3_COMPOSER_MODE`, or `off`. |
 | `--typo3-root=VOLUME`<br>`-v VOLUME` | `run` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path (containing a `/`).<br>In the latter case, the directory basename is used as the volume name, and the directory is bind-mounted at that volume. Thus, volume content appears to be owned by the current user.<br>__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3.<br>Default: `$T3_ROOT`, or `typo3-root`. |
 | `--typo3-port=PORT`<br>`-p PORT` | `run` | Host interface (optional) and port where to publish the TYPO3 HTTP port.<br>Default: `$T3_PORT`, or `127.0.0.1:8080`. |
 | `--db-type=TYPE`<br>`-d TYPE` | `run`| Type of database to use: `sqlite` or empty for SQLite, `mariadb` for MariaDB or `postgresql` for PostgreSQL (can be abbreviated).<br>Default: `$T3_DB_TYPE`, or `sqlite`. |
@@ -723,7 +733,7 @@ thus establishing a consistent environment for all `t3` commands.
 | `T3_NAME` | Container name. The database container name, if any, has `-mariadb` or `-postgresql` appended to this name. | `typo3` |
 | `T3_HOSTNAME` | Hostname assigned to the TYPO3 container and to Apache `ServerName` and `ServerAdmin`. | `typo3.$(hostname)` |
 | `T3_TAG` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`. | `latest` |
-| `T3_COMPOSER_MODE` | TODO - Composer Mode | `off` |
+| `T3_COMPOSER_MODE` | If set to `on` then Composer is responsible for installing/removing TYPO3 extensions. If set to `off` then this is handled by the TYPO3 Extension Manager. | `off` |
 | `T3_ROOT` | Volume name to be mapped to the TYPO3 root directory inside the container.<br>If an absolute directory path specified then its basename is used as the volume name; in addition, that directory is bind-mounted at the volume so that files and directories in that volume  appear to be owned by the current user. | `typo3-root` |
 | `T3_PORT` | Interface (optional) and port where to publish the TYPO3 HTTP port. | `127.0.0.1:8080` |
 | `T3_DB_TYPE` | Type of database to use: `sqlite` or empty for SQLite, `mariadb` for MariaDB or `postgresql` for PostgreSQL (can be abbreviated). | `sqlite` |
@@ -749,7 +759,7 @@ the `t3 env` command.
 | Name | Description | Built-in default |
 |------|-------------|------------------|
 | `TIMEZONE` | Sets the TYPO3 container timezone (e.g. `Europe/Vienna`). |Timezone of your current location, or else UTC. |
-| `LANG` | TODO - usually part of the existing environment. | `C.UTF-8` |
+| `LANG` | Sets the language used for PostgreSQL collation and sorting. | `C.UTF-8` |
 | `MODE`| <dl><dt>`prod`</dt><dd>selects production mode: TYPO3 operating in „Production Mode“, no Apache/PHP signature headers, PHP settings as per     [`php.ini-production`](https://github.com/php/php-src/blob/master/php.ini-production)</dd><dt>`dev`</dt><dd>selects development mode: TYPO3 in „Development Mode“, verbose Apache/PHP signature headers, PHP settings as recommended by [`php.ini-development`](https://github.com/php/php-src/blob/master/php.ini-development)</dd><dt>`xdebug`</dt><dd>selects development mode as above and also enables [XDebug](https://xdebug.org/)</dd></dl> | `prod` |
 | `COMPOSER_EXCLUDE` | Colon-separated list of _subdirectories_ of `/var/www/localhost` which are to be excluded from the effects of [Composer operations](#composer).<br>This is intended e.g. to protect the current version of an extension you are developing from being overwritten by an older version stored in a repository.<br>These directories need to exist only by the time Composer is invoked. | empty |
 | `PHP_...`<br>`php_...` | Environment variables prefixed with `PHP_` or `php_` become `php.ini` settings with the prefix removed, e.g. `--env php_post_max_size=5M` becomes `post_max_size=5M`. These settings override prior settings and `MODE`. | none |
