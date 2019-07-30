@@ -1,4 +1,0 @@
-#!/bin/sh
-
-# Restart Apache with the specified environment settings
-env $@ /usr/local/bin/init httpd -k graceful
