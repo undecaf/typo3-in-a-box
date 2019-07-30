@@ -10,7 +10,7 @@ set -e
 # Use the same environment as during build
 . /etc/environment
 
-# Point the SQLite directory to the database volume
-mkdir -p $TYPO3_ROOT/var $T3_DATADIR
+# Point the SQLite directory at the database volume
+mkdir -p $TYPO3_ROOT/var
 ln -s $T3_DATADIR $TYPO3_ROOT/var/sqlite
 chown -R ${APACHE_USER}: $TYPO3_ROOT/var $T3_DATADIR

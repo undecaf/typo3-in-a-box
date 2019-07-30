@@ -43,11 +43,6 @@ apk add \
     rsync \
     jq
 
-# Install databases
-apk add \
-    mariadb \
-    postgresql
-
 # Install Apache and PHP
 apk add \
 	apache2 \
@@ -107,8 +102,16 @@ apk add \
 	php7-xsl \
 	php7-zip
 
+# Install databases
+apk add \
+    mariadb \
+    postgresql
+
 # Set up the runtime environment
 . /etc/environment
+
+# Create the data volume directory
+mkdir -p $T3_DATADIR
 
 # Install Composer
 curl -sS https://getcomposer.org/installer | php
