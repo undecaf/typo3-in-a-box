@@ -1,17 +1,27 @@
-# TODO: TYPO3 in a box – from quick start to extension development 
+# Under construction: TYPO3 in a box – from quick start to extension development 
 
 [![Build Status](https://travis-ci.com/undecaf/typo3-in-a-box.svg?branch=master)](https://travis-ci.com/undecaf/typo3-in-a-box)
 [![Latest release](https://img.shields.io/github/release/undecaf/typo3-in-a-box.svg)](https://github.com/undecaf/typo3-in-a-box)
 ![Image Size](https://img.shields.io/microbadger/image-size/undecaf/typo3-in-a-box/latest.svg)
 
-This project provides a containerized TYPO3 installation equivalent to
+This project provides a ready-to-run and complete [TYPO3](https://typo3.org/) 
+installation as a container image.
+
+It is based on [Alpine Linux](https://alpinelinux.org/), comes
+with up-to-date versions of [Apache](https://httpd.apache.org/),
+[PHP](https://php.net/) and [ImageMagick](https://www.imagemagick.org/) 
+and has [SQLite](https://www.sqlite.org/), [MariaDB](https://mariadb.org/) and
+[PostgreSQL](https://www.postgresql.org/) built in to choose from.
+The image is available at
+[Docker Hub](https://hub.docker.com/r/undecaf/typo3-in-a-box), uses about
+450&nbsp;MB disk space and can run in
+[Docker](https://www.docker.com/) and [Podman](https://podman.io/).
+
+Usage scenarios simple -> extension development.
+a containerized TYPO3 installation equivalent to
 [`composer require typo3/cms`](https://packagist.org/packages/typo3/cms) with
 [ImageMagick](https://www.imagemagick.org/) installed and configured for
 [Composer Mode](https://getcomposer.org/#Composer_Mode).
-The image is based on [Alpine Linux&nbsp;3.10](https://alpinelinux.org/),
-Apache&nbsp;2.4 and PHP&nbsp;7.3,
-uses less than 300&nbsp;MB disk space and can run in
-[Docker](https://www.docker.com/) and [Podman](https://podman.io/).
 
 The TYPO3 container can be combined with a database container such as
 [MySQL or PostgreSQL](#using-mariadb-or-postgresql)
