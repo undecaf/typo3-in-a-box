@@ -19,7 +19,7 @@ LABEL \
 COPY files /
 RUN /usr/local/bin/build
 
-VOLUME /var/www/localhost /var/lib/mysql /var/lib/postgresql/data
+VOLUME /var/www/localhost /var/lib/typo3-db
 
 EXPOSE 80 3306 5432
 

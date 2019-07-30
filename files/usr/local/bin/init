@@ -140,8 +140,8 @@ if [ $$ -eq 1 ]; then
     DB_SUCCESS=
     [[ -n $T3_DB_TYPE && mariadb == ${T3_DB_TYPE,,}* ]] && start_mysql && DB_SUCCESS=1
     [[ -n $T3_DB_TYPE && postgresql == ${T3_DB_TYPE,,}* ]] && start_pg && DB_SUCCESS=1
-    [[ -z $T3_DB_TYPE || sqlite == ${T3_DB_TYPE,,}* ]] && DB_SUCCESS=1
-    [[ -n $DB_SUCCESS ]] || { echo "Unknown database type: '$T3_DB_TYPE'"; exit 1; }
+    [[ -z $T3_DB_TYPE || sqlite == ${T3_DB_TYPE,,}* ]] && start_sqlite && DB_SUCCESS=1
+    [[ -n $DB_SUCCESS ]] || { echo "Unknown database type or startup failure: '$T3_DB_TYPE'"; exit 1; }
 fi
 
 # Execute Dockerfile CMD or command line, passing host signals to the exec'd process

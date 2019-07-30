@@ -29,21 +29,20 @@ trap './t3 stop --rm; docker volume rm typo3-root typo3-data & >/dev/null' EXIT
 
 # Run tests
 for T in $TAGS; do
-    # TYPO3 + SQLite (only for TYPO3 v9.5)
-    if [ "$TYPO3_VER" = '9.5' ]; then
+    # TYPO3 + SQLite (not for TYPO3 v8.7)
+    if [ "$TYPO3_VER" != '8.7' ]; then
         echo $'\n*************** '"$TRAVIS_REPO_SLUG:$T with SQLite"
         t3 run -t $T
 
         test $(count_containers 'typo3') -eq 1
-        test $(count_volumes 'typo3-root') -eq 1
-        test $(count_volumes 'typo3-data') -eq 0
+        test $(count_volumes 'typo3-(root|data)') -eq 2
 
         t3 stop --rm
 
         test $(count_containers 'typo3') -eq 0
-        test $(count_volumes 'typo3-root') -eq 1
+        test $(count_volumes 'typo3-(root|data)') -eq 2
 
-        docker volume rm typo3-root >/dev/null
+        docker volume rm typo3-root typo3-data >/dev/null
     fi
 
     # TYPO3 + MariaDB/PostgreSQL

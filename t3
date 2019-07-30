@@ -25,10 +25,8 @@
 # Constants
 T3_IMAGE=undecaf/typo3-in-a-box
 T3_ROOTDIR=/var/www/localhost
-MYSQL_DATA=/var/lib/mysql
-PG_DATA=/var/lib/postgresql/data
+T3_DATADIR=/var/lib/typo3-db
 FILE_LIMIT='nofile=10000:15000'
-
 
 # --------------------------------------------------------------------------
 
@@ -788,25 +786,23 @@ done <<< "$(printenv)"
 
 # Database type-specific settings
 T3_DB_TYPE=$(autocomplete "$T3_DB_TYPE" sqlite mariadb postgresql)
+T3_DB_DATA=${T3_DB_DATA:-typo3-data}
+
 ENV_OPTIONS="$ENV_OPTIONS \
     --env T3_DB_TYPE=${T3_DB_TYPE:-sqlite}"
 
 case "$T3_DB_TYPE" in
     mariadb)
         DB_CONTAINER_PORT=3306
-        DB_DATA=$MYSQL_DATA
         ;;
 
     postgresql)
         DB_CONTAINER_PORT=5432
-        DB_DATA=$PG_DATA
         ;;
 esac
 
 case "$T3_DB_TYPE" in
     mariadb|postgresql)
-        T3_DB_DATA=${T3_DB_DATA:-typo3-data}
-        DB_VOL_OPTION="--volume $T3_DB_DATA:$DB_DATA"
         T3_DB_PORT=${T3_DB_PORT:-127.0.0.1:$DB_CONTAINER_PORT}
         DB_PORT_OPTION="--publish $T3_DB_PORT:$DB_CONTAINER_PORT"
         ENV_OPTIONS="$ENV_OPTIONS \
@@ -817,8 +813,6 @@ case "$T3_DB_TYPE" in
         ;;
 
     sqlite|'')
-        T3_DB_DATA=
-        DB_VOL_OPTION=
         T3_DB_PORT=
         DB_PORT_OPTION=
         ;;
@@ -847,6 +841,7 @@ case "$CMD" in
             --hostname "$T3_HOSTNAME" \
             --ulimit $FILE_LIMIT \
             --volume "$T3_ROOT:$T3_ROOTDIR" \
+            --volume "$T3_DB_DATA:$T3_DATADIR" \
             --publish $T3_PORT:80 \
             $DB_VOL_OPTION \
             $DB_PORT_OPTION \
@@ -867,7 +862,7 @@ case "$CMD" in
         # Collect volume names from container
         # Note: prior to Podman v1.4.3, the volume name was contained in property .Source, not .Name
         VOLNAMES="$($T3_ENGINE container inspect \
-            --format='{{range .Mounts}}{{if eq .Destination "'$T3_ROOTDIR'" "'$MYSQL_DATA'" "'$PG_DATA'"}}{{printf "%s " .Name}}{{end}}{{end}}' \
+            --format='{{range .Mounts}}{{if eq .Destination "'$T3_ROOTDIR'" "'$T3_DATADIR'"}}{{printf "%s " .Name}}{{end}}{{end}}' \
             "$T3_NAME" 2>/dev/null)"
 
         # Try to unmount whatever may be mounted at the mountpoint of each volume
