@@ -626,6 +626,7 @@ while [[ $# -gt 0 ]]; do
         --composer-mode=*)
             T3_COMPOSER_MODE="${1#--composer-mode=}"
             [[ "$T3_COMPOSER_MODE" =~ ^(on|off|true|false|yes|no|0|1)$ ]] || usage "Unknown Composer Mode option: '$T3_COMPOSER_MODE'"
+            shift
             ;;
 
         # Image tag
