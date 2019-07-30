@@ -2,10 +2,14 @@
 
 source .travis/tags
 
+# Push all images
 for T in $TAGS; do 
     echo $'\n*************** '"Pushing $TRAVIS_REPO_SLUG:$T"
     docker push $TRAVIS_REPO_SLUG:$T
 done
+
+# Update bages at MicroBadger
+curl -X POST https://hooks.microbadger.com/images/undecaf/typo3-in-a-box/2UP8UlsdvxENXjuqw_-AerEjcVY=
 
 # README.md exceeds the size limit of Dockerhub, it has to be excerpted manually
 exit
