@@ -486,8 +486,7 @@ relieves you from repeating that option for each `t3` command.
 
 __Container name(s):__ the name of the TYPO3 container defaults to `typo3`.
 Option `-n` and host environment variable `T3_NAME`
-let you specify a different name. The database container name is derived from the 
-TYPO3 container name by appending `-db`.
+let you specify a different name.
 
 __TYPO3:__
 by default, the latest image built for the most recent TYPO3 version is pulled
@@ -522,7 +521,7 @@ with TYPO3&nbsp;V9.5+). Option `-d` (or `T3_DB_TYPE`) lets
 you use the built-in `mariadb` or `postgresql` servers.
 
 In any case, database state is saved in a persistent volume named `typo3-data`.
-Option `-V` (or `T3_DB_DATA`) sets a different volume name. The SQLite database
+Option `-V` (or `T3_DB_DATA`) sets a different volume name or establishes a working directory mapping. The SQLite database
 can be accessed from the host if a _directory path_ (containing a `/`) is
 specified as described above for the TYPO3 volume.
 
