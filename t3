@@ -241,14 +241,14 @@ unmount_volume() {
 stop_container() {
     if $T3_ENGINE kill --signal SIGINT "$1" &>/dev/null && $T3_ENGINE stop --time 5 "$1" &>/dev/null; then
         echo "Container '$1' stopped"
-
-        # Remove the container(s) if so requested
-        test -n "$REMOVE_OPTION" && $T3_ENGINE container rm "$1" &>/dev/null
-
-        # Wait until the container was removed eventually
-        sleep 1
-        $T3_ENGINE container inspect "$1" &>/dev/null || echo "Container '$1' removed"
     fi
+
+    # Remove the container(s) if so requested
+    test -n "$REMOVE_OPTION" && $T3_ENGINE container rm "$1" &>/dev/null
+
+    # Wait until the container was removed eventually
+    sleep 1
+    $T3_ENGINE container inspect "$1" &>/dev/null || echo "Container '$1' removed"
 }
 
 
