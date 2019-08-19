@@ -37,7 +37,7 @@ PHP and Composer do not need to be installed on the host.
 
 ## What you get
 
-![Parts of this project in a block diagram: containers for TYPO3 and database, browser and IDE](https://undecaf.github.io/typo3-in-a-box/img/overview.png)
+![Parts of this project in a block diagram: container for TYPO3, shell script, browser and IDE](https://undecaf.github.io/typo3-in-a-box/img/overview.png)
 
 ## Contents
 
@@ -148,7 +148,7 @@ State is preserved in volumes `typo3-root` and `typo3-data` so that a subsequent
 
 MariaDB or PostgreSQL is optional for TYPO3&nbsp;9.5+ but is required for TYPO3&nbsp;8.7.
 
-The following example starts TYPO3 and MariaDB in the same container,
+The following example starts TYPO3 and a MariaDB server in the same container,
 preserves state in volumes `typo3-root` and `typo3-data` and exposes TYPO3 and 
 MariaDB on ports `127.0.0.1:8080` and `127.0.0.1:3306`, respectively:
 
@@ -156,7 +156,7 @@ MariaDB on ports `127.0.0.1:8080` and `127.0.0.1:3306`, respectively:
 $ t3 run -d maria
 ```
 
-To use PostgreSQL as the TYPO3 database  and have it exposed on `127.0.0.1:5432`,
+To use PostgreSQL as the TYPO3 database and have it exposed on `127.0.0.1:5432`,
 replace `-d maria` with `-d postgres`.
 
 More [`t3 run` options ](#t3-run) are available to configure the container
@@ -563,8 +563,7 @@ The container environment can be changed at runtime by command [`t3 env`](#t3-en
 
 __Options to be passed to Docker/Podman:__
 must be placed at the end of the 
-command line and should be separated from `t3` options by `--`. Such options are
-applied to both the TYPO3 and the database container (if one exists).
+command line and should be separated from `t3` options by `--`.
 
 
 ### `t3 stop`
@@ -718,7 +717,7 @@ that environment variable is not set.
 |--------|----------|-------------|
 | `--engine=ENGINE`<br>`-e ENGINE` | all | Container engine to use: `docker`, `podman` (can be) abbreviated, or an _absolute path_ to the engine executable.<br>Default:  `$T3_ENGINE`, or `podman` if installed, else `docker`. |
 | `-h`<br>`--help` | none<br>all | Displays a list of commands, or help for the specified command. |
-| `--name=NAME`<br>`-n NAME` | `run`<br>`stop`<br>`composer`<br>`env` | Container name. The database container name, if any, has `-db` appended to this name.<br>Default: `$T3_NAME`, or `typo3`. |
+| `--name=NAME`<br>`-n NAME` | `run`<br>`stop`<br>`composer`<br>`env` | Container name.<br>Default: `$T3_NAME`, or `typo3`. |
 | `--show`<br>`-s` | `run`<br>`stop`<br>`composer`<br>`env` | If this option is present then it shows generated Docker/Podman commands on the console.<br>_Warning:_ your database credentials will be visible on the console if this option is set for `t3 run`.<br>Default: `$T3_SHOW`, or not set. |
 | `--hostname=HOSTNAME`<br>`-h HOSTNAME` | `run` | Hostname assigned to the TYPO3 container and to Apache `ServerName` and `ServerAdmin`.<br>Default: `$T3_HOSTNAME`, or `typo3.$(hostname)`. |
 | `--tag=TAG`<br>`-t TAG` | `run` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`.<br>Default: `$T3_TAG`, or `latest`, i.e. the latest build for the most recent TYPO3 version. |
@@ -728,7 +727,7 @@ that environment variable is not set.
 | `--db-type=TYPE`<br>`-d TYPE` | `run`| Type of database to use: `sqlite` or empty for SQLite, `mariadb` for MariaDB or `postgresql` for PostgreSQL (can be abbreviated).<br>Default: `$T3_DB_TYPE`, or `sqlite`. |
 | `--db-vol=VOLUME`<br>`-V VOLUME` | `run` | Database volume name; requires option `--db-type`.<br>Defaults: `$T3_DB_DATA`, or `typo3-data`. |
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option `--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
-| `--rm` | `stop` | Causes the TYPO3 container and the respective database container (if one exists) to be removed after they were stopped. |
+| `--rm` | `stop` | Causes the TYPO3 container to be removed after they were stopped. |
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). The values of most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. `--env` options must be the _last options_ on the command line. |
 | `--mount=WORKDIR`<br>`-m WORKDIR` | `mount` | Path of a working directory to bind-mount to a persistent volume. The basename of this path is taken as the name of the persistent volume. |
 | `--unmount=WORKDIR`<br>`-u WORKDIR` | `unmount`| Absolute path of the directory to unmount from a persistent volume. |
@@ -745,7 +744,7 @@ thus establishing a consistent environment for all `t3` commands.
 | Name | Description | Built-in default |
 |------|-------------|------------------|
 | `T3_ENGINE` | Container engine to use: `docker`, `podman` (can be) abbreviated, or an _absolute path_ to the engine executable. | `podman` if installed, else `docker` |
-| `T3_NAME` | Container name. The database container name, if any, has `-mariadb` or `-postgresql` appended to this name. | `typo3` |
+| `T3_NAME` | Container name. | `typo3` |
 | `T3_SHOW` | If non-empty then this shows generated Docker/Podman commands on the console.<br>_Warning:_ your database credentials will be visible on the console if this option is set for `t3 run`. | empty |
 | `T3_HOSTNAME` | Hostname assigned to the TYPO3 container and to Apache `ServerName` and `ServerAdmin`. | `typo3.$(hostname)` |
 | `T3_TAG` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`. | `latest` |
