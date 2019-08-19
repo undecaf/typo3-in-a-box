@@ -34,24 +34,16 @@ if [ $$ -eq 1 ]; then
     echo "Locale: $LANG"
 
     # Deactivate Composer Mode if so requested
-    case "${T3_COMPOSER_MODE,,}" in
-        on|yes|1|true)
-            echo "Use Composer to add/remove TYPO3 extensions (Composer Mode)"
-            ;;
+    if [ -n "$T3_COMPOSER_MODE" ]; then
+        echo "Use Composer to add/remove TYPO3 extensions (Composer Mode)"
 
-        off|no|0|false)
-            sed -E \
-                -e "s/define *\( *'TYPO3_COMPOSER_MODE' *, *TRUE *\) *;/define('TYPO3_COMPOSER_MODE', FALSE);/" \
-                -i $TYPO3_ROOT/vendor/typo3/autoload-include.php
-            rm -rf $TYPO3_ROOT/composer.* $APACHE_HOME/.composer
-            echo "Use the TYPO3 Extension Manager to add/remove extensions"
-            ;;
-
-        *)
-            echo "Unknown Composer Mode option: '$T3_COMPOSER_MODE'"
-            exit 1
-            ;;
-    esac
+    else
+        sed -E \
+            -e "s/define *\( *'TYPO3_COMPOSER_MODE' *, *TRUE *\) *;/define('TYPO3_COMPOSER_MODE', FALSE);/" \
+            -i $TYPO3_ROOT/vendor/typo3/autoload-include.php
+        rm -rf $TYPO3_ROOT/composer.* $APACHE_HOME/.composer
+        echo "Use the TYPO3 Extension Manager to add/remove extensions"
+    fi
 fi
 
 # Set up developer/XDebug/production mode

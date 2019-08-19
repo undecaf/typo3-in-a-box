@@ -140,6 +140,25 @@ autocomplete() {
 
 # --------------------------------------------------------------------------
 
+# Runs the selected container engine with the given arguments. Echoes the
+# run command to the console if T3_SHOW is non-empty.
+#
+# Arguments:
+#   $1, $2, ...
+#       arguments to be passed to the container engine
+#
+# Environment:
+#   $T3_ENGINE
+#   $T3_SHOW
+#
+run_engine() {
+    test -n "$T3_SHOW" && echo "$T3_ENGINE $@"
+    $T3_ENGINE $@ >/dev/null
+}
+
+
+# --------------------------------------------------------------------------
+
 # Bind-mounts a working directory to a container volume so that files and
 # directories of that volume appear to be owned by the current user.
 # Does nothing if no path was given.
@@ -227,33 +246,6 @@ unmount_volume() {
 
 # --------------------------------------------------------------------------
 
-# Stops a container if possible and logs this to stdout. Also logs if the
-# container was removed after being stopped. Will remove the container if
-# $REMOVE_OPTION is set to anything non-empty.
-#
-# Arguments:
-#   $1  container name
-#
-# Environment:
-#   $T3_ENGINE
-#   $REMOVE_OPTION
-#
-stop_container() {
-    if $T3_ENGINE kill --signal SIGINT "$1" &>/dev/null && $T3_ENGINE stop --time 5 "$1" &>/dev/null; then
-        echo "Container '$1' stopped"
-    fi
-
-    # Remove the container(s) if so requested
-    test -n "$REMOVE_OPTION" && $T3_ENGINE container rm "$1" &>/dev/null
-
-    # Wait until the container was removed eventually
-    sleep 1
-    $T3_ENGINE container inspect "$1" &>/dev/null || echo "Container '$1' removed"
-}
-
-
-# --------------------------------------------------------------------------
-
 # Determine command
 
 [ -n "$1" ] && MSG="Unknown command: '$1'" || MSG="Missing command"
@@ -295,11 +287,11 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_TAG, or 'latest', i.e. the latest build for the most recent
       TYPO3 version.
 
-  --composer-mode=ON/OFF, -c ON/OFF
-      If Composer Mode is 'on' then Composer is responsible for installing/
-      removing TYPO3 extensions. If set to 'off' then this is handled by 
-      the TYPO3 Extension Manager.
-      Default: \$T3_COMPOSER_MODE, or 'off'.
+  --composer-mode, -c
+      If this option is present then Composer is responsible for installing/
+      removing TYPO3 extensions. Otherwise, this is handled by the TYPO3
+      Extension Manager.
+      Default: \$T3_COMPOSER_MODE, or empty.
  
   --typo3-vol=VOLUME, -v VOLUME
       Either a volume name to be mapped to the TYPO3 root directory inside the
@@ -328,6 +320,12 @@ Options (default values can be overridden by environment variables):
       Defaults: \$T3_DB_PORT, or '127.0.0.1:3306' for MariaDB and '127.0.0.1:5432'
       for PostgreSQL.
  
+  --show, -s
+      If this option is present then the generated Docker/Podman command will be
+      shown on the console.
+      Warning: your database credentials will be visible on the console.
+      Default: \$T3_SHOW, or empty.
+
   --env NAME=VALUE
       Sets the (initial) value of a container environment variable. The values of
       certain variables can be changed afterwards by '$(basename $0) env'.
@@ -342,7 +340,7 @@ described above. If necessary, '--' can be used to separate them from the $(base
  
 EOT
         )
-        ALLOWED_OPTS='-d|--db-type(=.*)?|-e|--engine(=.+)?|-h|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode(=.+)?|-v|--typo3-root(=.+)?|-V|--db-data(=.+)?|-p|--typo3-port(=.+)?|-P|--db-port(=.+)?'
+        ALLOWED_OPTS='-d|--db-type(=.*)?|-e|--engine(=.+)?|-h|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-V|--db-data(=.+)?|-p|--typo3-port(=.+)?|-P|--db-port(=.+)?|-s|--show'
         ;;
 
 
@@ -367,9 +365,13 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
 
   --name=NAME, -n NAME
-      Container name. The database container name, if any, has '-mariadb' or
-      '-postgresql' appended to this name.
+      Same container name as specified for 't3 run'.
       Default: \$T3_NAME, or 'typo3'.
+ 
+  --show, -s
+      If this option is present then the generated Docker/Podman command will be
+      shown on the console.
+      Default: \$T3_SHOW, or empty.
  
   --rm
       Causes the TYPO3 container and the respective database container (if one 
@@ -380,7 +382,7 @@ Options (default values can be overridden by environment variables):
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|--rm'
+        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-s|--show|--rm'
         ;;
 
 
@@ -402,14 +404,20 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
 
   --name=NAME, -n NAME
-      Container name. Default: \$T3_NAME, or 'typo3'.
+      Same container name as specified for 't3 run'.
+      Default: \$T3_NAME, or 'typo3'.
+ 
+  --show, -s
+      If this option is present then the generated Docker/Podman command will be
+      shown on the console.
+      Default: \$T3_SHOW, or empty.
 
   --help, -h
       Displays this text and exits.
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?'
+        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-s|--show'
         ;;
 
 
@@ -431,14 +439,20 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
 
   --name=NAME, -n NAME
-      Container name. Default: \$T3_NAME, or 'typo3'.
+      Same container name as specified for 't3 run'.
+      Default: \$T3_NAME, or 'typo3'.
+ 
+  --show, -s
+      If this option is present then the generated Docker/Podman command will be
+      shown on the console.
+      Default: \$T3_SHOW, or empty.
 
   --help, -h
       Displays this text and exits.
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?'
+        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-s|--show'
         ;;
 
 
@@ -562,7 +576,6 @@ T3_NAME=${T3_NAME:-typo3}
 T3_HOSTNAME=${T3_HOSTNAME:-typo3.$(hostname)}
 
 T3_TAG=${T3_TAG:-latest}
-T3_COMPOSER_MODE=${T3_COMPOSER_MODE:-off}
 T3_ROOT=${T3_ROOT:-typo3-root}
 T3_PORT=${T3_PORT:-127.0.0.1:8080}
 
@@ -618,12 +631,13 @@ while [[ $# -gt 0 ]]; do
 
         # Composer Mode
         -c|--composer-mode)
+            T3_COMPOSER_MODE=on
             shift
-            ;&
+            ;;
 
-        --composer-mode=*)
-            T3_COMPOSER_MODE="${1#--composer-mode=}"
-            [[ "$T3_COMPOSER_MODE" =~ ^(on|off|true|false|yes|no|0|1)$ ]] || usage "Unknown Composer Mode option: '$T3_COMPOSER_MODE'"
+        # Show container engine commands
+        -s|--show)
+            T3_SHOW=on
             shift
             ;;
 
@@ -735,7 +749,7 @@ done
 # --------------------------------------------------------------------------
 
 # Set up the container environment
-ENV_OPTIONS="--env T3_COMPOSER_MODE=$T3_COMPOSER_MODE"
+ENV_OPTIONS="--env T3_COMPOSER_MODE=$T3_COMPOSER_MODE "
 
 # Determine container engine name
 T3_ENGINE=$(autocomplete "$T3_ENGINE" docker podman)
@@ -831,11 +845,11 @@ case "$CMD" in
 
     run)
         # Roll back if command fails or is interrupted
-        trap "{ set +x +e; } 2>/dev/null; echo $'\n*** Command failed or interrupted, rolling back ***'; $0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm; exit 1" ERR SIGINT
+        trap "echo $'\n*** Command failed or interrupted, rolling back ***'; $0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm; exit 1" ERR SIGINT
 
         # Run the TYPO3 container
-        set -x -e
-        $T3_ENGINE run \
+        set -e
+        run_engine run \
             --detach \
             --name "$T3_NAME" \
             --hostname "$T3_HOSTNAME" \
@@ -847,10 +861,8 @@ case "$CMD" in
             $DB_PORT_OPTION \
             $ENV_OPTIONS \
             $@ \
-            $T3_IMAGE${T3_TAG:+:$T3_TAG} \
-            >/dev/null
-
-        { set +x; } 2>/dev/null   # disable command echoing and do not echo this command
+            $T3_IMAGE${T3_TAG:+:$T3_TAG}
+        echo '*** '"Container '$T3_NAME' started"' ***'
 
         # Eventually bind-mount container volumes in userspace
         mount_volume "$T3_ROOT" "$ROOT_MP"
@@ -871,19 +883,27 @@ case "$CMD" in
         done
 
         # Stop and eventually remove the container
-        stop_container "$T3_NAME"
+        #stop_container "$T3_NAME"
+        if run_engine kill --signal SIGINT "$T3_NAME" && run_engine stop --time 5 "$T3_NAME"; then
+            echo '*** '"Container '$T3_NAME' stopped"' ***'
+        fi
+
+        # Remove the container(s) if so requested
+        test -n "$REMOVE_OPTION" && run_engine container rm "$T3_NAME"
+
+        # Wait until the container was removed eventually
+        sleep 1
+        $T3_ENGINE container inspect "$T3_NAME" &>/dev/null || echo '*** '"Container '$T3_NAME' removed"' ***'
         ;;
 
 
     env)
-        set -x
-        $T3_ENGINE exec "$T3_NAME" setenv $HOST_IP_ENV $@
+        run_engine exec "$T3_NAME" setenv $HOST_IP_ENV $@
         ;;
 
 
     composer)
-        set -x
-        $T3_ENGINE exec "$T3_NAME" composer $@
+        run_engine exec "$T3_NAME" composer $@
         ;;
 
 
@@ -897,7 +917,7 @@ case "$CMD" in
         test -d "$MOUNT_PATH" || usage "Option '--unmount' is required"
         sudo --prompt $'\n*** sudo authorization is required for unmounting a working directory: ' \
             umount "$MOUNT_PATH" \
-        && echo "Working directory '$MOUNT_PATH' unmounted from volume '$(basename "$MOUNT_PATH")'"    
+        && echo '*** '"Working directory '$MOUNT_PATH' unmounted from volume '$(basename "$MOUNT_PATH")'"' ***'
         ;;
 
 
