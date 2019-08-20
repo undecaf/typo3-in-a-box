@@ -141,7 +141,7 @@ if [ -n "$COMMIT" ]; then
 <!doctype html>
 <html>
     <head>
-        <meta http-equiv="refresh" content="0; URL='https://github.com/undecaf/typo3-dev/tree/${COMMIT}#containerized-typo3--from-quick-start-to-extension-development'" />
+        <meta http-equiv="refresh" content="0; URL='https://github.com/undecaf/typo3-in-a-box/tree/${COMMIT}#typo3-in-a-box--a-multi-purpose-typo3-8795100-image'" />
     </head>
     <body>
     </body>
