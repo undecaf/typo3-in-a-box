@@ -1,4 +1,4 @@
-# TYPO3 in a box ‒ a multi-purpose TYPO3 8.7/9.5/10.0 image
+# TYPO3 in a box ‒ a versatile TYPO3 8.7/9.5/10.0 image
 
 [![Build Status](https://travis-ci.com/undecaf/typo3-in-a-box.svg?branch=master)](https://travis-ci.com/undecaf/typo3-in-a-box)
 [![Latest release](https://img.shields.io/github/release/undecaf/typo3-in-a-box.svg)](https://github.com/undecaf/typo3-in-a-box)
@@ -22,22 +22,24 @@ No additional container is required.
 Setting up and managing usage scenarios is simplified by a
 [shell script](#t3-shell-script-reference) for Linux and macOS.
 
+TYPO3 directories can be 
+[mapped from the container to the host](#using-an-ide).
 You can use your favorite IDE at the host to
-[develop for TYPO3](#developing-for-typo3) in the container,
-including [Composer Mode](https://getcomposer.org/#Composer_Mode),
+[develop for TYPO3](#developing-for-typo3) in the container without having to
+fiddle with host permissions.
+[Composer Mode](https://getcomposer.org/#Composer_Mode),
 [remote debugging with XDebug](#debugging-with-xdebug) and
-[database access](#accessing-the-typo3-database).
-
-No special permissions are required to develop in TYPO3 directories
-[mapped from the container to the host](#using-an-ide). Your extension directories
-can be [excluded from updates made by Composer](#preventing-composer-from-overwriting-your-changes).
+[database access](#accessing-the-typo3-database) are supported.
+Your personal extension directories can be
+[excluded from updates made by Composer](#preventing-composer-from-overwriting-your-changes).
 
 PHP and Composer do not need to be installed on the host.
 
 
-## What you get
+## Overview
 
 ![Parts of this project in a block diagram: container for TYPO3, shell script, browser and IDE](https://undecaf.github.io/typo3-in-a-box/img/overview.png)
+
 
 ## Contents
 
@@ -64,7 +66,7 @@ PHP and Composer do not need to be installed on the host.
     -   [Options](#options)
     -   [Host environment variables](#host-environment-variables)
     -   [Container environment variables](#container-environment-variables)
--   [Credits](#credits)
+-   [Credits to ...](#credits-to--)
 -   [Licenses](#licenses)
 
 
@@ -98,7 +100,7 @@ across container lifecycles.
 #### Online documentation
 
 In order to view the version of this README file that matches the version of
-the running TYPO3 instance, browse to `http://localhost:8080/readme.html`.
+the running TYPO3 instance, browse to [`http://localhost:8080/readme.html`]().
 
 
 ### `t3` shell script
@@ -123,16 +125,18 @@ See the [`t3` reference](#t3-shell-script-reference) for a complete description.
 
 ### Quick start with `t3`
 
-To run a TYPO3 container [as shown above](#quick-start) with `t3`,
+To run a TYPO3 container [as in the example above](#quick-start) with `t3`,
 simply type:
 
 ```bash
-$ t3 run --
+$ t3 run --    # please note the trailing dashes
 ```
 
 `t3` chooses between [Docker](https://www.docker.com/) and 
 [Podman](https://podman.io/) engines
-automatically, depending on which one is installed. If both are, Podman will be preferred.
+automatically, depending on which one is installed. If both are, Podman in
+[rootless mode](https://opensource.com/article/19/2/how-does-rootless-podman-work)
+will be preferred.
 
 To stop and remove the container, enter
 
@@ -149,7 +153,7 @@ State is preserved in volumes `typo3-root` and `typo3-data` so that a subsequent
 MariaDB or PostgreSQL is optional for TYPO3&nbsp;9.5+ but is required for TYPO3&nbsp;8.7.
 
 The following example starts TYPO3 and a MariaDB server in the same container,
-preserves state in volumes `typo3-root` and `typo3-data` and exposes TYPO3 and 
+preserving state in volumes `typo3-root` and `typo3-data` and exposing TYPO3 and 
 MariaDB on ports `127.0.0.1:8080` and `127.0.0.1:3306`, respectively:
 
 ```bash
@@ -181,9 +185,11 @@ to `toor`.
 
 ## Developing for TYPO3
 
-This section addresses primarily integrators and extension developers.
-It describes how to use this TYPO3 image for customizing or developing
-TYPO3 extensions or otherwise altering the source code of your TYPO3 installation.
+This section addresses mainly integrators and extension developers.
+It describes how to use this TYPO3 image for developing or customizing
+TYPO3 extensions or for otherwise altering the source code of your TYPO3
+installation.
+
 
 ### Using an IDE
 
@@ -243,6 +249,7 @@ When you are finished, unmount your working directory again:
 $ t3 unmount -u ~/ide-workspace/typo3-root
 ```
 
+
 #### Behind the scenes
 
 The TYPO3 root directory is accessible outside of the container at the volume mount
@@ -260,7 +267,7 @@ drwxrwsr-x  7 100 101   4096 Mai  3 23:02 var
 drwxr-xr-x 15 100 101   4096 Mai  3 23:01 vendor
 ```
 
-With Podman, the content os owned by one of the current user's sub-UIDs which 
+With Podman, the content is owned by one of the current user's sub-UIDs which 
 leads to the same situation.
 
 [bindfs](https://bindfs.org/) is a [FUSE](https://github.com/libfuse/libfuse#about)
@@ -541,7 +548,7 @@ MariaDB and PostgreSQL database name and credentials are determined by host envi
 all default to `t3` except for `T3_DB_ROOT_PW` which defaults to `toor`.
 
 __Composer Mode:__
-To have TYPO3 operate in [Composer Mode](https://getcomposer.org/#Composer_Mode),
+to have TYPO3 operate in [Composer Mode](https://getcomposer.org/#Composer_Mode),
 option `-c` must be present (or `T3_COMPOSER_MODE` must be non-empty).
 In this mode, [`t3 composer`](#t3-composer) lets you add/remove TYPO3 extensions.
 
@@ -780,9 +787,21 @@ the `t3 env` command.
 | `PHP_...`<br>`php_...` | Environment variables prefixed with `PHP_` or `php_` become `php.ini` settings with the prefix removed, e.g. `--env php_post_max_size=5M` becomes `post_max_size=5M`. These settings override prior settings and `MODE`. | none |
 
 
-## Credits
+## Credits to ...
 
-TODO
+-   [Docker, Inc.](https://www.docker.com/) for their Open Source Docker
+    implementation and the excellent documentation
+-   the people at [Red Hat](https://www.redhat.com/) developing
+    [Podman](https://podman.io/) with dedication
+-   [Yoba Systems](https://github.com/yobasystems) whose Alpine database containers
+    I used as templates
+-   the [Alpine Linux](https://alpinelinux.org/), [TYPO3](https://typo3.org/),
+    [MariaDB](https://mariadb.org/) and [PostgreSQL](https://www.postgresql.org/)
+    communities
+-   Derick Rethans for [Xdebug](https://xdebug.org/)
+-   Martin Pärtel for [bindfs](https://bindfs.org/) and the makers of
+    [osxfuse](https://github.com/osxfuse/osxfuse)
+-   ... and to all the people unknown to me whose work this project is based on
 
 
 ## Licenses
