@@ -18,7 +18,6 @@ export TYPO3_ROOT=$APACHE_HOME/localhost
 export TYPO3_DOCROOT=$TYPO3_ROOT/public
 
 export COMPOSER_EXCLUDE_FILE=/etc/composer-exclude
-export T3_COMPOSER_MODE=${T3_COMPOSER_MODE:-off}
 
 export T3_DB_NAME=${T3_DB_NAME:-t3}
 export T3_DB_USER=${T3_DB_USER:-t3}
