@@ -89,7 +89,7 @@ If you prefer
 [working rootless](https://de.slideshare.net/AkihiroSuda/rootless-containers)
 with [Podman](https://podman.io/) then substitute `podman` for `docker`.
 
-Next, browse to `http://localhost:8080`. This starts the TYPO3 installation wizard. 
+Next, browse to [`http://localhost:8080`](). This starts the TYPO3 installation wizard. 
 When asked to select a database, choose `Manually configured SQLite connection` and
 continue through the remaining dialogs to the TYPO3 login dialog.
 
@@ -100,25 +100,26 @@ across container lifecycles.
 #### Online documentation
 
 In order to view the version of this README file that matches the version of
-the running TYPO3 instance, browse to [`http://localhost:8080/readme.html`]().
+the running TYPO3 instance, browse to [`http://localhost:8080/readme.html`](http://localhost:8080/readme.html).
 
 
 ### `t3` shell script
 
-Scenarios that are more lifelike can require complex Docker or Podman command lines.
+Scenarios that are more lifelike will likely require complex Docker or Podman command lines.
 
 In order to simplify usage, the
 [`t3` shell script](https://raw.githubusercontent.com/undecaf/typo3-in-a-box/master/t3)
 has been provided for Linux and macOS.
 This script is
 [avaliable for download here](https://raw.githubusercontent.com/undecaf/typo3-in-a-box/master/t3).
- It lets you:
+It lets you:
 -   configure and run a TYPO3 container;
 -   stop this container and optionally remove it;
--   map the TYPO3 root to a working directory at the host;
+-   mount the TYPO3 root volume at a working directory at the host;
 -   access the databases from the host; 
 -   modify the TYPO3 environment even while the container is running;
--   run Composer within the TYPO3 container.
+-   run Composer within the TYPO3 container;
+-   provides defaults for all options to let you get started quickly.
 
 See the [`t3` reference](#t3-shell-script-reference) for a complete description.
 
@@ -453,7 +454,7 @@ $ t3 COMMAND [option]...
 The `t3` script is
 [avaliable for download here](https://raw.githubusercontent.com/undecaf/typo3-in-a-box/master/t3).
 In order to view the version of this document that matches a running TYPO3 instance, 
-point your browser to e.g. `http://localhost:8080/readme.html`.
+point your browser to [`http://localhost:8080/readme.html`](http://localhost:8080/readme.html).
 
 Commands are described below.
 
