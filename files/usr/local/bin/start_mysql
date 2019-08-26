@@ -1,27 +1,29 @@
 #!/bin/bash
 
 #
-# Starts MariaDB with the requested configuration
+# Sets up and starts MariaDB with the requested configuration
 #
-echo "Starting MariaDB server ..."
-
 set -e
 
 # Use the same environment as during build
 . /etc/environment
 
-# Set up MariaDB directories
+# Initialize MariaDB directories
 mkdir -p $MYSQL_DATA $MYSQL_RUN
 chown -R ${MYSQL_USER}: $MYSQL_DATA $MYSQL_RUN
 
-# Initialize MariaDB
-mysql_install_db --user=mysql --ldata=$MYSQL_DATA >/dev/null
+# Set up MariaDB if necessary
+if [ ! -d $MYSQL_DATA/mysql ]; then
+    echo "Initializing MariaDB ..."
 
-# Create the TYPO3 database and the users
-SQLFILE=$(mktemp -u)
-trap "rm -f $SQLFILE" EXIT
+    # Initialize MariaDB
+    mysql_install_db --user=mysql --ldata=$MYSQL_DATA >/dev/null
 
-cat << EOF > $SQLFILE
+    # Create the TYPO3 database and the users
+    SQLFILE=$(mktemp -u)
+    trap "rm -f $SQLFILE" EXIT
+
+    cat << EOF > $SQLFILE
 USE mysql;
 FLUSH PRIVILEGES;
 GRANT ALL ON *.* TO 'root'@'%' identified by '$T3_DB_ROOT_PW' WITH GRANT OPTION ;
@@ -34,7 +36,9 @@ GRANT ALL ON \`$T3_DB_NAME\`.* TO '$T3_DB_USER'@'%' IDENTIFIED BY '$T3_DB_PW';
 GRANT ALL ON \`$T3_DB_NAME\`.* TO '$T3_DB_USER'@'localhost' IDENTIFIED BY '$T3_DB_PW';
 EOF
 
-mysqld --datadir=$MYSQL_DATA --user=mysql --bootstrap --verbose=0 --skip-networking=0 <$SQLFILE
+    mysqld --datadir=$MYSQL_DATA --user=mysql --bootstrap --verbose=0 --skip-networking=0 <$SQLFILE
+fi
 
 # Start MariaDB
+echo "Starting MariaDB server ..."
 mysqld --datadir=$MYSQL_DATA --user=mysql --console --skip-networking=0 &

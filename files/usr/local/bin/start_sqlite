@@ -3,14 +3,21 @@
 #
 # Sets up SQLite
 #
-echo "Setting up SQLite"
-
 set -e
 
 # Use the same environment as during build
 . /etc/environment
+SQLITE_DIR=$TYPO3_ROOT/var/sqlite
 
-# Point the SQLite directory at the database volume
-mkdir -p $TYPO3_ROOT/var
-ln -s $T3_DATADIR $TYPO3_ROOT/var/sqlite
-chown -R ${APACHE_USER}: $TYPO3_ROOT/var $T3_DATADIR
+# Set up SQLite if necessary
+if [ ! -d $SQLITE_DIR ]; then
+    echo "Setting up SQLite ..."
+
+    # Point the SQLite directory at the database volume
+    mkdir -p $TYPO3_ROOT/var
+    ln -s $T3_DATADIR $TYPO3_ROOT/var/sqlite
+    chown -R ${APACHE_USER}: $TYPO3_ROOT/var $T3_DATADIR
+
+else
+    echo "SQLite ready"
+fi
