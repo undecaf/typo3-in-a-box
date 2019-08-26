@@ -8,11 +8,11 @@ set -e
 # Use the same environment as during build
 . /etc/environment
 
-# Initialize MariaDB directories
+# Set up MariaDB directories
 mkdir -p $MYSQL_DATA $MYSQL_RUN
 chown -R ${MYSQL_USER}: $MYSQL_DATA $MYSQL_RUN
 
-# Set up MariaDB if necessary
+# Initialize MariaDB if necessary
 if [ ! -d $MYSQL_DATA/mysql ]; then
     echo "Initializing MariaDB ..."
 
