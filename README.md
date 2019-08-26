@@ -110,18 +110,37 @@ Scenarios that are more lifelike will likely require complex Docker or Podman co
 In order to simplify usage, the
 [`t3` shell script](https://raw.githubusercontent.com/undecaf/typo3-in-a-box/master/t3)
 has been provided for Linux and macOS.
-This script is
-[avaliable for download here](https://raw.githubusercontent.com/undecaf/typo3-in-a-box/master/t3).
-It lets you:
+It enables you to:
 -   configure and run a TYPO3 container;
 -   stop this container and optionally remove it;
 -   mount the TYPO3 root volume at a working directory at the host;
 -   access the databases from the host; 
 -   modify the TYPO3 environment even while the container is running;
 -   run Composer within the TYPO3 container;
--   provides defaults for all options to let you get started quickly.
+-   and it provides defaults for all options to let you get started quickly.
 
 See the [`t3` reference](#t3-shell-script-reference) for a complete description.
+
+
+#### `t3` installation
+
+This script is
+[avaliable for download here](https://raw.githubusercontent.com/undecaf/typo3-in-a-box/master/t3).
+It should be saved in a directory which is part of the search path, e.g.
+`/usr/local/bin`, and it must be made executable, e.g.
+
+```bash
+$ sudo chmod 755 /usr/local/bin/t3
+```
+
+macOS users need to modify the script to run in [Zsh](https://ohmyz.sh/)
+instead of the 
+[outdated Bash version](https://www.theverge.com/2019/6/4/18651872/apple-macos-catalina-zsh-bash-shell-replacement-features)
+that comes with macOS:
+
+```bash
+$ sudo sed -e 's_#!/bin/bash_#!/bin/zsh_' -i .bak /usr/local/bin/t3
+```
 
 
 ### Quick start with `t3`
