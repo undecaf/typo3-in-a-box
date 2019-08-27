@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Show what is being composed
+echo $'\n*************** '"Composing TYPO3 $TYPO3_VER"
+
+# Set up the runtime environment
+. /etc/environment
+
+# Install Composer
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/
+chmod 755 /etc/php7
+
+mkdir -p $APACHE_HOME/.composer
+chown $APACHE_USER: $APACHE_HOME/.composer
+
+# Install TYPO3 version $TYPO3_VER using Composer
+mv $TYPO3_ROOT/composer-${TYPO3_VER}.json $TYPO3_ROOT/composer.json
+rm -f $TYPO3_ROOT/composer-*.json
+chown -R $APACHE_USER: $APACHE_HOME
+composer install --no-progress --no-suggest
+touch $TYPO3_DOCROOT/FIRST_INSTALL
+chown $APACHE_USER: $TYPO3_DOCROOT/FIRST_INSTALL
+
+# Move document root to $TYPO3_DOCROOT
+sed -i "s#/var/www/localhost/htdocs#$TYPO3_DOCROOT#" /etc/apache2/httpd.conf
+rm -rf $TYPO3_ROOT/htdocs $TYPO3_ROOT/cgi-bin
+
+# Make everything in Apache homedir accessible by Apache
+find $APACHE_HOME -type d -exec chmod 755 {} \;
+chown -R $APACHE_USER: $APACHE_HOME
+
+# Clean up
+rm -rf $APACHE_HOME/.composer $0
