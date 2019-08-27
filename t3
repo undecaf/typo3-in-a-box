@@ -292,7 +292,7 @@ Options (default values can be overridden by environment variables):
       If this option is present then Composer is responsible for installing/
       removing TYPO3 extensions. Otherwise, this is handled by the TYPO3
       Extension Manager.
-      Default: \$T3_COMPOSER_MODE, or empty.
+      Default: \$T3_COMPOSER_MODE, or not set.
  
   --typo3-vol=VOLUME, -v VOLUME
       Either a volume name to be mapped to the TYPO3 root directory inside the
@@ -302,17 +302,17 @@ Options (default values can be overridden by environment variables):
       appears to be owned by the current user.
       Default: \$T3_ROOT, or 'typo3-root'.
 
-  --typo3-ports=PORTS, -p PORTS
+  --typo3-ports=HTTP,HTTPS, -p HTTP,HTTPS
       Host interfaces (optional) and ports where to publish the TYPO3 HTTP port
       and the TYPO3 HTTPS port. If one of the parts is omitted then the respective
       port will not be published.
       Default: \$T3_PORTS, or '127.0.0.1:8080,127.0.0.1:8443'.
 
   --certfiles=PRIVATE-KEY,CERT, -k PRIVATE-KEY,CERT
-      Private key file and certificate file (PEM format) for HTTPS connections,
-      located at the host. If not specified then a self-signed certificate will
-      be used for HTTPS connections.
-      Default: \$T3_CERTFILES, or empty.
+      Private key file and certificate file for HTTPS, in PEM format and located
+      at the host. If not specified then a self-signed certificate will be used
+      for HTTPS connections.
+      Default: \$T3_CERTFILES, or not set.
 
   --db-type=TYPE, -d TYPE
       Type of database to use: 'sqlite' or empty for SQLite, 'mariadb' for 
@@ -333,7 +333,7 @@ Options (default values can be overridden by environment variables):
       If this option is present then the generated Docker/Podman command will be
       shown on the console.
       Warning: your database credentials will be visible on the console.
-      Default: \$T3_SHOW, or empty.
+      Default: \$T3_SHOW, or not set.
 
   --env NAME=VALUE
       Sets the (initial) value of a container environment variable. The values of
@@ -380,7 +380,7 @@ Options (default values can be overridden by environment variables):
   --show, -s
       If this option is present then the generated Docker/Podman command will be
       shown on the console.
-      Default: \$T3_SHOW, or empty.
+      Default: \$T3_SHOW, or not set.
  
   --rm
       Causes the TYPO3 container and the respective database container (if one 
@@ -419,7 +419,7 @@ Options (default values can be overridden by environment variables):
   --show, -s
       If this option is present then the generated Docker/Podman command will be
       shown on the console.
-      Default: \$T3_SHOW, or empty.
+      Default: \$T3_SHOW, or not set.
 
   --help, -h
       Displays this text and exits.
@@ -454,7 +454,7 @@ Options (default values can be overridden by environment variables):
   --show, -s
       If this option is present then the generated Docker/Podman command will be
       shown on the console.
-      Default: \$T3_SHOW, or empty.
+      Default: \$T3_SHOW, or not set.
 
   --help, -h
       Displays this text and exits.
