@@ -1,9 +1,39 @@
 #!/bin/bash
 
 #
-# (Re-)Configures Apache, PHP and XDebug and runs
-# what was given as command line arguments
+# (Re-)Configures Apache, PHP, XDebug and database
+# and runs what was given as command line arguments
+# =================================================
 #
+# Copyright F. Kasper <fkasper@modus-operandi.at> 2019
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+# --------------------------------------------------------------------------
+
+# Echoes the Common Name of a PEM certificate to stdout.
+#
+# Arguments:
+#   $1  certificate file in PEM format
+#
+common_name() {
+    openssl x509 -in "$1" -text -noout | grep 'Subject: CN' | awk -F ' *= *' '{ print $2 }'
+}
+
+# --------------------------------------------------------------------------
+
 
 # Use the same environment as during build
 . /etc/environment
@@ -37,38 +67,38 @@ if [ $$ -eq 1 ]; then
     mv /etc/apache2/conf.d/ssl.conf /etc/apache2/conf.d/ssl.conf.disabled
 
     # Ensure that a private key file and a certificate file are available
-    mkdir -p $APACHE_SSL
+    mkdir -p $(dirname $APACHE_CERT)
 
-    if [ -f ${APACHE_CUSTOM_CERT}.key -a -f ${APACHE_CUSTOM_CERT}.crt ]; then
-        # Use existing custom certificate files
-        ln -sf ${APACHE_CUSTOM_CERT}.key ${APACHE_CERT}.key
-        ln -sf ${APACHE_CUSTOM_CERT}.crt ${APACHE_CERT}.crt
-        chmod 600 ${APACHE_CUSTOM_CERT}.key
-        chmod 644 ${APACHE_CUSTOM_CERT}.crt
-        echo 'Using a custom SSL certificate'
+    if [ -f $APACHE_CUSTOM_CERT.key -a -f $APACHE_CUSTOM_CERT.pem ]; then
+        # Link to existing custom certificate files
+        chown $APACHE_USER: $APACHE_CUSTOM_CERT.{key,pem}
+        chmod 600 $APACHE_CUSTOM_CERT.key
+        chmod 644 $APACHE_CUSTOM_CERT.pem
+        ln -sf $APACHE_CUSTOM_CERT.key $APACHE_CERT.key
+        ln -sf $APACHE_CUSTOM_CERT.pem $APACHE_CERT.pem
+        echo "Using custom SSL certificate, CN=$(common_name $APACHE_CUSTOM_CERT.pem)"
 
     else
         # Create a self-signed certificate for $HOSTNAME unless one already exists
         while true; do
-            if [ -f ${APACHE_CERT}.key -a -f ${APACHE_CERT}.crt ]; then
+            if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem ]; then
                 # Certificate found, does it match the current $HOSTNAME?
-                CERT_HOSTNAME=$(openssl x509 -in ${APACHE_CERT}.crt -text -noout | grep 'Subject: CN' | awk -F ' *= *' '{ print $2 }')
-                test "$CERT_HOSTNAME" = "$HOSTNAME" && echo 'Re-using the self-signed SSL certificate' && break
+                test "$(common_name $APACHE_CERT.pem)" = "$HOSTNAME" && echo "Using self-signed SSL certificate, CN=$HOSTNAME" && break
             fi
 
             # No certificate found that matches the current $HOSTNAME -- create a new one
             openssl req -x509 -sha256 -days 3653 \
                 -newkey rsa:2048 -nodes \
-                -keyout ${APACHE_CERT}.key \
-                -subj "/CN=${HOSTNAME}" \
-                -out ${APACHE_CERT}.crt \
+                -keyout $APACHE_CERT.key \
+                -subj "/CN=$HOSTNAME" \
+                -out $APACHE_CERT.pem \
                 &>/dev/null
-            echo 'Created a new self-signed SSL certificate'
+
+            chown $APACHE_USER: $APACHE_CERT.{key,pem}
+            echo "Created self-signed SSL certificate, CN=$HOSTNAME"
             break
         done
     fi
-
-    chown -R $APACHE_USER: $APACHE_SSL
 
     # Deactivate Composer Mode if so requested
     if [ -n "$T3_COMPOSER_MODE" ]; then
@@ -159,9 +189,9 @@ if [ -f $COMPOSER_EXCLUDE_FILE ] && [ -n "$(cat $COMPOSER_EXCLUDE_FILE)" ]; then
     done <<< "$(cat $COMPOSER_EXCLUDE_FILE)"
 fi
 
-# Start MariaDB/PostgreSQL if so requested
+# Start SQLite/MariaDB/PostgreSQL if so requested
 if [ $$ -eq 1 ]; then
-    # Show this ahead of the database log
+    # Show this before the database log appears
     echo $'Ctrl-C to stop the container\n'
     trap "echo \$'\nContainer stopped'" EXIT
 

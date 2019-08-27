@@ -10,9 +10,8 @@ export LANG=${LANG:-C.UTF-8}
 
 # Derived environment variables
 export APACHE_USER=apache
-export APACHE_SSL=$TYPO3_ROOT/.ssl
-export APACHE_CERT=$APACHE_SSL/effective
-export APACHE_CUSTOM_CERT=$APACHE_SSL/custom
+export APACHE_CERT=$TYPO3_ROOT/.ssl/server
+export APACHE_CUSTOM_CERT=/etc/ssl/apache2/custom
 
 export TYPO3_DOCROOT=$TYPO3_ROOT/public
 

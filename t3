@@ -26,7 +26,7 @@
 T3_IMAGE=undecaf/typo3-in-a-box
 T3_ROOTDIR=/var/www/localhost
 T3_DATADIR=/var/lib/typo3-db
-CERT_BASENAME=$T3_ROOTDIR/.ssl/custom
+CERT_BASENAME=/etc/ssl/apache2/custom
 FILE_LIMIT='nofile=10000:15000'
 
 # --------------------------------------------------------------------------
@@ -885,7 +885,7 @@ case "$CMD" in
 
         # Create the TYPO3 container
         set -e
-        echo '*** '"Preparing container '$T3_NAME' ..."' ***'
+        echo '*** '"Preparing container '$T3_NAME'"' ***'
         run_engine create \
             --name "$T3_NAME" \
             --hostname "$T3_HOSTNAME" \
@@ -902,7 +902,7 @@ case "$CMD" in
         # Copy certificate files, if any
         if [ -n "$T3_CERTFILES" ]; then
             run_engine cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
-            run_engine cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.crt
+            run_engine cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
         fi
         echo '*** '"Container '$T3_NAME' created"' ***'
 
@@ -919,7 +919,7 @@ case "$CMD" in
 
 
     stop)
-        echo '*** '"Stopping container '$T3_NAME' ..."' ***'
+        echo '*** '"Stopping container '$T3_NAME'"' ***'
 
         # Collect volume names from container
         # Note: prior to Podman v1.4.3, the volume name was contained in property .Source, not .Name
