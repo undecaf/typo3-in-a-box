@@ -1,3 +1,5 @@
+FROM alpine:3.10
+
 # Build arguments
 ARG BUILD_DATE
 ARG COMMIT
@@ -8,9 +10,6 @@ ARG TYPO3_VER=10.0
 ARG APACHE_HOME=/var/www
 ARG TYPO3_ROOT=${APACHE_HOME}/localhost
 ARG TYPO3_DATADIR=/var/lib/typo3-db
-
-
-FROM alpine:3.10
 
 LABEL \
     org.opencontainers.image.title="A versatile TYPO3 8.7/9.5/10.0 image" \
