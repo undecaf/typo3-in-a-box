@@ -142,6 +142,7 @@ if [ -n "$COMMIT" ]; then
 EOF
 
     # Keep the document out of the VOLUME so that it does not get pinned
+    mkdir -p $TYPO3_DOCROOT
     ln -s $APACHE_HOME/readme.html $TYPO3_DOCROOT/
 fi
 
