@@ -2,6 +2,7 @@
 .vscode
 .images
 .travis*
+snakeoil*
 README.md
 COPYING
 t3
