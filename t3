@@ -865,7 +865,6 @@ case "$CMD" in
         set -e
         echo '*** '"Preparing container '$T3_NAME' ..."' ***'
         run_engine create \
-            --detach \
             --name "$T3_NAME" \
             --hostname "$T3_HOSTNAME" \
             --ulimit $FILE_LIMIT \
