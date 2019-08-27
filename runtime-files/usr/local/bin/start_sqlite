@@ -15,9 +15,9 @@ if [ ! -d $SQLITE_DIR ]; then
 
     # Point the SQLite directory at the database volume
     mkdir -p $TYPO3_ROOT/var
-    ln -s $T3_DATADIR $TYPO3_ROOT/var/sqlite
-    chown -R ${APACHE_USER}: $TYPO3_ROOT/var $T3_DATADIR
-
-else
-    echo "SQLite ready"
+    ln -s $TYPO3_DATADIR $TYPO3_ROOT/var/sqlite
+    chown -R ${APACHE_USER}: $TYPO3_ROOT/var $TYPO3_DATADIR
 fi
+
+# Nothing to start
+echo "SQLite ready"

@@ -48,6 +48,7 @@ PHP and Composer do not need to be installed on the host.
     -   [`t3` shell script](#t3-shell-script)
     -   [Quick start with `t3`](#quick-start-with-t3)
     -   [MariaDB and PostgreSQL](#mariadb-and-postgresql)
+    -   [HTTPS connection](#https-connection)
 -   [Developing for TYPO3](#developing-for-typo3)
     -   [Using an IDE](#using-an-ide)
     -   [Setting the container environment](#setting-the-container-environment)
@@ -201,6 +202,10 @@ type `t3 stop --rm` instead.
 Database credentials can be defined by [host environment variables](#host-environment-variables)
 `T3_DB_NAME`, `T3_DB_USER`, `T3_DB_PW` and `T3_DB_ROOT_PW`. If not set then the database name, user and password all default to `t3` and `T3_DB_ROOT_PW` defaults
 to `toor`.
+
+
+### HTTPS connection
+
 
 
 ## Developing for TYPO3
@@ -447,7 +452,7 @@ options as [host environment variables](#host-environment-variables), e.g.
 ```bash
 export T3_NAME=my-t3
 export T3_ROOT=t3-root
-export T3_PORT=127.0.0.1:8181
+export T3_PORTS=127.0.0.1:8181,127.0.0.1:9443
   ⁝
 ```
 
@@ -495,7 +500,7 @@ $ t3 COMMAND -h
 
 ### `t3 run`
 
-Configures and runs a TYPO3 container:
+Configures and runs a TYPO3 container, or restarts an existing TYPO3 container:
 
 ```bash
 $ t3 run [option]... [--] [Docker/Podman option]...
@@ -527,8 +532,11 @@ from [`docker.io/undecaf/typo3-in-a-box`](https://hub.docker.com/r/undecaf/typo3
 Option `-t` (or `T3_TAG`) selects a particular TYPO3 version and build by one of the
 [available tags](https://hub.docker.com/r/undecaf/typo3-in-a-box/tags).
 
-TYPO3 is served at `127.0.0.1:8080` by default. Option `-p` (or `T3_PORT`) lets
-you choose a different host interface and/or port.
+TYPO3 is served at `http://127.0.0.1:8080` and  `https://127.0.0.1:8443` by default.
+Option `-p` (or `T3_PORTS`) lets you choose different host interfaces and/or ports.
+
+__Server certificate:__
+TODO
 
 __TYPO3 volume and work directory:__
 The TYPO3 instance is saved in a persistent volume named `typo3-root`.
@@ -750,7 +758,7 @@ that environment variable is not set.
 | `--tag=TAG`<br>`-t TAG` | `run` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`.<br>Default: `$T3_TAG`, or `latest`, i.e. the latest build for the most recent TYPO3 version. |
 | `--composer-mode`<br>`-c` | `run` | If this option is present then Composer is responsible for installing/removing TYPO3 extensions. Otherwise, this is handled by the TYPO3 Extension Manager.<br>Default: `$T3_COMPOSER_MODE`, or not set. |
 | `--typo3-root=VOLUME`<br>`-v VOLUME` | `run` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path (containing a `/`).<br>In the latter case, the directory basename is used as the volume name, and the directory is bind-mounted at that volume. Thus, volume content appears to be owned by the current user.<br>__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3.<br>Default: `$T3_ROOT`, or `typo3-root`. |
-| `--typo3-port=PORT`<br>`-p PORT` | `run` | Host interface (optional) and port where to publish the TYPO3 HTTP port.<br>Default: `$T3_PORT`, or `127.0.0.1:8080`. |
+| `--typo3-ports=PORTS`<br>`-p PORTS` | `run` | Host interfaces (optional) and ports where to publish the TYPO3 HTTP port and the TYPO3 HTTPS port. If one of the parts is omitted then the respective port will not be published.<br>Default: `$T3_PORTS`, or `127.0.0.1:8080,127.0.0.1:8443`. |
 | `--db-type=TYPE`<br>`-d TYPE` | `run`| Type of database to use: `sqlite` or empty for SQLite, `mariadb` for MariaDB or `postgresql` for PostgreSQL (can be abbreviated).<br>Default: `$T3_DB_TYPE`, or `sqlite`. |
 | `--db-vol=VOLUME`<br>`-V VOLUME` | `run` | Database volume name; requires option `--db-type`.<br>Defaults: `$T3_DB_DATA`, or `typo3-data`. |
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option `--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
@@ -777,7 +785,7 @@ thus establishing a consistent environment for all `t3` commands.
 | `T3_TAG` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`. | `latest` |
 | `T3_COMPOSER_MODE` | If non-empty then Composer is responsible for installing/removing TYPO3 extensions. Otherwise, this is handled by the TYPO3 Extension Manager. | empty |
 | `T3_ROOT` | Volume name to be mapped to the TYPO3 root directory inside the container.<br>If an absolute directory path specified then its basename is used as the volume name; in addition, that directory is bind-mounted at the volume so that files and directories in that volume  appear to be owned by the current user. | `typo3-root` |
-| `T3_PORT` | Interface (optional) and port where to publish the TYPO3 HTTP port. | `127.0.0.1:8080` |
+| `T3_PORTS` | Host interfaces (optional) and ports where to publish the TYPO3 HTTP port and the TYPO3 HTTPS port. If one of the parts is omitted then the respective port will not be published. | `127.0.0.1:8080,`<br>`127.0.0.1:8443` |
 | `T3_DB_TYPE` | Type of database to use: `sqlite` or empty for SQLite, `mariadb` for MariaDB or `postgresql` for PostgreSQL (can be abbreviated). | `sqlite` |
 | `T3_DB_DATA`| Database volume name; effective only for MariaDB and PostgreSQL. | `typo3-data` |
 | `T3_DB_PORT` | Host interface (optional) and port where to publish the database port; effective only for MariaDB and PostgreSQL. | `127.0.0.1:3306`, or<br>`127.0.0.1:5432` |

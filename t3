@@ -26,6 +26,7 @@
 T3_IMAGE=undecaf/typo3-in-a-box
 T3_ROOTDIR=/var/www/localhost
 T3_DATADIR=/var/lib/typo3-db
+CERT_BASENAME=/etc/ssl/apache2/custom
 FILE_LIMIT='nofile=10000:15000'
 
 # --------------------------------------------------------------------------
@@ -301,9 +302,17 @@ Options (default values can be overridden by environment variables):
       appears to be owned by the current user.
       Default: \$T3_ROOT, or 'typo3-root'.
 
-  --typo3-port=PORT, -p PORT
-      Host interface (optional) and port where to publish the TYPO3 HTTP port.
-      Default: \$T3_PORT, or '127.0.0.1:8080'.
+  --typo3-ports=PORTS, -p PORTS
+      Host interfaces (optional) and ports where to publish the TYPO3 HTTP port
+      and the TYPO3 HTTPS port. If one of the parts is omitted then the respective
+      port will not be published.
+      Default: \$T3_PORTS, or '127.0.0.1:8080,127.0.0.1:8443'.
+
+  --certfiles=PRIVATE-KEY,CERT, -k PRIVATE-KEY,CERT
+      Private key file and certificate file (PEM format) for HTTPS connections,
+      located at the host. If not specified then a self-signed certificate will
+      be used for HTTPS connections.
+      Default: \$T3_CERTFILES, or empty.
 
   --db-type=TYPE, -d TYPE
       Type of database to use: 'sqlite' or empty for SQLite, 'mariadb' for 
@@ -340,7 +349,7 @@ described above. If necessary, '--' can be used to separate them from the $(base
  
 EOT
         )
-        ALLOWED_OPTS='-d|--db-type(=.*)?|-e|--engine(=.+)?|-h|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-V|--db-data(=.+)?|-p|--typo3-port(=.+)?|-P|--db-port(=.+)?|-s|--show'
+        ALLOWED_OPTS='-d|--db-type(=.*)?|-e|--engine(=.+)?|-h|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-V|--db-data(=.+)?|-p|--typo3-ports(=.+)?|-k|--certfiles(=.+)?|-P|--db-port(=.+)?|-s|--show'
         ;;
 
 
@@ -577,7 +586,7 @@ T3_HOSTNAME=${T3_HOSTNAME:-typo3.$(hostname)}
 
 T3_TAG=${T3_TAG:-latest}
 T3_ROOT=${T3_ROOT:-typo3-root}
-T3_PORT=${T3_PORT:-127.0.0.1:8080}
+T3_PORTS=${T3_PORTS:-127.0.0.1:8080,127.0.0.1:8443}
 
 REMOVE_OPTION=
 MOUNT_PATH=
@@ -698,13 +707,23 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
 
-        # TYPO3 HTTP port
-        -p|--typo3-port)
+        # TYPO3 HTTP and HTTPS interfaces and ports
+        -p|--typo3-ports)
             shift
             ;&
 
-        --typo3-port=*)
-            T3_PORT="${1#--typo3-port=}"
+        --typo3-ports=*)
+            T3_PORTS="${1#--typo3-ports=}"
+            shift
+            ;;
+
+        # Private key file and certificate file
+        -k|--certfiles)
+            shift
+            ;&
+
+        --certfiles=*)
+            T3_CERTFILES="${1#--certfiles=}"
             shift
             ;;
 
@@ -767,13 +786,30 @@ case $ENGINE_NAME in
         ;;
 
     podman)
-        HOST_IP_ENV="HOST_IP=$(hostname -I | awk '{print $1}')"
+        # hostname -I is not supported under macOS, therefore:
+        HOST_IP_ENV="HOST_IP=$(ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{ print $2; }' | head -n 1)"
         ENV_OPTIONS="$ENV_OPTIONS \
             --env $HOST_IP_ENV"
         MP_FORMAT='{{.MountPoint}}'
         SUDO_PREFIX=
         ;;
 esac
+
+# Split into HTTP and HTTPS port and interface
+RE='^((.+?)?,(.+?)?)?$'
+[[ "$T3_PORTS" =~ $RE ]] || usage "Invalid option: '$T3_PORTS'"
+HTTP_PORT=${BASH_REMATCH[2]}
+HTTPS_PORT=${BASH_REMATCH[3]}
+
+HTTP_OPTIONS=
+test -n ${HTTP_PORT} && HTTP_OPTIONS="$HTTP_OPTIONS --publish $HTTP_PORT:80"
+test -n ${HTTPS_PORT} && HTTP_OPTIONS="$HTTP_OPTIONS --publish $HTTPS_PORT:443"
+
+# Split into private key file and certificate file
+RE='^((.+),(.+))?$'
+[[ "$T3_CERTFILES" =~ $RE ]] || usage "Invalid option: '$T3_CERTFILES'"
+KEY_FILE=${BASH_REMATCH[2]}
+CERT_FILE=${BASH_REMATCH[3]}
 
 # Volume names and working directories
 ROOT_MP=
@@ -844,33 +880,47 @@ esac
 case "$CMD" in
 
     run)
-        # Roll back if command fails or is interrupted
-        trap "echo $'\n*** Command failed or interrupted, rolling back ***'; $0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm; exit 1" ERR SIGINT
+        # Roll back if command terminates prematurely
+        trap "echo $'\n*** Command failed or interrupted, rolling back ***'; $0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm; exit 1" EXIT
 
-        # Run the TYPO3 container
+        # Create the TYPO3 container
         set -e
-        run_engine run \
-            --detach \
+        echo '*** '"Preparing container '$T3_NAME'"' ***'
+        run_engine create \
             --name "$T3_NAME" \
             --hostname "$T3_HOSTNAME" \
             --ulimit $FILE_LIMIT \
             --volume "$T3_ROOT:$T3_ROOTDIR" \
             --volume "$T3_DB_DATA:$T3_DATADIR" \
-            --publish $T3_PORT:80 \
+            $HTTP_OPTIONS \
             $DB_VOL_OPTION \
             $DB_PORT_OPTION \
             $ENV_OPTIONS \
             $@ \
             $T3_IMAGE${T3_TAG:+:$T3_TAG}
+
+        # Copy certificate files, if any
+        if [ -n "$T3_CERTFILES" ]; then
+            run_engine cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
+            run_engine cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
+        fi
+        echo '*** '"Container '$T3_NAME' created"' ***'
+
+        # Start the container
+        run_engine start "$T3_NAME"
         echo '*** '"Container '$T3_NAME' started"' ***'
 
         # Eventually bind-mount container volumes in userspace
         mount_volume "$T3_ROOT" "$ROOT_MP"
         mount_volume "$T3_DB_DATA" "$DB_DATA_MP"
+
+        trap - EXIT
         ;;
 
 
     stop)
+        echo '*** '"Stopping container '$T3_NAME'"' ***'
+
         # Collect volume names from container
         # Note: prior to Podman v1.4.3, the volume name was contained in property .Source, not .Name
         VOLNAMES="$($T3_ENGINE container inspect \

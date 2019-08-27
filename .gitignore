@@ -1,5 +1,8 @@
 .vscode
 .images
+/typo3-root
+/typo3-data
+/snakeoil*
 /todo*
 /run-*
 /pod-*
