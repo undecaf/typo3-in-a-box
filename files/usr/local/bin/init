@@ -33,6 +33,43 @@ if [ $$ -eq 1 ]; then
     # Show locale
     echo "Locale: $LANG"
 
+    # Disable the default SSL configuration in favor of the TYPO3 SSL configuration
+    mv /etc/apache2/conf.d/ssl.conf /etc/apache2/conf.d/ssl.conf.disabled
+
+    # Ensure that a private key file and a certificate file are available
+    mkdir -p $APACHE_SSL
+
+    if [ -f ${APACHE_CUSTOM_CERT}.key -a -f ${APACHE_CUSTOM_CERT}.crt ]; then
+        # Use existing custom certificate files
+        ln -sf ${APACHE_CUSTOM_CERT}.key ${APACHE_CERT}.key
+        ln -sf ${APACHE_CUSTOM_CERT}.crt ${APACHE_CERT}.crt
+        chmod 600 ${APACHE_CUSTOM_CERT}.key
+        chmod 644 ${APACHE_CUSTOM_CERT}.crt
+        echo 'Using a custom SSL certificate'
+
+    else
+        # Create a self-signed certificate for $HOSTNAME unless one already exists
+        while true; do
+            if [ -f ${APACHE_CERT}.key -a -f ${APACHE_CERT}.crt ]; then
+                # Certificate found, does it match the current $HOSTNAME?
+                CERT_HOSTNAME=$(openssl x509 -in ${APACHE_CERT}.crt -text -noout | grep 'Subject: CN' | awk -F ' *= *' '{ print $2 }')
+                test "$CERT_HOSTNAME" = "$HOSTNAME" && echo 'Re-using the self-signed SSL certificate' && break
+            fi
+
+            # No certificate found that matches the current $HOSTNAME -- create a new one
+            openssl req -x509 -sha256 -days 3653 \
+                -newkey rsa:2048 -nodes \
+                -keyout ${APACHE_CERT}.key \
+                -subj "/CN=${HOSTNAME}" \
+                -out ${APACHE_CERT}.crt \
+                &>/dev/null
+            echo 'Created a new self-signed SSL certificate'
+            break
+        done
+    fi
+
+    chown -R $APACHE_USER: $APACHE_SSL
+
     # Deactivate Composer Mode if so requested
     if [ -n "$T3_COMPOSER_MODE" ]; then
         echo "Use Composer to add/remove TYPO3 extensions (Composer Mode)"

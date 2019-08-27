@@ -1,13 +1,24 @@
 #!/bin/sh
 
 # Show and save what is being built
-echo $'\n*************** '"Building TYPO3 ${TYPO3_VER}, container image: ${IMAGE_VER}, commit: $COMMIT"
-cat >>/etc/environment <<EOF 
+echo $'\n*************** '"Building TYPO3 $TYPO3_VER, container image: $IMAGE_VER, commit: $COMMIT"
 
-export TYPO3_VER=${TYPO3_VER}
-export IMAGE_VER=${IMAGE_VER}
+# Prepend the build arguments and constants to /etc/environment
+E=$(mktemp)
+cat - /etc/environment >$E <<EOF
+# Build arguments
+export TYPO3_VER=$TYPO3_VER
+export IMAGE_VER=$IMAGE_VER
 export BUILD_DATE='${BUILD_DATE:-$(date --utc +'%Y-%m-%dT%H:%M:%SZ')}'
+
+# Build constants
+export APACHE_HOME=$APACHE_HOME
+export TYPO3_ROOT=$TYPO3_ROOT
+export TYPO3_DATADIR=$TYPO3_DATADIR
+
 EOF
+mv -f $E /etc/environment
+chmod 644 /etc/environment
 
 # Add extra repositories
 mkdir -p /etc/apk
@@ -47,6 +58,7 @@ apk add \
 # Install Apache and PHP
 apk add \
 	apache2 \
+    apache2-ssl \
 	php7 \
 	php7-apache2 \
 	php7-phar \
@@ -112,7 +124,7 @@ apk add \
 . /etc/environment
 
 # Create the data volume directory
-mkdir -p $T3_DATADIR
+mkdir -p $TYPO3_DATADIR
 
 # Install Composer
 curl -sS https://getcomposer.org/installer | php
@@ -127,7 +139,7 @@ chown $APACHE_USER: $APACHE_HOME/.composer
 mv $TYPO3_ROOT/composer-${TYPO3_VER}.json $TYPO3_ROOT/composer.json
 rm -f $TYPO3_ROOT/composer-*.json
 chown -R $APACHE_USER: $APACHE_HOME
-composer install --no-progress
+composer install --no-progress --no-suggest
 touch $TYPO3_DOCROOT/FIRST_INSTALL
 chown $APACHE_USER: $TYPO3_DOCROOT/FIRST_INSTALL
 

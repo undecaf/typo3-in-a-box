@@ -1,25 +1,28 @@
-export HOSTNAME=${HOSTNAME:-localhost}
-export LANG=${LANG:-C.UTF-8}
-
-export APACHE_USER=apache
-export APACHE_HOME=$(grep $APACHE_USER /etc/passwd | cut -d ':' -f 6)
-
-export T3_DATADIR=/var/lib/typo3-db
-
-export MYSQL_USER=mysql
-export MYSQL_DATA=$T3_DATADIR
-export MYSQL_RUN=/run/mysqld
-
-export PG_USER=postgres
-export PG_DATA=$T3_DATADIR
-export PG_RUN=/run/postgresql
-
-export TYPO3_ROOT=$APACHE_HOME/localhost
-export TYPO3_DOCROOT=$TYPO3_ROOT/public
-
-export COMPOSER_EXCLUDE_FILE=/etc/composer-exclude
-
+# Host environment variables
 export T3_DB_NAME=${T3_DB_NAME:-t3}
 export T3_DB_USER=${T3_DB_USER:-t3}
 export T3_DB_PW=${T3_DB_PW:-t3}
 export T3_DB_ROOT_PW=${T3_DB_ROOT_PW:-toor}
+
+# Container environment variables
+export HOSTNAME=${HOSTNAME:-localhost}
+export LANG=${LANG:-C.UTF-8}
+
+# Derived environment variables
+export APACHE_USER=apache
+export APACHE_SSL=$TYPO3_ROOT/.ssl
+export APACHE_CERT=$APACHE_SSL/effective
+export APACHE_CUSTOM_CERT=$APACHE_SSL/custom
+
+export TYPO3_DOCROOT=$TYPO3_ROOT/public
+
+export MYSQL_USER=mysql
+export MYSQL_DATA=$TYPO3_DATADIR
+export MYSQL_RUN=/run/mysqld
+
+export PG_USER=postgres
+export PG_DATA=$TYPO3_DATADIR
+export PG_RUN=/run/postgresql
+
+export COMPOSER_EXCLUDE_FILE=/etc/composer-exclude
+
