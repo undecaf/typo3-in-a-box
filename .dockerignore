@@ -2,6 +2,8 @@
 .vscode
 .images
 .travis*
+typo3-root
+typo3-data
 snakeoil*
 README.md
 COPYING
