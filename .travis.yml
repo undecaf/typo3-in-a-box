@@ -1,8 +1,17 @@
+os: linux
+dist: bionic
+
 language: bash
-cache: false
 
 services:
   - docker
+
+addons:
+  apt:
+    packages:
+      - bindfs
+
+cache: false
 
 env:
   matrix:
