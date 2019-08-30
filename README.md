@@ -125,7 +125,7 @@ It enables you to:
 See the [`t3` reference](#t3-shell-script-reference) for a complete description.
 
 
-#### `t3` installation
+#### Installing `t3`
 
 This script is
 [avaliable for download here](https://raw.githubusercontent.com/undecaf/typo3-in-a-box/master/t3).
