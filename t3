@@ -320,7 +320,7 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_DB_TYPE, or 'sqlite'.
 
   --db-vol=VOLUME, -V VOLUME
-      Database volume name; ; effective only for MariaDB and PostgreSQL.
+      Database volume name or working directory path (see '--typo3-root').
       Defaults: \$T3_DB_DATA, or 'typo3-data'.
 
   --db-port=PORT, -P PORT
@@ -519,7 +519,7 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
 
   --unmount=WORK_DIR, -u WORK_DIR
-      Absolute path of the directory to unmount from a persistent volume.
+      Path of the working directory to unmount from a persistent volume.
 
   --help, -h
       Displays this text and exits.

@@ -17,7 +17,9 @@ and has [SQLite](https://www.sqlite.org/), [MariaDB](https://mariadb.org/) and
 It is available at [Docker Hub](https://hub.docker.com/r/undecaf/typo3-in-a-box),
 uses about 450&nbsp;MB disk space and can run in
 [Docker](https://www.docker.com/) and [Podman](https://podman.io/).
-No additional container is required.
+No additional container is required, and only a browser needs to be installed
+at the host to get going.
+
 
 Setting up and managing usage scenarios is simplified by a
 [shell script](#t3-shell-script-reference) for Linux and macOS.
@@ -27,13 +29,13 @@ TYPO3 directories can be
 You can use your favorite IDE at the host to
 [develop for TYPO3](#developing-for-typo3) in the container without having to
 fiddle with host permissions.
-HTTPS, [Composer Mode](https://getcomposer.org/#Composer_Mode),
+
+[Secure connections](#https-connection),
+[Composer Mode](https://getcomposer.org/#Composer_Mode),
 [remote debugging with XDebug](#debugging-with-xdebug) and
 [database access](#accessing-the-typo3-database) are supported.
 Your personal extension directories can be
 [excluded from updates made by Composer](#preventing-composer-from-overwriting-your-changes).
-
-PHP and Composer do not need to be installed on the host.
 
 
 ## Overview
@@ -770,12 +772,12 @@ that environment variable is not set.
 | `--typo3-ports=HTTP,HTTPS`<br>`-p HTTP,HTTPS` | `run` | Host interfaces (optional) and ports where to publish the TYPO3 HTTP port and the TYPO3 HTTPS port. If one of the mappings is omitted then the respective port will not be published.<br>Default: `$T3_PORTS`, or `127.0.0.1:8080,127.0.0.1:8443`. |
 | `--certfiles=PRIVATE-KEY,CERT`<br>`-k PRIVATE-KEY,CERT` | `run` | Private key file and certificate file for HTTPS, in PEM format and located at the host. If not specified then a self-signed certificate will be used for HTTPS connections.<br>Default: `$T3_CERTFILES`, or not set. |
 | `--db-type=TYPE`<br>`-d TYPE` | `run`| Type of database to use: `sqlite` or empty for SQLite, `mariadb` for MariaDB or `postgresql` for PostgreSQL (can be abbreviated).<br>Default: `$T3_DB_TYPE`, or `sqlite`. |
-| `--db-vol=VOLUME`<br>`-V VOLUME` | `run` | Database volume name; requires option&nbsp;`--db-type`.<br>Defaults: `$T3_DB_DATA`, or `typo3-data`. |
+| `--db-vol=VOLUME`<br>`-V VOLUME` | `run` | Database volume name or working directory path (see `--typo3-root`).<br>Defaults: `$T3_DB_DATA`, or `typo3-data`. |
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option&nbsp;`--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
 | `--rm` | `stop` | Causes the TYPO3 container to be removed after they were stopped. |
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). The values of most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. `--env` options must be the _last options_ on the command line. |
 | `--mount=WORKDIR`<br>`-m WORKDIR` | `mount` | Path of a working directory to bind-mount to a persistent volume. The basename of this path is taken as the name of the persistent volume. |
-| `--unmount=WORKDIR`<br>`-u WORKDIR` | `unmount`| Absolute path of the directory to unmount from a persistent volume. |
+| `--unmount=WORKDIR`<br>`-u WORKDIR` | `unmount`| Path of the working directory to unmount from a persistent volume. |
 
 
 ### Host environment variables
@@ -794,11 +796,11 @@ thus establishing a consistent environment for all `t3` commands.
 | `T3_HOSTNAME` | Hostname assigned to the TYPO3 container and to Apache `ServerName` and `ServerAdmin`. | `typo3.$(hostname)` |
 | `T3_TAG` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`. | `latest` |
 | `T3_COMPOSER_MODE` | If non-empty then Composer is responsible for installing/removing TYPO3 extensions. Otherwise, this is handled by the TYPO3 Extension Manager. | empty |
-| `T3_ROOT` | Volume name to be mapped to the TYPO3 root directory inside the container.<br>If an absolute directory path specified then its basename is used as the volume name; in addition, that directory is bind-mounted at the volume so that files and directories in that volume  appear to be owned by the current user. | `typo3-root` |
+| `T3_ROOT` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path (containing a `/`).<br>In the latter case, the directory basename is used as the volume name, and the directory is bind-mounted at that volume. Thus, volume content appears to be owned by the current user.<br>__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3. | `typo3-root` |
 | `T3_PORTS` | Host interfaces (optional) and ports where to publish the TYPO3 HTTP port and the TYPO3 HTTPS port. If one of the parts is omitted then the respective port will not be published. | `127.0.0.1:8080,`<br>`127.0.0.1:8443` |
 | `T3_CERTFILES` | Private key file and certificate file for HTTPS, in PEM format and located at the host. If not specified then a self-signed certificate will be used for HTTPS connections. | empty |
 | `T3_DB_TYPE` | Type of database to use: `sqlite` or empty for SQLite, `mariadb` for MariaDB or `postgresql` for PostgreSQL (can be abbreviated). | `sqlite` |
-| `T3_DB_DATA`| Database volume name; effective only for MariaDB and PostgreSQL. | `typo3-data` |
+| `T3_DB_DATA`| Database volume name or working directory path (see `T3_ROOT`). | `typo3-data` |
 | `T3_DB_PORT` | Host interface (optional) and port where to publish the database port; effective only for MariaDB and PostgreSQL. | `127.0.0.1:3306`, or<br>`127.0.0.1:5432` |
 | `T3_DB_NAME` | Name of the TYPO3 database that is created automatically by `t3 run`; effective only for MariaDB and PostgreSQL. | `t3` |
 | `T3_DB_USER` | Name of the TYPO3 database owner; effective only for MariaDB and PostgreSQL. | `t3` |
