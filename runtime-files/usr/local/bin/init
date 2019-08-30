@@ -146,7 +146,7 @@ ln -sf /etc/php7/mode.${MODE}.template /etc/php7/conf.d/zz_50_mode.ini
 export \
     | awk -F ' |=' \
         -e 'BEGIN { IGNORECASE = 1 }' \
-        -e '$2 ~ /^PHP_/ { gsub("^PHP_", "", $2); gsub(/'"'"'/, "", $3); printf "%s=%s\n", $2, $3; }' \
+        -e '$3 ~ /^PHP_/ { gsub("^PHP_", "", $3); gsub(/'"'"'/, "", $4); printf "%s=%s\n", $3, $4; }' \
     > /etc/php7/conf.d/zz_99_overrides.ini
 
 if [ -s /etc/php7/conf.d/zz_99_overrides.ini ]; then
