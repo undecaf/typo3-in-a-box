@@ -1,49 +1,104 @@
-os: linux
-dist: bionic
+# Basic Linux configuration
+linux: &linux
+  os: linux
+  dist: bionic
+  language: shell
+  services:
+    - docker    
 
-language: bash
 
-services:
-  - docker
+# Basic macOS configuration
+macos: &macos
+  os: osx
+  osx_image: xcode11  # required for an up-to-date Homebrew
+  language: shell
 
-addons:
-  apt:
-    packages:
-      - bindfs
 
-cache: false
+# Build the image for TYPO3 version ${TYPO3_VER} and deploy it temporarily
+build: &build
+  stage: build
+  <<: *linux
+  before_script:
+    - docker pull $TRAVIS_REPO_SLUG || true
+  script:
+    - .travis/build/build.sh
+  before_deploy:
+    - docker login --username "$REGISTRY_USER" --password "$REGISTRY_PASS"
+  deploy:
+    - provider: script
+      script: .travis/build/push.sh
+      skip_cleanup: true
+      on:
+        all_branches: true
 
-env:
-  matrix:
-    - TYPO3_VER=8.7
-    - TYPO3_VER=9.5
-    - TYPO3_VER=10.0 VERY_LAST=true
 
-before_script:
-  - docker pull $TRAVIS_REPO_SLUG || true
+# Test the image for TYPO3 version ${TYPO3_VER} under Linux
+test_linux: &test_linux
+  stage: test
+  <<: *linux
+  addons:
+    apt:
+      packages:
+        - bindfs
+  script:
+    - .travis/test/linux.sh
 
-script:
-  - .travis/build.sh
-  - .travis/test.sh
 
-before_deploy:
-  - docker login --username "$REGISTRY_USER" --password "$REGISTRY_PASS"
+# Test the t3 script with a Docker mockup under macOS
+test_macos: &test_macos
+  stage: test
+  <<: *macos
+  script:
+    - .travis/test/macos.sh
 
-deploy:
-  - provider: script
-    script: .travis/push.sh
-    skip_cleanup: true
-    on:
-      branch: master
 
-  - provider: script
-    script: .travis/push.sh
-    skip_cleanup: true
-    on:
-      branch: dev
+# Deploy the image with all tags for TYPO3 version ${TYPO3_VER} and this branch
+deploy: &deploy
+  stage: deploy
+  <<: *linux
+  before_deploy:
+    - docker login --username "$REGISTRY_USER" --password "$REGISTRY_PASS"
+  deploy:
+    - provider: script
+      script: .travis/deploy/push.sh
+      skip_cleanup: true
+      on:
+        all_branches: true
 
-  - provider: script
-    script: .travis/push.sh
-    skip_cleanup: true
-    on:
-      tags: true
+
+jobs:
+  include:
+    # Build images for various TYPO3 versions and deploy temporarily
+    - <<: *build
+      env: TYPO3_VER=8.7 TEMP_TAG=$TRAVIS_REPO_SLUG:$TYPO3_VER-dev
+
+    - <<: *build
+      env: TYPO3_VER=9.5 TEMP_TAG=$TRAVIS_REPO_SLUG:$TYPO3_VER-dev
+
+    - <<: *build
+      env: TYPO3_VER=10.0 TEMP_TAG=$TRAVIS_REPO_SLUG:$TYPO3_VER-dev
+
+
+    # Test images and scripts under Linux and macOS
+    - <<: *test_linux
+      env: TYPO3_VER=8.7
+
+    - <<: *test_linux
+      env: TYPO3_VER=9.5
+
+    - <<: *test_linux
+      env: TYPO3_VER=10.0
+
+    # - <<: *test_macos
+    #   env: TYPO3_VER=10.0
+
+
+    # Deploy images with multiple tags each
+    - <<: *deploy
+      env: TYPO3_VER=8.7
+
+    - <<: *deploy
+      env: TYPO3_VER=9.5
+
+    - <<: *deploy
+      env: TYPO3_VER=10.0 MOST_RECENT=true
