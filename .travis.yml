@@ -70,13 +70,13 @@ jobs:
   include:
     # Build images for various TYPO3 versions and deploy temporarily
     - <<: *build
-      env: TYPO3_VER=8.7 TEMP_TAG=$TRAVIS_REPO_SLUG:$TYPO3_VER-dev
+      env: TYPO3_VER=8.7
 
     - <<: *build
-      env: TYPO3_VER=9.5 TEMP_TAG=$TRAVIS_REPO_SLUG:$TYPO3_VER-dev
+      env: TYPO3_VER=9.5
 
     - <<: *build
-      env: TYPO3_VER=10.0 TEMP_TAG=$TRAVIS_REPO_SLUG:$TYPO3_VER-dev
+      env: TYPO3_VER=10.0
 
 
     # Test images and scripts under Linux and macOS
