@@ -29,6 +29,26 @@ T3_DATADIR=/var/lib/typo3-db
 CERT_BASENAME=/etc/ssl/apache2/custom
 FILE_LIMIT='nofile=10000:15000'
 
+# Bypass aliases
+AWK=$(which awk)
+BASENAME=$(which basename)
+BINDFS=$(which bindfs 2>/dev/null)
+CAT=$(which cat)
+DF=$(which df)
+DIRNAME=$(which dirname)
+GREP=$(which grep)
+HOSTNAME=$(which hostname)
+LS=$(which ls)
+MKDIR=$(which mkdir)
+PRINTENV=$(which printenv)
+SLEEP=$(which sleep)
+STAT=$(which stat)
+SUDO=$(which sudo)
+UNAME=$(which uname)
+
+
+# TODO Rerun under zsh if running in bash under Darwin
+
 # --------------------------------------------------------------------------
 
 # Prints $USAGE and an optional error message to stdout or stderr
@@ -46,12 +66,12 @@ FILE_LIMIT='nofile=10000:15000'
 #       )
 #
 usage() {
-    local SCRIPT=$(basename $0)
+    local SCRIPT=$($BASENAME $0)
     local REDIR=
     local EXIT_CODE=0
 
     if [ -n "$1" ]; then
-        cat >&2 <<- EOT
+        $CAT >&2 <<- EOT
 
 *** $1 ***
 EOT
@@ -61,6 +81,50 @@ EOT
 
     eval 'echo "$USAGE" '$REDIR
     exit $EXIT_CODE
+}
+
+
+# --------------------------------------------------------------------------
+
+# Returns exit code 0 if this script runs under macOS (Darwin).
+#
+is_macos() {
+    [ "$($UNAME)" = 'Darwin' ]
+}
+
+
+# --------------------------------------------------------------------------
+
+# Matches a string against a regex and returns success if they match.
+# Works in bash and zsh (copied from https://stackoverflow.com/questions/22537804/retrieve-a-word-after-a-regular-expression-in-shell-script#22539067).
+#
+# Additionally, the matched string(s) is returned in array variable ${RE_MATCH[@]},
+# which works the same as bash's ${BASH_REMATCH[@]} variable: the overall
+# match is stored in the 1st element of ${RE_MATCH[@]}, with matches for
+# capture groups (parenthesized subexpressions), if any, stored in the remaining
+# array elements.
+#
+# Arguments:
+#   $1  string
+#   $2  regular expression
+#
+
+# Make array indices in zsh start at 0 as in bash
+test -n "$ZSH_VERSION" && setopt KSH_ARRAYS
+
+function re_match {
+  local EC
+  unset -v RE_MATCH # initialize output variable
+
+  [[ $1 =~ $2 ]] # perform the regex test
+  EC=$? # save exit code
+
+  if [[ $EC -eq 0 ]]; then # copy result to output variable
+    [[ -n $BASH_VERSION ]] && RE_MATCH=( "${BASH_REMATCH[@]}" )
+    [[ -n $ZSH_VERSION ]]  && RE_MATCH=( "$MATCH" "${match[@]}" )
+  fi
+
+  return $EC
 }
 
 
@@ -92,10 +156,10 @@ is_path() {
 verify_dir() {
     if is_path "$1"; then
         # At least the parent directory must exist
-        [ -d $(dirname "$1") ] || usage "Working directory '$1' does not have a parent"
+        [ -d $($DIRNAME "$1") ] || usage "Working directory '$1' does not have a parent"
 
         # Mount point must be an empty directory
-        [ -n "$(ls -A "$1" 2>/dev/null)" ] && usage "Working directory path '$1' is not an empty directory"
+        [ -n "$($LS -A "$1" 2>/dev/null)" ] && usage "Working directory path '$1' is not an empty directory"
     fi
 }
 
@@ -153,7 +217,7 @@ autocomplete() {
 #   $T3_SHOW
 #
 run_engine() {
-    test -n "$T3_SHOW" && echo "$T3_ENGINE $@"
+    [ -n "$T3_SHOW" ] && echo "$T3_ENGINE $@"
     $T3_ENGINE $@ >/dev/null
 }
 
@@ -178,33 +242,34 @@ run_engine() {
 #
 mount_volume() {
     if is_path "$2"; then
-        if ! which bindfs &>/dev/null; then
+        if [ -z "$BINDFS" ]; then
             unset USAGE
-            usage "*** bindfs not installed, see https://bindfs.org/ for information ***"
+            usage "bindfs not installed, see https://bindfs.org/ for information"
         fi
 
         local BIND_MP
         local VOL_MP
         local VOL_UID
         local VOL_GID
+        local FORMAT_OPT
 
         # Locate the volume mount point of the container engine
         VOL_MP=$($T3_ENGINE volume inspect --format "$MP_FORMAT" "$1") \
             || usage "Volume '$1' not found"
 
         # Acquire sudo authorization for what follows
-        sudo --prompt $'\n*** sudo authorization is required for bind-mounting a working directory: ' --validate
+        $SUDO --prompt $'\n*** sudo authorization is required for bind-mounting a working directory: ' --validate
 
-        # Determine UID and GID of the volume owner
-        # (options differ between Linux and BSD)
-        VOL_UID=$($SUDO_PREFIX stat --format '%u' $VOL_MP 2>/dev/null) || VOL_UID=$($SUDO_PREFIX stat -f '%u' $VOL_MP)
-        VOL_GID=$($SUDO_PREFIX stat --format '%g' $VOL_MP 2>/dev/null) || VOL_GID=$($SUDO_PREFIX stat -f '%g' $VOL_MP)
+        # Determine UID and GID of the volume owner (options differ between Linux and macOS)
+        is_macos && FORMAT_OPT=-f || FORMAT_OPT=--format
+        VOL_UID=$($SUDO_PREFIX $STAT $FORMAT_OPT '%u' $VOL_MP 2>/dev/null)
+        VOL_GID=$($SUDO_PREFIX $STAT $FORMAT_OPT '%g' $VOL_MP 2>/dev/null)
 
         # Create the directory if necessary
-        mkdir -p "$2"
+        $MKDIR -p "$2"
         BIND_MP=$(canonicalize "$2")
 
-        sudo bindfs \
+        $SUDO $BINDFS \
             --map=$VOL_UID/$(id -u):@$VOL_GID/@$(id -g) \
             $VOL_MP \
             "$BIND_MP" \
@@ -237,10 +302,10 @@ unmount_volume() {
 
     # Find the directory bind-mounted to the container volume mountpoint
     RE='^/.+( +[0-9]+){4}% +(/.+)$'
-    if LINE=$(df -P -l | grep --fixed-string "$VOL_MP ") && [[ "$LINE" =~ $RE ]]; then
-        sudo --prompt $'\n*** sudo authorization is required for unmounting a working directory: ' \
-            umount "${BASH_REMATCH[2]}" \
-        && echo "Working directory '${BASH_REMATCH[2]}' unmounted from volume '$1'"    
+    if LINE=$($DF -P -l | $GREP --fixed-string "$VOL_MP ") && re_match "$LINE" $RE; then
+        $SUDO --prompt $'\n*** sudo authorization is required for unmounting a working directory: ' \
+            umount "${RE_MATCH[2]}" \
+        && echo "Working directory '${RE_MATCH[2]}' unmounted from volume '$1'"    
     fi
 }
 
@@ -255,11 +320,11 @@ case "$1" in
 
     # Run TYPO3 in a container, optionally with a database in an extra container
     run)
-        USAGE=$(cat <<EOT
+        USAGE=$($CAT <<EOT
 
 Usage:
-  $(basename $0) run [option]... [--] [Docker/Podman option]...
-  $(basename $0) run [-h|--help]
+  $($BASENAME $0) run [option]... [--] [Docker/Podman option]...
+  $($BASENAME $0) run [-h|--help]
 
 Runs TYPO3 image 'undecaf/typo3-in-a-box' in a container in Docker or Podman.
 
@@ -280,7 +345,7 @@ Options (default values can be overridden by environment variables):
   --hostname=HOSTNAME, -h HOSTNAME
       Hostname assigned to the TYPO3 container and to Apache ServerName and
       ServerAdmin.
-      Default: \$T3_HOSTNAME, or 'typo3.$(hostname)'.
+      Default: \$T3_HOSTNAME, or 'typo3.$($HOSTNAME)'.
 
   --tag=TAG, -t TAG
       Tag of image to run, consisting of TYPO3 version and build version,
@@ -337,7 +402,7 @@ Options (default values can be overridden by environment variables):
 
   --env NAME=VALUE
       Sets the (initial) value of a container environment variable. The values of
-      certain variables can be changed afterwards by '$(basename $0) env'.
+      certain variables can be changed afterwards by '$($BASENAME $0) env'.
       This option may appear multiple times. '--env' options must be the last options
       on the command line.
  
@@ -345,7 +410,7 @@ Options (default values can be overridden by environment variables):
       Displays this text and exits.
 
 Additional options for the Docker/Podman 'run' command can be added after the options
-described above. If necessary, '--' can be used to separate them from the $(basename $0) options.
+described above. If necessary, '--' can be used to separate them from the $($BASENAME $0) options.
  
 EOT
         )
@@ -355,11 +420,11 @@ EOT
 
     # Stop and remove a running TYPO3 (and the respective database) container
     stop)
-        USAGE=$(cat <<EOT
+        USAGE=$($CAT <<EOT
 
 Usage:
-  $(basename $0) stop [option]...
-  $(basename $0) stop [-h|--help]
+  $($BASENAME $0) stop [option]...
+  $($BASENAME $0) stop [-h|--help]
 
 Stops a running TYPO3 (and the associated database) container.
 
@@ -397,11 +462,11 @@ EOT
 
     # Change environment settings in a running TYPO3 container
     env)
-        USAGE=$(cat <<EOT
+        USAGE=$($CAT <<EOT
 
 Usage:
-  $(basename $0) env [option]... [NAME=VALUE]...
-  $(basename $0) env [-h|--help]
+  $($BASENAME $0) env [option]... [NAME=VALUE]...
+  $($BASENAME $0) env [-h|--help]
 
 Modifies the environment of a running TYPO3 container.
 
@@ -432,11 +497,11 @@ EOT
 
     # Run Composer in a running TYPO3 container
     composer)
-        USAGE=$(cat <<EOT
+        USAGE=$($CAT <<EOT
 
 Usage:
-  $(basename $0) composer [option]... COMPOSER_CMD [Composer option]...
-  $(basename $0) composer [-h|--help]
+  $($BASENAME $0) composer [option]... COMPOSER_CMD [Composer option]...
+  $($BASENAME $0) composer [-h|--help]
 
 Executes a Composer command inside of a running TYPO3 container.
 
@@ -467,16 +532,16 @@ EOT
 
     # Bind-mount a directory to a container volume
     mount)
-        USAGE=$(cat <<EOT
+        USAGE=$($CAT <<EOT
 
 Usage:
-  $(basename $0) mount [--mount|-m] WORK_DIR [option]...
-  $(basename $0) mount [-h|--help]
+  $($BASENAME $0) mount [--mount|-m] WORK_DIR [option]...
+  $($BASENAME $0) mount [-h|--help]
 
 Mounts a working directory to a container volume so that the volume
 appears to be owned and can be managed by the current user.
  
-Equivalent to '$(basename $0) run' with a directory path for '--typo3-vol'
+Equivalent to '$($BASENAME $0) run' with a directory path for '--typo3-vol'
 except that the container does not need to be running (it does not even 
 have to exist).
 
@@ -503,11 +568,11 @@ EOT
 
     # Unmount a bind-mouted directory from a container volume
     unmount)
-        USAGE=$(cat <<EOT
+        USAGE=$($CAT <<EOT
 
 Usage:
-  $(basename $0) unmount [--unmount|-u] WORK_DIR [option]...
-  $(basename $0) unmount [-h|--help]
+  $($BASENAME $0) unmount [--unmount|-u] WORK_DIR [option]...
+  $($BASENAME $0) unmount [-h|--help]
 
 Unmounts a working directory from the container volume.
 
@@ -538,10 +603,10 @@ EOT
 
     # Unknown command
     *)
-        USAGE=$(cat <<EOT
+        USAGE=$($CAT <<EOT
 
 Usage:
-  $(basename $0) COMMAND [option]...
+  $($BASENAME $0) COMMAND [option]...
 
 Commands:
 
@@ -582,7 +647,7 @@ OPT_COUNT=$#
 # Default options, overridden by environment variables
 T3_ENGINE=${T3_ENGINE:-$(which podman)} || T3_ENGINE=docker
 T3_NAME=${T3_NAME:-typo3}
-T3_HOSTNAME=${T3_HOSTNAME:-typo3.$(hostname)}
+T3_HOSTNAME=${T3_HOSTNAME:-typo3.$($HOSTNAME)}
 
 T3_TAG=${T3_TAG:-latest}
 T3_ROOT=${T3_ROOT:-typo3-root}
@@ -775,19 +840,19 @@ T3_ENGINE=$(autocomplete "$T3_ENGINE" docker podman)
 [ -x "$(which $T3_ENGINE)" ] || usage "Container engine '$T3_ENGINE' not found"
 
 T3_ENGINE=$(which $T3_ENGINE)
-ENGINE_NAME=$(basename $T3_ENGINE)
+ENGINE_NAME=$($BASENAME $T3_ENGINE)
 
 # Options that differ between container engines
 case $ENGINE_NAME in
     docker)
         HOST_IP_ENV=
         MP_FORMAT='{{.Mountpoint}}'
-        SUDO_PREFIX=sudo
+        SUDO_PREFIX=$SUDO
         ;;
 
     podman)
         # hostname -I is not supported under macOS, therefore:
-        HOST_IP_ENV="HOST_IP=$(ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{ print $2; }' | head -n 1)"
+        HOST_IP_ENV="HOST_IP=$(ifconfig | $GREP 'inet ' | $GREP -v '127.0.0.1' | $AWK '{ print $2; }' | head -n 1)"
         ENV_OPTIONS="$ENV_OPTIONS \
             --env $HOST_IP_ENV"
         MP_FORMAT='{{.MountPoint}}'
@@ -797,42 +862,42 @@ esac
 
 # Split into HTTP and HTTPS port and interface
 RE='^((.+?)?,(.+?)?)?$'
-[[ "$T3_PORTS" =~ $RE ]] || usage "Invalid option: '$T3_PORTS'"
-HTTP_PORT=${BASH_REMATCH[2]}
-HTTPS_PORT=${BASH_REMATCH[3]}
+re_match "$T3_PORTS" $RE || usage "Invalid option: '$T3_PORTS'"
+HTTP_PORT=${RE_MATCH[2]}
+HTTPS_PORT=${RE_MATCH[3]}
 
 HTTP_OPTIONS=
-test -n ${HTTP_PORT} && HTTP_OPTIONS="$HTTP_OPTIONS --publish $HTTP_PORT:80"
-test -n ${HTTPS_PORT} && HTTP_OPTIONS="$HTTP_OPTIONS --publish $HTTPS_PORT:443"
+[ -n "$HTTP_PORT" ] && HTTP_OPTIONS="$HTTP_OPTIONS --publish $HTTP_PORT:80"
+[ -n "$HTTPS_PORT" ] && HTTP_OPTIONS="$HTTP_OPTIONS --publish $HTTPS_PORT:443"
 
 # Split into private key file and certificate file
 RE='^((.+),(.+))?$'
-[[ "$T3_CERTFILES" =~ $RE ]] || usage "Invalid option: '$T3_CERTFILES'"
-KEY_FILE=${BASH_REMATCH[2]}
-CERT_FILE=${BASH_REMATCH[3]}
+re_match "$T3_CERTFILES" $RE || usage "Invalid option: '$T3_CERTFILES'"
+KEY_FILE=${RE_MATCH[2]}
+CERT_FILE=${RE_MATCH[3]}
 
 # Volume names and working directories
 ROOT_MP=
 if is_path "$T3_ROOT"; then
     ROOT_MP="$T3_ROOT"
-    T3_ROOT=$(basename "$T3_ROOT")
+    T3_ROOT=$($BASENAME "$T3_ROOT")
 fi
 
 DB_DATA_MP=
 if is_path "$T3_DB_DATA"; then
     DB_DATA_MP="$T3_DB_DATA"
-    T3_DB_DATA=$(basename "$T3_DB_DATA")
+    T3_DB_DATA=$($BASENAME "$T3_DB_DATA")
 fi
 
 # Initialize container environment variables
 RE='^T3_(TIMEZONE|LANG|MODE|COMPOSER_EXCLUDE|PHP_.+|php_.+)=(.*)$'
 
 while read -r ENV_VAR; do
-    if [[ "$ENV_VAR" =~ $RE ]]; then
+    if re_match "$ENV_VAR" $RE; then
         ENV_OPTIONS="$ENV_OPTIONS \
-            --env ${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"
+            --env ${RE_MATCH[1]}=${RE_MATCH[2]}"
     fi
-done <<< "$(printenv)"
+done <<< "$($PRINTENV)"
 
 # Database type-specific settings
 T3_DB_TYPE=$(autocomplete "$T3_DB_TYPE" sqlite mariadb postgresql)
@@ -939,10 +1004,10 @@ case "$CMD" in
         fi
 
         # Remove the container(s) if so requested
-        test -n "$REMOVE_OPTION" && run_engine container rm "$T3_NAME"
+        [ -n "$REMOVE_OPTION" ] && run_engine container rm "$T3_NAME"
 
         # Wait until the container was removed eventually
-        sleep 1
+        $SLEEP 1
         $T3_ENGINE container inspect "$T3_NAME" &>/dev/null || echo '*** '"Container '$T3_NAME' removed"' ***'
         ;;
 
@@ -958,16 +1023,16 @@ case "$CMD" in
 
 
     mount)
-        test -n "$MOUNT_PATH" || usage "Option '--mount' is required"
-        mount_volume $(basename "$MOUNT_PATH") "$MOUNT_PATH"
+        [ -n "$MOUNT_PATH" ] || usage "Option '--mount' is required"
+        mount_volume $($BASENAME "$MOUNT_PATH") "$MOUNT_PATH"
         ;;
 
 
     unmount)
-        test -d "$MOUNT_PATH" || usage "Option '--unmount' is required"
-        sudo --prompt $'\n*** sudo authorization is required for unmounting a working directory: ' \
+        [ -d "$MOUNT_PATH" ] || usage "Option '--unmount' is required"
+        $SUDO --prompt $'\n*** sudo authorization is required for unmounting a working directory: ' \
             umount "$MOUNT_PATH" \
-        && echo '*** '"Working directory '$MOUNT_PATH' unmounted from volume '$(basename "$MOUNT_PATH")'"' ***'
+        && echo '*** '"Working directory '$MOUNT_PATH' unmounted from volume '$($BASENAME "$MOUNT_PATH")'"' ***'
         ;;
 
 
