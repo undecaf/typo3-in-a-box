@@ -319,7 +319,7 @@ unmount_volume() {
     local LINE
     local RE
 
-    VOL_MP=$($T3_ENGINE volume inspect "$1" --format=$MP_FORMAT)
+    VOL_MP=$($T3_ENGINE volume inspect --format=$MP_FORMAT "$1")
     # {{- ...}} and {{... -}} do no work here, therefore to trim:
     VOL_MP=$(echo $VOL_MP)
 
@@ -334,6 +334,9 @@ unmount_volume() {
 
 
 # --------------------------------------------------------------------------
+
+# Split parameters on whitespace in Zsh
+test_shell 'zsh' && setopt SH_WORD_SPLIT
 
 # Determine command
 
@@ -1011,9 +1014,9 @@ case "$CMD" in
 
         # Collect volume names from container
         # Note: prior to Podman v1.4.3, the volume name was contained in property .Source, not .Name
-        VOLNAMES="$($T3_ENGINE container inspect \
+        VOLNAMES=$($T3_ENGINE container inspect \
             --format='{{range .Mounts}}{{if eq .Destination "'$T3_ROOTDIR'" "'$T3_DATADIR'"}}{{printf "%s " .Name}}{{end}}{{end}}' \
-            "$T3_NAME" 2>/dev/null)"
+            "$T3_NAME" 2>/dev/null)
 
         # Try to unmount whatever may be mounted at the mountpoint of each volume
         for VOLNAME in $VOLNAMES; do
