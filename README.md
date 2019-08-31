@@ -136,16 +136,6 @@ It should be saved in a directory which is part of the search path, e.g.
 $ sudo chmod 755 /usr/local/bin/t3
 ```
 
-macOS users need to modify the script to run in [Zsh](https://ohmyz.sh/)
-instead of the 
-[outdated Bash version](https://www.theverge.com/2019/6/4/18651872/apple-macos-catalina-zsh-bash-shell-replacement-features)
-that comes with macOS:
-
-```bash
-$ sudo sed -e 's_#!/bin/bash_#!/bin/zsh_' -i .bak /usr/local/bin/t3
-```
-
-
 ### Quick start with `t3`
 
 To run a TYPO3 container [as in the example above](#quick-start) with `t3`,

@@ -106,11 +106,11 @@ test_shell() {
 
 # --------------------------------------------------------------------------
 
-# Rerun this script under zsh if running in (outdated) bash under Darwin
+# Rerun this script under zsh if running in (outdated) bash in macOS
 test_macos && test_shell 'bash' && exec zsh $0 $@
 
 
-# --------------------------------------------------------------------------
+# -------------- What follows is not parseable by macOS bash ---------------
 
 # Matches a string against a regex and returns success if they match.
 # Works in bash and zsh (copied from https://stackoverflow.com/questions/22537804/retrieve-a-word-after-a-regular-expression-in-shell-script#22539067).
