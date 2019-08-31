@@ -106,14 +106,14 @@ test_shell() {
 
 # --------------------------------------------------------------------------
 
-# Rerun this script under zsh if running in (outdated) bash in macOS
+# Rerun this script under Zsh if running in (outdated) Bash in macOS
 test_macos && test_shell 'bash' && exec zsh $0 "$@"
 
 
-# -------------- What follows is not parseable by macOS bash ---------------
+# ------------ What follows may not be parseable by macOS Bash -------------
 
 # Matches a string against a regex and returns success if they match.
-# Works in bash and zsh (
+# Works in Bash and Zsh.
 #
 # Inspired by https://stackoverflow.com/questions/22537804/retrieve-a-word-after-a-regular-expression-in-shell-script#22539067).
 #
@@ -131,8 +131,8 @@ test_macos && test_shell 'bash' && exec zsh $0 "$@"
 #   test_shell
 #
 
-# Make array indices in zsh start at 0 as in bash
-test -n "$ZSH_VERSION" && setopt KSH_ARRAYS
+# Make array indices in Zsh start at 0 as in Bash
+test_shell 'zsh' && setopt KSH_ARRAYS
 
 function re_match {
   local SUCCESS
@@ -884,7 +884,7 @@ case $ENGINE_NAME in
 esac
 
 # Split into HTTP and HTTPS port and interface
-RE='^((.+?)?,(.+?)?)?$'
+RE='^((.+)?,(.+)?)?$'
 re_match "$T3_PORTS" $RE || usage "Invalid option: '$T3_PORTS'"
 HTTP_PORT=${RE_MATCH[2]}
 HTTPS_PORT=${RE_MATCH[3]}
