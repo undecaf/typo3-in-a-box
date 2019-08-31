@@ -107,13 +107,15 @@ test_shell() {
 # --------------------------------------------------------------------------
 
 # Rerun this script under zsh if running in (outdated) bash in macOS
-test_macos && test_shell 'bash' && exec zsh $0 $@
+test_macos && test_shell 'bash' && exec zsh $0 "$@"
 
 
 # -------------- What follows is not parseable by macOS bash ---------------
 
 # Matches a string against a regex and returns success if they match.
-# Works in bash and zsh (copied from https://stackoverflow.com/questions/22537804/retrieve-a-word-after-a-regular-expression-in-shell-script#22539067).
+# Works in bash and zsh (
+#
+# Inspired by https://stackoverflow.com/questions/22537804/retrieve-a-word-after-a-regular-expression-in-shell-script#22539067).
 #
 # Additionally, the matched string(s) is returned in array variable ${RE_MATCH[@]},
 # which works the same as bash's ${BASH_REMATCH[@]} variable: the overall
@@ -133,18 +135,19 @@ test_macos && test_shell 'bash' && exec zsh $0 $@
 test -n "$ZSH_VERSION" && setopt KSH_ARRAYS
 
 function re_match {
-  local EC
-  unset -v RE_MATCH # initialize output variable
+  local SUCCESS
+  unset -v RE_MATCH
 
-  [[ $1 =~ $2 ]] # perform the regex test
-  EC=$? # save exit code
+  [[ $1 =~ $2 ]]
+  SUCCESS=$?
 
-  if [[ $EC -eq 0 ]]; then # copy result to output variable
+  if [[ $SUCCESS -eq 0 ]]; then
+    test_shell $(basename "$0") && RE_MATCH=( "${BASH_REMATCH[@]}" )
     test_shell 'bash' && RE_MATCH=( "${BASH_REMATCH[@]}" )
     test_shell 'zsh'  && RE_MATCH=( "$MATCH" "${match[@]}" )
   fi
 
-  return $EC
+  return $SUCCESS
 }
 
 
@@ -176,7 +179,7 @@ is_path() {
 verify_dir() {
     if is_path "$1"; then
         # At least the parent directory must exist
-        [ -d $($DIRNAME "$1") ] || usage "Working directory '$1' does not have a parent"
+        [ -d "$($DIRNAME "$1")" ] || usage "Working directory '$1' does not have a parent"
 
         # Mount point must be an empty directory
         [ -n "$($LS -A "$1" 2>/dev/null)" ] && usage "Working directory path '$1' is not an empty directory"
@@ -212,7 +215,7 @@ canonicalize() {
 autocomplete() {
     local ARG="$1"
     shift
-    for AC in $@; do
+    for AC in "$@"; do
         if [ "${AC##$ARG}" != "$AC" ]; then
             echo "$AC"
             return
@@ -238,7 +241,7 @@ autocomplete() {
 #
 run_engine() {
     [ -n "$T3_SHOW" ] && echo "$T3_ENGINE $@"
-    $T3_ENGINE $@ >/dev/null
+    $T3_ENGINE "$@" >/dev/null
 }
 
 
@@ -317,12 +320,12 @@ unmount_volume() {
     local RE
 
     VOL_MP=$($T3_ENGINE volume inspect "$1" --format=$MP_FORMAT)
-    # {{- ...}} and {{... -}} do no work here, therefore:
+    # {{- ...}} and {{... -}} do no work here, therefore to trim:
     VOL_MP=$(echo $VOL_MP)
 
     # Find the directory bind-mounted to the container volume mountpoint
     RE='^/.+( +[0-9]+){4}% +(/.+)$'
-    if LINE=$($DF -P -l | $GREP --fixed-string "$VOL_MP ") && re_match "$LINE" $RE; then
+    if LINE=$($DF -P -l | $GREP --fixed-string "$VOL_MP ") && re_match "$LINE" "$RE"; then
         $SUDO --prompt $'\n*** sudo authorization is required for unmounting a working directory: ' \
             umount "${RE_MATCH[2]}" \
         && echo "Working directory '${RE_MATCH[2]}' unmounted from volume '$1'"    
@@ -981,7 +984,7 @@ case "$CMD" in
             $DB_VOL_OPTION \
             $DB_PORT_OPTION \
             $ENV_OPTIONS \
-            $@ \
+            "$@" \
             $T3_IMAGE${T3_TAG:+:$T3_TAG}
 
         # Copy certificate files, if any
@@ -1033,12 +1036,12 @@ case "$CMD" in
 
 
     env)
-        run_engine exec "$T3_NAME" setenv $HOST_IP_ENV $@
+        run_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
         ;;
 
 
     composer)
-        run_engine exec "$T3_NAME" composer $@
+        run_engine exec "$T3_NAME" composer "$@"
         ;;
 
 

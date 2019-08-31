@@ -4,7 +4,7 @@
 # Runs t3 with the specified arguments and echoes the command line to stdout.
 t3_() {
     echo "+ t3 $@"
-    ./t3 $@
+    ./t3 "$@"
 }
 
 # Runs t3 with the specified arguments, echoes the command line to stdout
@@ -15,26 +15,26 @@ t3_log() {
     CMD=$1
     shift
     echo "+ t3 $CMD -s $@" | tee -a $LOGFILE
-    ./t3 $CMD -s $@ | tee -p | \
+    ./t3 $CMD -s "$@" | tee -p | \
         grep -E '^(/[a-z/]?+/)?(docker|podman) ' | sed -e 's/typo3\.'$HOSTNAME'/typo3.travis-job/' >>$LOGFILE
 }
 
 # Returns success if all specified containers exist.
 verify_containers_exist() {
     echo "verify_containers_exist $@"
-    docker container inspect $@ &>/dev/null
+    docker container inspect "$@" &>/dev/null
 }
 
 # Returns success if all specified containers are running.
 verify_containers_running() {
     echo "verify_containers_running() $@"
-    ! docker container inspect --format='{{.State.Status}}' $@ | grep -v -q 'running'
+    ! docker container inspect --format='{{.State.Status}}' "$@" | grep -v -q 'running'
 }
 
 # Returns success if all specified volumes exist.
 verify_volumes_exist() {
     echo "verify_volumes_exist $@"
-    docker volume inspect $@ &>/dev/null
+    docker volume inspect "$@" &>/dev/null
 }
 
 # Cleans up container and volumes after a test
@@ -127,22 +127,24 @@ done
 
 
 # Test volume mapping
-ROOT_VOL=./t3-root
-DB_VOL=./t3-data
+ROOT_VOL='./root volume/t3-root'
+DB_VOL='./database volume/t3-data'
 
-echo $'\n*************** Volumes'
-rm -rf $ROOT_VOL $DB_VOL
-T3_DB_DATA=$DB_VOL t3_ run -v ./t3-root
+echo $'\n*************** '"Root volume '$ROOT_VOL' and database volume '$DB_VOL'"
+rm -rf "$ROOT_VOL" "$DB_VOL"
+mkdir -p "$(dirname "$ROOT_VOL")" "$DB_VOL"
 
-verify_volumes_exist $(basename $ROOT_VOL) $(basename $DB_VOL)
-test -f $ROOT_VOL/public/FIRST_INSTALL
-test -d $DB_VOL
+T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL"
 
-t3_ unmount -u $ROOT_VOL
-! test -f $ROOT_VOL/public/FIRST_INSTALL
+verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
+test -f "$ROOT_VOL/public/FIRST_INSTALL"
+test -d "$DB_VOL"
 
-t3_ mount -m $ROOT_VOL
-test -f $ROOT_VOL/public/FIRST_INSTALL
+t3_ unmount -u "$ROOT_VOL"
+! test -f "$ROOT_VOL/public/FIRST_INSTALL"
+
+t3_ mount -m "$ROOT_VOL"
+test -f "$ROOT_VOL/public/FIRST_INSTALL"
 
 cleanup
 
@@ -151,7 +153,7 @@ cleanup
 CONT_NAME=foo
 HOST_NAME=bar
 
-echo $'\n*************** Container name and hostname'
+echo $'\n*************** '"Container name '$CONT_NAME' and hostname '$HOST_NAME'"
 t3_ run --
 test "$(docker exec typo3 hostname)" = typo3.${HOSTNAME}
 cleanup
@@ -201,17 +203,17 @@ cleanup
 
 
 # Test custom certificate
-CERTFILE=certificate
+CERTFILE='cert file'
 CN=foo.bar
 
 echo $'\n*************** Custom certificate'
 openssl req -x509 -sha256 -days 1 \
     -newkey rsa:2048 -nodes \
-    -keyout $CERTFILE.key \
+    -keyout "$CERTFILE.key" \
     -subj "/CN=$CN" \
-    -out $CERTFILE.pem
+    -out "$CERTFILE.pem"
 
-t3_ run -k $CERTFILE.key,$CERTFILE.pem
+t3_log run -k "$CERTFILE.key,$CERTFILE.pem"
 
 echo "Waiting for certificate"
 sleep 5
