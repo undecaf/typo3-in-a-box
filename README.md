@@ -17,7 +17,7 @@ and has [SQLite](https://www.sqlite.org/), [MariaDB](https://mariadb.org/) and
 It is available at [Docker Hub](https://hub.docker.com/r/undecaf/typo3-in-a-box),
 uses about 450&nbsp;MB disk space and can run in
 [Docker](https://www.docker.com/) and [Podman](https://podman.io/).
-No additional container is required, and only a browser needs to be installed
+No additional container is required, and only a browser is needed
 at the host to get going.
 
 

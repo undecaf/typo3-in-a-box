@@ -41,13 +41,12 @@ HOSTNAME=$(which hostname)
 LS=$(which ls)
 MKDIR=$(which mkdir)
 PRINTENV=$(which printenv)
+PS=$(which ps)
 SLEEP=$(which sleep)
 STAT=$(which stat)
 SUDO=$(which sudo)
 UNAME=$(which uname)
 
-
-# TODO Rerun under zsh if running in bash under Darwin
 
 # --------------------------------------------------------------------------
 
@@ -86,11 +85,29 @@ EOT
 
 # --------------------------------------------------------------------------
 
-# Returns exit code 0 if this script runs under macOS (Darwin).
+# Returns success if this script runs under macOS (Darwin).
 #
-is_macos() {
+test_macos() {
     [ "$($UNAME)" = 'Darwin' ]
 }
+
+
+# --------------------------------------------------------------------------
+
+# Returns success if this script runs under the specified shell.
+#
+# Arguments:
+#   $1  basename of shell command
+#
+test_shell() {
+    [ "$(basename $($PS -p $$ -o comm=))" = "$1" ]
+}
+
+
+# --------------------------------------------------------------------------
+
+# Rerun this script under zsh if running in (outdated) bash under Darwin
+test_macos && test_shell 'bash' && exec zsh $0 $@
 
 
 # --------------------------------------------------------------------------
@@ -108,6 +125,9 @@ is_macos() {
 #   $1  string
 #   $2  regular expression
 #
+# Calls:
+#   test_shell
+#
 
 # Make array indices in zsh start at 0 as in bash
 test -n "$ZSH_VERSION" && setopt KSH_ARRAYS
@@ -120,8 +140,8 @@ function re_match {
   EC=$? # save exit code
 
   if [[ $EC -eq 0 ]]; then # copy result to output variable
-    [[ -n $BASH_VERSION ]] && RE_MATCH=( "${BASH_REMATCH[@]}" )
-    [[ -n $ZSH_VERSION ]]  && RE_MATCH=( "$MATCH" "${match[@]}" )
+    test_shell 'bash' && RE_MATCH=( "${BASH_REMATCH[@]}" )
+    test_shell 'zsh'  && RE_MATCH=( "$MATCH" "${match[@]}" )
   fi
 
   return $EC
@@ -261,7 +281,7 @@ mount_volume() {
         $SUDO --prompt $'\n*** sudo authorization is required for bind-mounting a working directory: ' --validate
 
         # Determine UID and GID of the volume owner (options differ between Linux and macOS)
-        is_macos && FORMAT_OPT=-f || FORMAT_OPT=--format
+        test_macos && FORMAT_OPT=-f || FORMAT_OPT=--format
         VOL_UID=$($SUDO_PREFIX $STAT $FORMAT_OPT '%u' $VOL_MP 2>/dev/null)
         VOL_GID=$($SUDO_PREFIX $STAT $FORMAT_OPT '%g' $VOL_MP 2>/dev/null)
 
