@@ -153,12 +153,12 @@ function re_match {
 
 # --------------------------------------------------------------------------
 
-# Returns exit code 0 if the argument contains a '/'.
+# Returns success if the argument contains a '/'.
 #
 # Arguments:
 #   $1  string to test
 #
-is_path() {
+test_path() {
     local RE
     RE='.+/.+'
     [[ "$1" =~ $RE ]]
@@ -167,17 +167,17 @@ is_path() {
 
 # --------------------------------------------------------------------------
 
-# If the argument is a path, verify that at least the parent exists and that
-# it is an empty directory.
+# If the argument is a path, returns success only if at least the parent
+# exists and if it is an empty directory.
 #
 # Arguments:
 #   $1  path of a working directory to bind-mount, or a volume name
 #
 # Calls:
-#   is_path
+#   test_path
 #
-verify_dir() {
-    if is_path "$1"; then
+test_dir() {
+    if test_path "$1"; then
         # At least the parent directory must exist
         [ -d "$($DIRNAME "$1")" ] || usage "Working directory '$1' does not have a parent"
 
@@ -228,6 +228,20 @@ autocomplete() {
 
 # --------------------------------------------------------------------------
 
+# Returns success if the specified container exists.
+#
+# Arguments:
+#   $1  container name
+#
+# Environment:
+#   $T3_ENGINE
+test_container() {
+    $T3_ENGINE container inspect $1 &>/dev/null
+}
+
+
+# --------------------------------------------------------------------------
+
 # Runs the selected container engine with the given arguments. Echoes the
 # run command to the console if T3_SHOW is non-empty.
 #
@@ -261,10 +275,10 @@ run_engine() {
 #   $SUDO_PREFIX
 #
 # Calls:
-#   is_path
+#   test_path
 #
 mount_volume() {
-    if is_path "$2"; then
+    if test_path "$2"; then
         if [ -z "$BINDFS" ]; then
             unset USAGE
             usage "bindfs not installed, see https://bindfs.org/ for information"
@@ -758,7 +772,7 @@ while [[ $# -gt 0 ]]; do
 
         --mount=*)
             MOUNT_PATH="${1#--mount=}"
-            verify_dir "$MOUNT_PATH"
+            test_dir "$MOUNT_PATH"
             shift
             ;;
 
@@ -781,7 +795,7 @@ while [[ $# -gt 0 ]]; do
 
         --typo3-root=*)
             T3_ROOT="${1#--typo3-root=}"
-            verify_dir "$T3_ROOT"
+            test_dir "$T3_ROOT"
             shift
             ;;
 
@@ -794,7 +808,7 @@ while [[ $# -gt 0 ]]; do
 
         --db-data=*)
             T3_DB_DATA="${1#--db-data=}"
-            verify_dir "$T3_DB_DATA"
+            test_dir "$T3_DB_DATA"
             shift
             ;;
 
@@ -904,13 +918,13 @@ CERT_FILE=${RE_MATCH[3]}
 
 # Volume names and working directories
 ROOT_MP=
-if is_path "$T3_ROOT"; then
+if test_path "$T3_ROOT"; then
     ROOT_MP="$T3_ROOT"
     T3_ROOT=$($BASENAME "$T3_ROOT")
 fi
 
 DB_DATA_MP=
-if is_path "$T3_DB_DATA"; then
+if test_path "$T3_DB_DATA"; then
     DB_DATA_MP="$T3_DB_DATA"
     T3_DB_DATA=$($BASENAME "$T3_DB_DATA")
 fi
@@ -971,12 +985,18 @@ esac
 case "$CMD" in
 
     run)
+        # Verify that the container does not exist yet
+        if test_container "$T3_NAME"; then
+            echo '*** '"Cannot run container '$T3_NAME': it already exists"$' ***\n*** '"To remove it, enter '$0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm'"' ***'
+            exit 1
+        fi
+
         # Roll back if command terminates prematurely
         trap "echo $'\n*** Command failed or interrupted, rolling back ***'; $0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm; exit 1" EXIT
 
         # Create the TYPO3 container
         set -e
-        echo '*** '"Preparing container '$T3_NAME'"' ***'
+        echo '*** '"Creating container '$T3_NAME'"' ***'
         run_engine create \
             --name "$T3_NAME" \
             --hostname "$T3_HOSTNAME" \
