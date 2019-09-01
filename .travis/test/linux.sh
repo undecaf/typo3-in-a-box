@@ -1,22 +1,32 @@
 #!/bin/bash
 
 
-# Runs t3 with the specified arguments and echoes the command line to stdout.
+# If $LOGFILE is a file then this function runs t3 with the specified 
+# arguments, echoes the command line to stdout and appends it to $LOGFILE.
+# The output generated at stdout is also appended to $T3_log.
+#
+# Otherwise, runs t3 with the specified arguments and just echoes the 
+# command line to stdout.
 t3_() {
-    echo "+ t3 $@"
-    ./t3 "$@"
-}
+    if [ -f "$LOGFILE" ]; then
+        local CMD
+        CMD=$1
+        shift
 
-# Runs t3 with the specified arguments, echoes the command line to stdout
-# and appends it to $LOGFILE. The generated Docker commands are also 
-# appended to $T3_log.
-t3_log() {
-    local CMD
-    CMD=$1
-    shift
-    echo "+ t3 $CMD -s $@" | tee -a $LOGFILE
-    ./t3 $CMD -s "$@" | tee -p | \
-        grep -E '^(/[a-z/]?+/)?(docker|podman) ' | sed -e 's/typo3\.'$HOSTNAME'/typo3.travis-job/' >>$LOGFILE
+        local SHOW
+        local RE
+        RE='run|stop|env|composer'
+        [[ "$CMD" =~ $RE ]] && SHOW=-s
+
+        echo "+ t3 $CMD $SHOW $@" | tee -a $LOGFILE
+        ./t3 $CMD $SHOW "$@" | \
+            tee -p | \
+            sed -e 's/typo3\.'$HOSTNAME'/typo3.travis-job/' >>$LOGFILE
+
+    else
+        echo "+ t3 $@"
+        ./t3 "$@"
+    fi
 }
 
 # Returns success if all specified containers exist.
@@ -67,24 +77,29 @@ INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
 # Will stop any running t3 configuration
 trap 'set +e; cleanup' EXIT
 
-
 echo $'\n*************** Testing '"$TRAVIS_REPO_SLUG:${TYPO3_VER}-dev"
+
+
+# Test error handling
+. .travis/test/errors
 
 
 # Test basic container and volume status
 echo $'\n*************** Basic container and volume status'
-t3_ run --
+t3_ run
 verify_containers_running typo3
 verify_volumes_exist typo3-root typo3-data
 
-t3_ stop --
+verify_error 'Cannot run container' ./t3 run
+
+t3_ stop
 verify_containers_exist typo3
 ! verify_containers_running typo3
 verify_volumes_exist typo3-root typo3-data
 
 cleanup
 
-t3_ run --
+t3_ run
 
 t3_ stop --rm
 ! verify_containers_exist typo3
@@ -95,12 +110,35 @@ docker volume prune --force >/dev/null
 
 # Test HTTP and HTTPS connectivity
 echo $'\n*************** HTTP and HTTPS connectivity'
-t3_ run --
+t3_ run
 
 echo "Getting $INSTALL_URL and $INSTALL_URL_SECURE"
 sleep 5
 curl -Is $INSTALL_URL | grep -q '200 OK'
 curl -Isk $INSTALL_URL_SECURE | grep -q '200 OK'
+
+cleanup
+
+TEST_PORT=4711
+TEST_URL=${INSTALL_URL/$HTTP_PORT/$TEST_PORT}
+
+t3_ run -p $TEST_PORT,
+
+echo "Getting $TEST_URL, $INSTALL_URL_SECURE not listening"
+sleep 5
+curl -Is $TEST_URL | grep -q '200 OK'
+! curl -Isk $INSTALL_URL_SECURE
+
+cleanup
+
+TEST_URL=${TEST_URL/http:/https:}
+
+t3_ run -p ,$TEST_PORT
+
+echo "Getting $TEST_URL, $INSTALL_URL not listening"
+sleep 5
+! curl -Is $INSTALL_URL
+curl -Isk $TEST_URL | grep -q '200 OK'
 
 cleanup
 
@@ -126,25 +164,34 @@ for DB_TYPE in mariadb postgresql; do
 done
 
 
-# Test volume mapping
-ROOT_VOL='./root volume/t3-root'
-DB_VOL='./database volume/t3-data'
+# Test volume names, mapping and (un-)mounting
+ROOT_VOL='./root volume/root'
+DB_VOL='./database volume/dbdata'
 
-echo $'\n*************** '"Root volume '$ROOT_VOL' and database volume '$DB_VOL'"
+echo $'\n*************** Volume names, mapping and (un-)mounting'
+T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
+verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
+
+cleanup
+
 rm -rf "$ROOT_VOL" "$DB_VOL"
 mkdir -p "$(dirname "$ROOT_VOL")" "$DB_VOL"
 
 T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL"
 
 verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
-test -f "$ROOT_VOL/public/FIRST_INSTALL"
+test -O "$ROOT_VOL/public/FIRST_INSTALL"
+test -G "$ROOT_VOL/public/FIRST_INSTALL"
 test -d "$DB_VOL"
 
-t3_ unmount -u "$ROOT_VOL"
+t3_ unmount "$ROOT_VOL" "$DB_VOL"
 ! test -f "$ROOT_VOL/public/FIRST_INSTALL"
 
-t3_ mount -m "$ROOT_VOL"
+t3_ mount "$ROOT_VOL"
 test -f "$ROOT_VOL/public/FIRST_INSTALL"
+
+verify_error 'Not a working directory, or already mounted' ./t3 mount "$ROOT_VOL"
+verify_error 'Unable to unmount' ./t3 unmount "$DB_VOL"
 
 cleanup
 
@@ -154,7 +201,7 @@ CONT_NAME=foo
 HOST_NAME=bar
 
 echo $'\n*************** '"Container name '$CONT_NAME' and hostname '$HOST_NAME'"
-t3_ run --
+t3_ run
 test "$(docker exec typo3 hostname)" = typo3.${HOSTNAME}
 cleanup
 
@@ -166,7 +213,7 @@ docker volume prune --force >/dev/null
 
 # Test Composer Mode
 echo $'\n*************** Composer Mode'
-t3_ run --
+t3_ run
 ! t3_ composer show
 cleanup
 
@@ -213,7 +260,7 @@ openssl req -x509 -sha256 -days 1 \
     -subj "/CN=$CN" \
     -out "$CERTFILE.pem"
 
-t3_log run -k "$CERTFILE.key,$CERTFILE.pem"
+t3_ run -k "$CERTFILE.key,$CERTFILE.pem"
 
 echo "Waiting for certificate"
 sleep 5

@@ -129,13 +129,17 @@ See the [`t3` reference](#t3-shell-script-reference) for a complete description.
 
 This script is
 [avaliable for download here](https://raw.githubusercontent.com/undecaf/typo3-in-a-box/master/t3).
-It should be saved in a directory which is part of the search path, e.g.
+It should be saved to a directory which is part of the search path, e.g.
 `/usr/local/bin`, and it must be made executable, e.g.
 
 ```bash
 $ sudo chmod 755 /usr/local/bin/t3
 ```
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> dev
 ### Quick start with `t3`
 
 To run a TYPO3 container [as in the example above](#quick-start) with `t3`,
@@ -259,7 +263,7 @@ even if the container is not running or does not even exist. Just mount your
 working directory on top of the volume:
 
 ```bash
-$ t3 mount -m ~/ide-workspace/typo3-root
+$ t3 mount ~/ide-workspace/typo3-root
 ```
 
 As with [`t3 run -v`](#using-an-ide), the name of the volume is equal to the working
@@ -268,7 +272,7 @@ directory basename.
 When you are finished, unmount your working directory again:
 
 ```bash
-$ t3 unmount -u ~/ide-workspace/typo3-root
+$ t3 unmount ~/ide-workspace/typo3-root
 ```
 
 
@@ -605,8 +609,8 @@ Stops a TYPO3 container if it is running and optionally removes it:
 $ t3 stop [option]...
 ```
 
-`t3 stop` will unmount working directories mounted by [`t3 run`](#t3-run) or by
-[`t3 mount`](#t3-mount).
+`t3 stop` will unmount the container's working directories mounted by
+[`t3 run`](#t3-run) or by [`t3 mount`](#t3-mount).
 
 __Container engine:__
 the same engine as for the corresponding `t3 run` command.
@@ -621,7 +625,7 @@ If option&nbsp;`-s` is present (or `T3_SHOW` is non-empty) then the Docker/Podma
 
 __Remove stopped container:__
 add option&nbsp;`--rm` if the TYPO3 container should be removed after being stopped.
-This can be used also to remove a container that is not running.
+This can also be used to remove a container that is not running.
 
 Please note: `t3` never removes _volumes_.
 You have to use `docker/podman volume rm` to do that.
@@ -692,16 +696,19 @@ to a colon-separated list of _subdirectories_ of
 
 ### `t3 mount`
 
-Mounts a working directory to a container volume so that the volume
-appears to be owned and can be managed by the current user:
+Mounts one or more working directories to container volumes so that
+the volumes appear to be owned by and can be managed by the current user:
 
 ```bash
-$ t3 mount [--mount|-m] WORK_DIR [option]...
+$ t3 mount [option] WORK_DIR...
 ```
- 
-This is equivalent to [`t3 run`](#t3-run) with a working directory path for `-v`
-or `-V` except that the container does not need to be running (it does not even 
-have to exist).
+
+The directories must be given as paths (containing `/`). The basenames
+are used as volume names.
+
+This command is equivalent to [`t3 run`](#t3-run) options `-v` or `-V`
+with a working directory path except that the container does not need to be running
+(it does not even have to exist).
 
 This command will ask for `sudo` authorization unless there are cached credentials.
 
@@ -710,18 +717,17 @@ the same engine as for the corresponding `t3 run` command.
 Use option&nbsp;`-e` (or `T3_ENGINE`) if necessary.
 
 __TYPO3 working directory, database directory:__
-specify the _directory path_ (it _must_ contain a `/`) for option&nbsp;`-m`.
+a _directory path_ is required (it _must_ contain a `/`).
 The directory basename is taken as the volume name, and the directory
-is bind-mounted at that volume. This is equivalent to the `-v` or `-V` option of
-[`t3 run`](#t3-run) except that no container is needed for this operation.
+is bind-mounted at that volume.
 
 
 ### `t3 unmount`
 
-Unmounts a working directory from the container volume:
+Unmounts one or more working directories from their container volumes:
 
 ```bash
-$ t3 unmount [--unmount|-u] WORK_DIR [option]...
+$ t3 unmount [option] WORK_DIR
 ```
 
 This command will ask for `sudo` authorization unless there are cached credentials.

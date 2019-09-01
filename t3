@@ -50,7 +50,7 @@ UNAME=$(which uname)
 
 # --------------------------------------------------------------------------
 
-# Prints $USAGE and an optional error message to stdout or stderr
+# Shows $USAGE and an optional error message at stdout or stderr
 # and exits with exit code 0 or 1, respectively.
 #
 # Arguments:
@@ -80,6 +80,21 @@ EOT
 
     eval 'echo "$USAGE" '$REDIR
     exit $EXIT_CODE
+}
+
+
+# --------------------------------------------------------------------------
+
+# Shows a message at stderr and exits with the specified return status (or
+# with 1).
+#
+# Arguments:
+#   $1  error message
+#   $2  (optional) return code, defaults to 1
+#
+err_exit() {
+    echo '*** '"$1"' ***' >&2
+    exit ${2:-1}
 }
 
 
@@ -263,19 +278,20 @@ run_engine() {
 
 # Bind-mounts a working directory to a container volume so that files and
 # directories of that volume appear to be owned by the current user.
-# Does nothing if no path was given.
+# Returns failure if no suitable path was given.
 #
 # Arguments:
 #   $1  name of container volume
 #   $2  working directory path
 #
+# Calls:
+#   test_path
+#   err_exit
+#
 # Environment:
 #   $T3_ENGINE
 #   $MP_FORMAT
 #   $SUDO_PREFIX
-#
-# Calls:
-#   test_path
 #
 mount_volume() {
     if test_path "$2"; then
@@ -292,10 +308,10 @@ mount_volume() {
 
         # Locate the volume mount point of the container engine
         VOL_MP=$($T3_ENGINE volume inspect --format "$MP_FORMAT" "$1") \
-            || usage "Volume '$1' not found"
+            || err_exit '*** '"Volume '$1' not found"' ***'
 
         # Acquire sudo authorization for what follows
-        $SUDO --prompt $'\n*** sudo authorization is required for bind-mounting a working directory: ' --validate
+        $SUDO --prompt '*** sudo authorization is required for bind-mounting working directories: ' --validate
 
         # Determine UID and GID of the volume owner (options differ between Linux and macOS)
         test_macos && FORMAT_OPT=-f || FORMAT_OPT=--format
@@ -311,6 +327,9 @@ mount_volume() {
             $VOL_MP \
             "$BIND_MP" \
         && echo "Working directory '$BIND_MP' bind-mounted to volume '$1'"
+
+    else
+        return 1
     fi
 }
 
@@ -322,6 +341,9 @@ mount_volume() {
 #
 # Arguments:
 #   $1  name of container volume
+#
+# Calls:
+#   unmount_workdir
 #
 # Environment:
 #   $T3_ENGINE
@@ -340,10 +362,24 @@ unmount_volume() {
     # Find the directory bind-mounted to the container volume mountpoint
     RE='^/.+( +[0-9]+){4}% +(/.+)$'
     if LINE=$($DF -P | $GREP --fixed-string "$VOL_MP ") && re_match "$LINE" "$RE"; then
-        $SUDO --prompt $'\n*** sudo authorization is required for unmounting a working directory: ' \
-            umount "${RE_MATCH[2]}" \
-        && echo "Working directory '${RE_MATCH[2]}' unmounted from volume '$1'"    
+        unmount_workdir "$1" "${RE_MATCH[2]}"
     fi
+}
+
+
+# --------------------------------------------------------------------------
+
+# Unmounts a working directory from wherever it may be mounted and returns
+# the status of the unmount operation.
+#
+# Arguments:
+#   $1  name of container volume
+#   $2  working directory path
+#
+unmount_workdir() {
+    $SUDO --prompt '*** sudo authorization is required for unmounting working directories: ' \
+        umount "$2" \
+    && echo "Working directory '$2' unmounted from volume '$1'"
 }
 
 
@@ -462,7 +498,7 @@ EOT
         ;;
 
 
-    # Stop and remove a running TYPO3 (and the respective database) container
+    # Stop and remove a TYPO3 container
     stop)
         USAGE=$($CAT <<EOT
 
@@ -470,7 +506,8 @@ Usage:
   $($BASENAME $0) stop [option]...
   $($BASENAME $0) stop [-h|--help]
 
-Stops a running TYPO3 (and the associated database) container.
+Stops a TYPO3 container, optionally removes it and unmounts the working
+directories of this container.
 
 Options (default values can be overridden by environment variables):
 
@@ -489,8 +526,8 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_SHOW, or not set.
  
   --rm
-      Causes the TYPO3 container and the respective database container (if one 
-      exists) to be removed after they were stopped.
+      Causes the TYPO3 container to be removed after is was stopped.
+      This can also be used to remove a container that is not running.
 
   --help, -h
       Displays this text and exits.
@@ -579,15 +616,17 @@ EOT
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) mount [--mount|-m] WORK_DIR [option]...
+  $($BASENAME $0) mount [option] WORK_DIR...
   $($BASENAME $0) mount [-h|--help]
 
-Mounts a working directory to a container volume so that the volume
-appears to be owned and can be managed by the current user.
- 
-Equivalent to '$($BASENAME $0) run' with a directory path for '--typo3-vol'
-except that the container does not need to be running (it does not even 
-have to exist).
+Mounts one or more working directories to container volumes so that
+the volumes appear to be owned by and can be managed by the current user.
+The directories must be given as paths (containing '/'). The basenames
+are used as volume names.
+
+Equivalent to '$($BASENAME $0) run' options '-v' or '-V' with a working directory
+path except that the container does not need to be running (it does not
+even have to exist).
 
 Options (default values can be overridden by environment variables):
 
@@ -596,17 +635,12 @@ Options (default values can be overridden by environment variables):
       to the engine executable.
       Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
 
-  --mount=WORK_DIR, -m WORK_DIR
-      Path of a working directory to bind-mount to a persistent
-      volume. The basename of this path is taken as the name of the
-      persistent volume.
-
   --help, -h
       Displays this text and exits.
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-m|--mount(=.+)?'
+        ALLOWED_OPTS='-e|--engine(=.+)?'
         ;;
 
 
@@ -615,10 +649,10 @@ EOT
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) unmount [--unmount|-u] WORK_DIR [option]...
+  $($BASENAME $0) unmount [option] WORK_DIR...
   $($BASENAME $0) unmount [-h|--help]
 
-Unmounts a working directory from the container volume.
+Unmounts one or more working directories from their container volumes.
 
 Options (default values can be overridden by environment variables):
 
@@ -627,15 +661,12 @@ Options (default values can be overridden by environment variables):
       to the engine executable.
       Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
 
-  --unmount=WORK_DIR, -u WORK_DIR
-      Path of the working directory to unmount from a persistent volume.
-
   --help, -h
       Displays this text and exits.
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-u|--unmount(=.+)?'
+        ALLOWED_OPTS='-e|--engine(=.+)?'
         ;;
 
 
@@ -693,7 +724,6 @@ T3_ROOT=${T3_ROOT:-typo3-root}
 T3_PORTS=${T3_PORTS:-127.0.0.1:8080,127.0.0.1:8443}
 
 REMOVE_OPTION=
-MOUNT_PATH=
 
 ALLOWED_OPTS='^('"$ALLOWED_OPTS"'|-h|--help|--)$'
 
@@ -764,27 +794,6 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
 
-        # Directory to be bind-mounted
-        -m|--mount)
-            shift
-            ;&
-
-        --mount=*)
-            MOUNT_PATH="${1#--mount=}"
-            test_dir "$MOUNT_PATH"
-            shift
-            ;;
-
-        # Directory to be unmounted
-        -u|--unmount)
-            shift
-            ;&
-
-        --unmount=*)
-            MOUNT_PATH="${1#--unmount=}"
-            shift
-            ;;
-
         # TYPO3 volume (volume name or absolute path)
         # If an absolute path is given then its basename is used as the name
         # of a volume which is mounted at the absolute path
@@ -852,13 +861,13 @@ while [[ $# -gt 0 ]]; do
             usage
             ;;
 
-        # Separator from container engine options
+        # Separator from container engine options or mount/unmount directory
         --)
             shift
             break
             ;;
 
-        # First unknown option, pass through to the container engine
+        # First unknown option or mount/unmount directory, keep remaining options in "$@"
         *)
             break
             ;;
@@ -985,10 +994,8 @@ case "$CMD" in
 
     run)
         # Verify that the container does not exist yet
-        if test_container "$T3_NAME"; then
-            echo '*** '"Cannot run container '$T3_NAME': it already exists"$' ***\n*** '"To remove it, enter '$0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm'"' ***' 1>&2
-            exit 1
-        fi
+        test_container "$T3_NAME" && \
+            err_exit '*** '"Cannot run container '$T3_NAME': it already exists"$' ***\n*** '"To remove it, enter '$0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm'"' ***'
 
         # Roll back if command terminates prematurely
         trap "echo $'\n*** Command failed or interrupted, rolling back ***'; $0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm; exit 1" EXIT
@@ -1021,8 +1028,8 @@ case "$CMD" in
         echo '*** '"Container '$T3_NAME' started"' ***'
 
         # Eventually bind-mount container volumes in userspace
-        mount_volume "$T3_ROOT" "$ROOT_MP"
-        mount_volume "$T3_DB_DATA" "$DB_DATA_MP"
+        mount_volume "$T3_ROOT" "$ROOT_MP" || true
+        mount_volume "$T3_DB_DATA" "$DB_DATA_MP" || true
 
         trap - EXIT
         ;;
@@ -1068,18 +1075,21 @@ case "$CMD" in
 
 
     mount)
-        [ -n "$MOUNT_PATH" ] || usage "Option '--mount' is required"
-        mount_volume $($BASENAME "$MOUNT_PATH") "$MOUNT_PATH"
+        [ $# -gt 0 ] || usage 'A working directory is required'
+        for MP in "$@"; do
+            mount_volume "$($BASENAME "$MP")" "$MP" || \
+                err_exit "Not a working directory, or already mounted: '$1'"
+        done
         ;;
 
 
     unmount)
-        [ -d "$MOUNT_PATH" ] || usage "Option '--unmount' is required"
-        $SUDO --prompt $'\n*** sudo authorization is required for unmounting a working directory: ' \
-            umount "$MOUNT_PATH" \
-        && echo '*** '"Working directory '$MOUNT_PATH' unmounted from volume '$($BASENAME "$MOUNT_PATH")'"' ***'
+        [ $# -gt 0 ] || usage 'A working directory is required'
+        for MP in "$@"; do
+            unmount_workdir "$($BASENAME "$MP")" "$MP" || \
+                err_exit "Unable to unmount working directory '$MP'"
+        done
         ;;
-
 
     *)
         usage "Unknown command: '$CMD'"
