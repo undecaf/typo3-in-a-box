@@ -276,7 +276,12 @@ trap - EXIT
 
 
 # Show the log file so that it can be copied
-echo $'\n--------------- Begin log ---------------'
-cat $LOGFILE
-echo $'---------------  End log  ---------------\n'
-rm $LOGFILE
+if [ -s "$LOGFILE" ]; then
+    echo $'\n--------------- Begin log ---------------'
+    cat $LOGFILE
+    echo $'---------------  End log  ---------------\n'
+    rm $LOGFILE
+fi
+
+# Finish successfully
+true
