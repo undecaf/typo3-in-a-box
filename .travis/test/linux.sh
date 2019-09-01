@@ -57,8 +57,9 @@ cleanup() {
 # Exit with error status if any verification fails
 set -e
 
-# t3 command lines (prepended by '+') and generated Docker commands are saved here
-LOGFILE=$(mktemp)
+# If defined then t3 command lines (prepended by '+') and output generated
+# by t3 are saved here
+#LOGFILE=$(mktemp)
 
 # TYPO3 image version under test
 export T3_TAG=${TYPO3_VER}-dev
