@@ -703,11 +703,8 @@ the volumes appear to be owned by and can be managed by the current user:
 $ t3 mount [option] WORK_DIR...
 ```
 
-The directories must be given as paths (containing `/`). The basenames
-are used as volume names.
-
 This command is equivalent to [`t3 run`](#t3-run) options `-v` or `-V`
-with a working directory path except that the container does not need to be running
+plus a working directory path except that the container does not need to be running
 (it does not even have to exist).
 
 This command will ask for `sudo` authorization unless there are cached credentials.
@@ -737,8 +734,8 @@ the same engine as for the corresponding `t3 run` command.
 Use option&nbsp;`-e` (or `T3_ENGINE`) if necessary.
 
 __TYPO3 working directory:__
-specify the _working directory path_ to unmount for option&nbsp;`-u`. This is what
-is done automatically by [`t3 stop`](#t3-stop).
+specify the _working directory path_ to unmount. This is what is done automatically 
+by [`t3 stop`](#t3-stop).
 
 
 ### Options
@@ -765,8 +762,6 @@ that environment variable is not set.
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option&nbsp;`--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
 | `--rm` | `stop` | Causes the TYPO3 container to be removed after they were stopped. |
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). The values of most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. `--env` options must be the _last options_ on the command line. |
-| `--mount=WORKDIR`<br>`-m WORKDIR` | `mount` | Path of a working directory to bind-mount to a persistent volume. The basename of this path is taken as the name of the persistent volume. |
-| `--unmount=WORKDIR`<br>`-u WORKDIR` | `unmount`| Path of the working directory to unmount from a persistent volume. |
 
 
 ### Host environment variables
