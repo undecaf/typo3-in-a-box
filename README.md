@@ -733,7 +733,7 @@ __Container engine:__
 the same engine as for the corresponding `t3 run` command.
 Use option&nbsp;`-e` (or `T3_ENGINE`) if necessary.
 
-__TYPO3 working directory:__
+__TYPO3 working directory, database directory:__
 specify the _working directory path_ to unmount. This is what is done automatically 
 by [`t3 stop`](#t3-stop).
 
