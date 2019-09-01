@@ -142,7 +142,7 @@ To run a TYPO3 container [as in the example above](#quick-start) with `t3`,
 simply type:
 
 ```bash
-$ t3 run --    # please note the trailing dashes
+$ t3 run
 ```
 
 `t3` chooses between [Docker](https://www.docker.com/) and 
@@ -158,7 +158,7 @@ $ t3 stop --rm
 ```
 
 State is preserved in volumes `typo3-root` and `typo3-data` so that a subsequent
-`t3 run --` command will resume from where you left off.
+`t3 run` command will resume from where you left off.
 
 
 ### MariaDB and PostgreSQL
@@ -182,7 +182,7 @@ according to your needs.
 Enter
 
 ```bash
-$ t3 stop --
+$ t3 stop
 ```
 
 to stop the container. If you wish to have the stopped container removed, too,
@@ -457,7 +457,7 @@ export T3_PORTS=127.0.0.1:8181,127.0.0.1:9443
 and omit all options from the command, e.g.
 
 ```bash
-$ source my-t3-conf && t3 run --
+$ source my-t3-conf && t3 run
   ⁝
 $ source my-t3-conf && t3 stop
 ```
@@ -502,11 +502,6 @@ Configures and runs a TYPO3 container:
 ```bash
 $ t3 run [option]... [--] [Docker/Podman option]...
 ```
-
-Although all
-[options are optional](https://www.quora.com/What-is-the-meaning-of-no-pun-intended),
-at least one option must be set (`--` is sufficient) as a precaution against 
-inadvertent command invocation.
 
 __Container engine:__
 if you have both [Docker](https://www.docker.com/) and [Podman](https://podman.io/)
@@ -612,9 +607,6 @@ $ t3 stop [option]...
 
 `t3 stop` will unmount working directories mounted by [`t3 run`](#t3-run) or by
 [`t3 mount`](#t3-mount).
-
-Although all options are optional, at least one option must be set
-(`--` is sufficient) as a precaution against inadvertent command invocation.
 
 __Container engine:__
 the same engine as for the corresponding `t3 run` command.

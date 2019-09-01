@@ -352,11 +352,15 @@ unmount_volume() {
 # Split parameters on whitespace in Zsh
 test_shell 'zsh' && setopt SH_WORD_SPLIT
 
+# Save command
+CMD="$1"
+shift
+OPT_COUNT=$#
+
 # Determine command
+[ -n "$CMD" ] && MSG="Unknown command: '$CMD'" || MSG="Missing command"
 
-[ -n "$1" ] && MSG="Unknown command: '$1'" || MSG="Missing command"
-
-case "$1" in
+case "$CMD" in
 
     # Run TYPO3 in a container, optionally with a database in an extra container
     run)
@@ -367,9 +371,6 @@ Usage:
   $($BASENAME $0) run [-h|--help]
 
 Runs TYPO3 image 'undecaf/typo3-in-a-box' in a container in Docker or Podman.
-
-Although all options are optional, at least one option must be set
-('--' is sufficient) as a precaution against inadvertent command invocation.
 
 Options (default values can be overridden by environment variables):
 
@@ -455,6 +456,9 @@ described above. If necessary, '--' can be used to separate them from the $($BAS
 EOT
         )
         ALLOWED_OPTS='-d|--db-type(=.*)?|-e|--engine(=.+)?|-h|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-V|--db-data(=.+)?|-p|--typo3-ports(=.+)?|-k|--certfiles(=.+)?|-P|--db-port(=.+)?|-s|--show'
+
+        # No additional options required
+        OPT_COUNT=1
         ;;
 
 
@@ -467,9 +471,6 @@ Usage:
   $($BASENAME $0) stop [-h|--help]
 
 Stops a running TYPO3 (and the associated database) container.
-
-Although all options are optional, at least one option must be set
-('--' is sufficient) as a precaution against inadvertent command invocation.
 
 Options (default values can be overridden by environment variables):
 
@@ -497,6 +498,9 @@ Options (default values can be overridden by environment variables):
 EOT
         )
         ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-s|--show|--rm'
+
+        # No additional options required
+        OPT_COUNT=1
         ;;
 
 
@@ -673,11 +677,6 @@ EOT
         usage "$MSG"
         ;;
 esac
-
-# Save command
-CMD="$1"
-shift
-OPT_COUNT=$#
 
 
 # --------------------------------------------------------------------------
