@@ -470,10 +470,12 @@ $ source my-t3-conf && t3 stop
 ## `t3` shell script reference
 
 `t3`is a shell script for Linux and macOS for managing containerized TYPO3 instances.
-`t3` command lines contain a command verb (what to do) and options (how to do it):
+
+`t3` command lines contain a command verb (what to do) and may contain options
+(how to do it) and arguments (with what to do it):
 
 ```bash
-$ t3 COMMAND [option]...
+$ t3 COMMAND [option]... [argument]...
 ```
 
 The `t3` script is
@@ -481,7 +483,13 @@ The `t3` script is
 In order to view the version of this document that matches a running TYPO3 instance, 
 point your browser to [`http://localhost:8080/readme.html`](http://localhost:8080/readme.html).
 
-Commands are described below.
+Commands are described below. Each command can be abbreviated to an unambiguous
+verb, such as:
+
+```bash
+$ t3 r ...    # abbreviation for 't3 run ...'
+$ t3 c ...    # abbreviation for 't3 composer ...'
+```
 
 
 ### Getting help
@@ -751,7 +759,7 @@ that environment variable is not set.
 | `-h`<br>`--help` | none<br>all | Displays a list of commands, or help for the specified command. |
 | `--name=NAME`<br>`-n NAME` | `run`<br>`stop`<br>`composer`<br>`env` | Container name.<br>Default: `$T3_NAME`, or `typo3`. |
 | `--show`<br>`-s` | `run`<br>`stop`<br>`composer`<br>`env` | If this option is present then it shows generated Docker/Podman commands on the console.<br>_Warning:_ your database credentials will be visible on the console if this option is set for `t3 run`.<br>Default: `$T3_SHOW`, or not set. |
-| `--hostname=HOSTNAME`<br>`-h HOSTNAME` | `run` | Hostname assigned to the TYPO3 container and to Apache `ServerName` and `ServerAdmin`.<br>Default: `$T3_HOSTNAME`, or `typo3.$(hostname)`. |
+| `--hostname=HOSTNAME`<br>`-H HOSTNAME` | `run` | Hostname assigned to the TYPO3 container and to Apache `ServerName` and `ServerAdmin`.<br>Default: `$T3_HOSTNAME`, or `typo3.$(hostname)`. |
 | `--tag=TAG`<br>`-t TAG` | `run` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`.<br>Default: `$T3_TAG`, or `latest`, i.e. the latest build for the most recent TYPO3 version. |
 | `--composer-mode`<br>`-c` | `run` | If this option is present then Composer is responsible for installing/removing TYPO3 extensions. Otherwise, this is handled by the TYPO3 Extension Manager.<br>Default: `$T3_COMPOSER_MODE`, or not set. |
 | `--typo3-root=VOLUME`<br>`-v VOLUME` | `run` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path (containing a `/`).<br>In the latter case, the directory basename is used as the volume name, and the directory is bind-mounted at that volume. Thus, volume content appears to be owned by the current user.<br>__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3.<br>Default: `$T3_ROOT`, or `typo3-root`. |
