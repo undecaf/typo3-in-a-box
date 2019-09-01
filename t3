@@ -420,7 +420,7 @@ Options (default values can be overridden by environment variables):
       Container name.
       Default: \$T3_NAME, or 'typo3'.
 
-  --hostname=HOSTNAME, -h HOSTNAME
+  --hostname=HOSTNAME, -H HOSTNAME
       Hostname assigned to the TYPO3 container and to Apache ServerName and
       ServerAdmin.
       Default: \$T3_HOSTNAME, or 'typo3.$($HOSTNAME)'.
@@ -492,7 +492,7 @@ described above. If necessary, '--' can be used to separate them from the $($BAS
  
 EOT
         )
-        ALLOWED_OPTS='-d|--db-type(=.*)?|-e|--engine(=.+)?|-h|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-V|--db-data(=.+)?|-p|--typo3-ports(=.+)?|-k|--certfiles(=.+)?|-P|--db-port(=.+)?|-s|--show'
+        ALLOWED_OPTS='-d|--db-type(=.*)?|-e|--engine(=.+)?|-H|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-V|--db-data(=.+)?|-p|--typo3-ports(=.+)?|-k|--certfiles(=.+)?|-P|--db-port(=.+)?|-s|--show'
 
         # No additional options required
         OPT_COUNT=1
@@ -729,13 +729,10 @@ T3_PORTS=${T3_PORTS:-127.0.0.1:8080,127.0.0.1:8443}
 REMOVE_OPTION=
 
 ALLOWED_OPTS='^('"$ALLOWED_OPTS"'|-h|--help|--)$'
-echo "-----------------ALLOWED_OPTS: $ALLOWED_OPTS"    
 
 while [[ $# -gt 0 ]]; do
     # Check for allowed options by regular expression
-echo "-----------------Processing option $1"    
     [[ "$1" =~ $ALLOWED_OPTS ]] || break
-echo "-----------------Option $1 is allowed"    
 
     case "$1" in
         # Database type
@@ -759,7 +756,7 @@ echo "-----------------Option $1 is allowed"
             ;;
 
         # Hostname
-        -h|--hostname)
+        -H|--hostname)
             shift
             ;&
 
