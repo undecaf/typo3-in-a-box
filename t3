@@ -986,7 +986,7 @@ case "$CMD" in
     run)
         # Verify that the container does not exist yet
         if test_container "$T3_NAME"; then
-            echo '*** '"Cannot run container '$T3_NAME': it already exists"$' ***\n*** '"To remove it, enter '$0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm'"' ***'
+            echo '*** '"Cannot run container '$T3_NAME': it already exists"$' ***\n*** '"To remove it, enter '$0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm'"' ***' 1>&2
             exit 1
         fi
 
