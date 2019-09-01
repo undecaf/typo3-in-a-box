@@ -205,7 +205,7 @@ t3_ run
 test "$(docker exec typo3 hostname)" = typo3.${HOSTNAME}
 cleanup
 
-T3_NAME=$CONT_NAME t3_ run -h $HOST_NAME
+T3_NAME=$CONT_NAME t3_ run -H $HOST_NAME
 test "$(docker exec $CONT_NAME hostname)" = $HOST_NAME
 t3_ stop -n $CONT_NAME --rm
 docker volume prune --force >/dev/null
