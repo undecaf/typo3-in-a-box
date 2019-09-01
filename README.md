@@ -604,7 +604,7 @@ command line and should be separated from `t3` options by `--`.
 
 ### `t3 stop`
 
-Stops a running TYPO3 container:
+Stops a TYPO3 container if it is running and optionally removes it:
 
 ```bash
 $ t3 stop [option]...
@@ -629,6 +629,7 @@ If option&nbsp;`-s` is present (or `T3_SHOW` is non-empty) then the Docker/Podma
 
 __Remove stopped container:__
 add option&nbsp;`--rm` if the TYPO3 container should be removed after being stopped.
+This can be used also to remove a container that is not running.
 
 Please note: `t3` never removes _volumes_.
 You have to use `docker/podman volume rm` to do that.
