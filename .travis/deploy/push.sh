@@ -32,7 +32,7 @@ echo $'\n*************** '"Pushing all of $TRAVIS_REPO_SLUG"
 docker push $TRAVIS_REPO_SLUG
 
 # Update bages at MicroBadger
-curl -X POST https://hooks.microbadger.com/images/undecaf/typo3-in-a-box/2UP8UlsdvxENXjuqw_-AerEjcVY=
+curl -X POST https://hooks.microbadger.com/images/undecaf/typo3-in-a-box/$MICROBADGER_WEBHOOK
 
 # README.md exceeds the size limit of Dockerhub, it has to be excerpted manually
 exit

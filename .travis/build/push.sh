@@ -1,6 +1,10 @@
 #!/bin/bash
 
-TEMP_TAG=$TRAVIS_REPO_SLUG:$TYPO3_VER-dev
+# Set environment variables common to all build stages
+source .travis/setenv.inc
 
-echo $'\n*************** '"Pushing $TEMP_TAG"
-docker push $TEMP_TAG
+echo $'\n*************** '"Pushing $TEST_IMG"
+
+set -x
+
+docker push $TEST_IMG

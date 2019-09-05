@@ -48,6 +48,7 @@ apk add \
 	bash \
     su-exec \
 	nano \
+    git \
     gettext \
 	tzdata \
 	curl \

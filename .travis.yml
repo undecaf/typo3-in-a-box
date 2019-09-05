@@ -18,21 +18,21 @@ macos: &macos
 build: &build
   stage: build
   <<: *linux
-  before_script:
-    - docker pull $TRAVIS_REPO_SLUG || true
   script:
     - .travis/build/build.sh
   before_deploy:
     - docker login --username "$REGISTRY_USER" --password "$REGISTRY_PASS"
   deploy:
     - provider: script
-      script: .travis/build/push.sh
+      script:
+        - .travis/build/push.sh
       skip_cleanup: true
       on:
         all_branches: true
 
 
 # Test the image for TYPO3 version ${TYPO3_VER} under Linux
+# and deploy the image if the tests passed
 test_linux: &test_linux
   stage: test
   <<: *linux
@@ -41,26 +41,35 @@ test_linux: &test_linux
       packages:
         - bindfs
   script:
-    - .travis/test/linux.sh
-
-
-# Test the t3 script with a Docker mockup under macOS
-test_macos: &test_macos
-  stage: test
-  <<: *macos
-  script:
-    - .travis/test/macos.sh
-
-
-# Deploy the image with all tags for TYPO3 version ${TYPO3_VER} and this branch
-deploy: &deploy
-  stage: deploy
-  <<: *linux
+    - .travis/test-deploy/linux.sh
+  after_failure:
+    - .travis/test-deploy/cleanup.sh
   before_deploy:
     - docker login --username "$REGISTRY_USER" --password "$REGISTRY_PASS"
   deploy:
     - provider: script
-      script: .travis/deploy/push.sh
+      script:
+        - .travis/test-deploy/push.sh
+      skip_cleanup: true
+      on:
+        all_branches: true
+
+
+# Test the t3 script with a Docker mockup under macOS
+# and deploy the image if the tests passed
+test_macos: &test_macos
+  stage: test
+  <<: *macos
+  script:
+    - .travis/test-deploy/macos.sh
+  after_failure:
+    - .travis/test-deploy/cleanup.sh
+  before_deploy:
+    - docker login --username "$REGISTRY_USER" --password "$REGISTRY_PASS"
+  deploy:
+    - provider: script
+      script:
+        - .travis/test-deploy/push.sh
       skip_cleanup: true
       on:
         all_branches: true
@@ -70,35 +79,28 @@ jobs:
   include:
     # Build images for various TYPO3 versions and deploy temporarily
     - <<: *build
-      env: TYPO3_VER=8.7
+      env: MAJOR_VER=8
+      if: branch != dev
 
     - <<: *build
-      env: TYPO3_VER=9.5
+      env: MAJOR_VER=9
 
     - <<: *build
-      env: TYPO3_VER=10.0
+      env: MAJOR_VER=10 MOST_RECENT=true
 
 
-    # Test images and scripts under Linux and macOS
+    # Test images and scripts under Linux and save the test sequence for macOS
     - <<: *test_linux
-      env: TYPO3_VER=8.7
-
-    - <<: *test_linux
-      env: TYPO3_VER=9.5
+      env: MAJOR_VER=8
+      if: branch != dev
 
     - <<: *test_linux
-      env: TYPO3_VER=10.0
+      env: MAJOR_VER=9
 
+    - <<: *test_linux
+      env: MAJOR_VER=10 MOST_RECENT=true
+
+
+    # TODO Test scripts under macOS using the saved test sequence and a Docker mockup
     # - <<: *test_macos
-    #   env: TYPO3_VER=10.0
-
-
-    # Deploy images with multiple tags each
-    - <<: *deploy
-      env: TYPO3_VER=8.7
-
-    - <<: *deploy
-      env: TYPO3_VER=9.5
-
-    - <<: *deploy
-      env: TYPO3_VER=10.0 MOST_RECENT=true
+    #   env: MAJOR_VER=10 MOST_RECENT=true

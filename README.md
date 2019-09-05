@@ -138,6 +138,12 @@ $ sudo chmod 755 /usr/local/bin/t3
 
 <<<<<<< HEAD
 =======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> master
+>>>>>>> dev
 
 >>>>>>> dev
 ### Quick start with `t3`
@@ -711,8 +717,21 @@ the volumes appear to be owned by and can be managed by the current user:
 $ t3 mount [option] WORK_DIR...
 ```
 
+<<<<<<< HEAD
 This command is equivalent to [`t3 run`](#t3-run) options `-v` or `-V`
 plus a working directory path except that the container does not need to be running
+=======
+<<<<<<< HEAD
+The directories must be given as paths (containing `/`). The basenames
+are used as volume names.
+
+This command is equivalent to [`t3 run`](#t3-run) options `-v` or `-V`
+with a working directory path except that the container does not need to be running
+=======
+This command is equivalent to [`t3 run`](#t3-run) options `-v` or `-V`
+plus a working directory path except that the container does not need to be running
+>>>>>>> master
+>>>>>>> dev
 (it does not even have to exist).
 
 This command will ask for `sudo` authorization unless there are cached credentials.
@@ -770,6 +789,14 @@ that environment variable is not set.
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option&nbsp;`--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
 | `--rm` | `stop` | Causes the TYPO3 container to be removed after they were stopped. |
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). The values of most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. `--env` options must be the _last options_ on the command line. |
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+| `--mount=WORKDIR`<br>`-m WORKDIR` | `mount` | Path of a working directory to bind-mount to a persistent volume. The basename of this path is taken as the name of the persistent volume. |
+| `--unmount=WORKDIR`<br>`-u WORKDIR` | `unmount`| Path of the working directory to unmount from a persistent volume. |
+=======
+>>>>>>> master
+>>>>>>> dev
 
 
 ### Host environment variables
@@ -841,7 +868,7 @@ the `t3 env` command.
 
 Scripts in this repository are licensed under the GPL&nbsp;3.0.
 
-This document is licensed under the Creative Commons license CC&nbsp;BY-SA&nbsp;3.0.
+This document is licensed under the Creative Commons license CC&nbsp;BY-SA&nbsp;4.0.
 
 As for any pre-built image usage, it is the image user's responsibility to ensure that any use of this image
 complies with any relevant licenses for all software contained within.
