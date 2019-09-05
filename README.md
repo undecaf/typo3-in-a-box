@@ -15,7 +15,7 @@ with up-to-date versions of [Apache](https://httpd.apache.org/),
 and has [SQLite](https://www.sqlite.org/), [MariaDB](https://mariadb.org/) and
 [PostgreSQL](https://www.postgresql.org/) built in.
 It is available at [Docker Hub](https://hub.docker.com/r/undecaf/typo3-in-a-box),
-uses about 450&nbsp;MB disk space and can run in
+uses less than 500&nbsp;MB disk space and can run in
 [Docker](https://www.docker.com/) and [Podman](https://podman.io/).
 No additional container is required, and only a browser is needed
 at the host to get going.
