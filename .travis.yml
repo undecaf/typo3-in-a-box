@@ -2,7 +2,7 @@
 # and deploy it if the tests passed
 build_test: &build_test
   stage: build_test
-  name: "Build, test Linux and deploy"
+  name: "Build image, test under Linux and deploy to Docker Hub"
   os: linux
   dist: bionic
   language: shell
