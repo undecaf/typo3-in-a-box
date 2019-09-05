@@ -8,17 +8,20 @@ t3_() {
 
 # Install Docker mockup
 mkdir -p /usr/local/bin
-cp .travis/test-deploy/docker-mock.sh /usr/local/bin/docker
+cp .travis/docker-mock.sh /usr/local/bin/docker
 chmod 755 /usr/local/bin/docker
 docker reset
 
 export T3_ENGINE=docker
 
 
-echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $TEST_IMG"
+# Set environment variables for the current job
+source .travis/setenv.inc
+
+echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG"
 
 # Test help and error handling
-#source .travis/test-deploy/messages.inc
+#source .travis/messages.inc
 
 # Test with Docker mockup
 #t3_ run -s
@@ -28,7 +31,7 @@ echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $TEST_IMG"
 # Read log
 HOSTNAME=$(hostname)
 
-cat .travis/test-deploy/linux.log | while read -r LOG_LINE; do
+cat .travis/linux.log | while read -r LOG_LINE; do
     case "$LOG_LINE" in
         '+ '*)
             # Command found, execute it and save output and exit status

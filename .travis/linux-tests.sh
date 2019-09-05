@@ -13,7 +13,7 @@ t3_() {
     shift
 
     local TAG
-    test "$CMD" = 'run' && TAG="-t $TEST_TAG"
+    test "$CMD" = 'run' && TAG="-t $PRIMARY_TAG"
 
     if [ -f "$LOGFILE" ]; then
         local SHOW
@@ -76,11 +76,8 @@ cleanup() {
 }
 
 
-# Set environment variables common to all build stages
+# Set environment variables for the current job
 source .travis/setenv.inc
-
-# Exit with error status if any verification fails
-set -e
 
 # t3 command lines (prepended by '+') and generated Docker commands are saved here
 #LOGFILE=$(mktemp)
@@ -98,17 +95,17 @@ INSTALL_URL=http://$HOST_IP:$HTTP_PORT/typo3/install.php
 INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
 
 
+echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG"
+
 # Will stop any running t3 configuration
 trap 'set +e; cleanup' EXIT
 
-echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $TEST_IMG"
-
-# Pull the image first so that Docker messages do not clobber the log
-docker pull $TEST_IMG
+# Exit with error status if any verification fails
+set -e
 
 
 # Test help and error handling
-source .travis/test-deploy/messages.inc
+source .travis/messages.inc
 
 
 # Test basic container and volume status

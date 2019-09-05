@@ -1,5 +1,5 @@
-# Sets environment variables for scripts in a job
-# -----------------------------------------------
+# Sets environment variables for the current job
+# ----------------------------------------------
 #
 # Usage: source $0
 #
@@ -19,7 +19,7 @@ TYPO3_ROOT=/var/www/localhost
 RE1='compose-files'$TYPO3_ROOT'/composer-('$MAJOR_VER'\.[^ \n]+'$TRAVIS_BRANCH')\.json'
 RE2='compose-files'$TYPO3_ROOT'/composer-('$MAJOR_VER'\.[^ \n]+)\.json'
 if [[ "$(ls compose-files$TYPO3_ROOT/*)" =~ $RE1 ]] || [[ "$(ls compose-files$TYPO3_ROOT/*)" =~ $RE2 ]]; then
-    TYPO3_VER=${BASH_REMATCH[1]}
+    export TYPO3_VER=${BASH_REMATCH[1]}
 else
     echo 'Cannot determine TYPO3_VER' >&2
     exit 1;
@@ -43,12 +43,11 @@ case "$TRAVIS_BRANCH" in
 esac
 
 # Most concise tag for this build
-PRIMARY_TAG=$TYPO3_TAG-$BRANCH
-DEPLOY_TAGS="$PRIMARY_TAG $DEPLOY_TAGS"
+export PRIMARY_TAG=$TYPO3_TAG-$BRANCH
+export DEPLOY_TAGS="$PRIMARY_TAG $DEPLOY_TAGS"
 
-# Temporary image-under-test
-TEST_TAG=$PRIMARY_TAG-test
-TEST_IMG=$TRAVIS_REPO_SLUG:$TEST_TAG
+# Image-under-test
+export PRIMARY_IMG=$TRAVIS_REPO_SLUG:$PRIMARY_TAG
 
 
 cat <<EOF
@@ -60,8 +59,7 @@ cat <<EOF
 | MAJOR_VER:     '$MAJOR_VER'
 | TYPO3_VER:     '$TYPO3_VER'
 |
-| TEST_TAG:      '$TEST_TAG'
-| TEST_IMG:      '$TEST_IMG'
+| PRIMARY_IMG:   '$PRIMARY_IMG'
 | PRIMARY_TAG:   '$PRIMARY_TAG'
 | DEPLOY_TAGS:   '$DEPLOY_TAGS'
 +-----------------------------------------------

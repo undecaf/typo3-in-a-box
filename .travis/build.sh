@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Set environment variables common to all build stages
+# Set environment variables for the current job
 source .travis/setenv.inc
 
-echo $'\n*************** '"Building $TEST_IMG"
+echo $'\n*************** '"Building $PRIMARY_IMG"
 
 set -x
 
@@ -12,5 +12,5 @@ docker build \
     --build-arg COMMIT=$TRAVIS_COMMIT \
     --build-arg TYPO3_VER=$TYPO3_VER \
     --build-arg IMAGE_VER=$IMAGE_VER \
-    --tag $TEST_IMG \
+    --tag $PRIMARY_IMG \
     .

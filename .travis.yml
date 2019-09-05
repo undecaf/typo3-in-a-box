@@ -1,55 +1,26 @@
-# Basic Linux configuration
-linux: &linux
+# Build and test the image for a TYPO3 version
+# and deploy it if the tests passed
+build_test: &build_test
+  stage: build_test
+  name: "Build, test Linux and deploy"
   os: linux
   dist: bionic
   language: shell
   services:
     - docker    
-
-
-# Basic macOS configuration
-macos: &macos
-  os: osx
-  osx_image: xcode11  # required for an up-to-date Homebrew
-  language: shell
-
-
-# Build the image for TYPO3 version ${TYPO3_VER} and deploy it temporarily
-build: &build
-  stage: build
-  <<: *linux
-  script:
-    - .travis/build/build.sh
-  before_deploy:
-    - docker login --username "$REGISTRY_USER" --password "$REGISTRY_PASS"
-  deploy:
-    - provider: script
-      script:
-        - .travis/build/push.sh
-      skip_cleanup: true
-      on:
-        all_branches: true
-
-
-# Test the image for TYPO3 version ${TYPO3_VER} under Linux
-# and deploy the image if the tests passed
-test_linux: &test_linux
-  stage: test
-  <<: *linux
   addons:
     apt:
       packages:
         - bindfs
   script:
-    - .travis/test-deploy/linux.sh
-  after_failure:
-    - .travis/test-deploy/cleanup.sh
+    - .travis/build.sh
+    - .travis/linux-tests.sh
   before_deploy:
     - docker login --username "$REGISTRY_USER" --password "$REGISTRY_PASS"
   deploy:
     - provider: script
       script:
-        - .travis/test-deploy/push.sh
+        - .travis/push.sh
       skip_cleanup: true
       on:
         all_branches: true
@@ -57,47 +28,35 @@ test_linux: &test_linux
 
 # Test the t3 script with a Docker mockup under macOS
 # and deploy the image if the tests passed
-test_macos: &test_macos
-  stage: test
-  <<: *macos
-  script:
-    - .travis/test-deploy/macos.sh
-  after_failure:
-    - .travis/test-deploy/cleanup.sh
-  before_deploy:
-    - docker login --username "$REGISTRY_USER" --password "$REGISTRY_PASS"
-  deploy:
-    - provider: script
-      script:
-        - .travis/test-deploy/push.sh
-      skip_cleanup: true
-      on:
-        all_branches: true
+# test_macos: &test_macos
+#   stage: test_macos
+#   name: "Test macOS"
+#     os: osx
+#     osx_image: xcode11  # required for an up-to-date Homebrew
+#     language: shell
+#   script:
+#     - .travis/macos-tests.sh
+#   deploy:
+#     - provider: script
+#       script:
+#         - echo '*** Nothing to do ***'
+#       skip_cleanup: true
+#       on:
+#         all_branches: true
 
 
 jobs:
   include:
-    # Build images for various TYPO3 versions and deploy temporarily
-    - <<: *build
+    # Build and test images for various TYPO3 versions
+    # and deploy each one if the tests passed
+    - <<: *build_test
       env: MAJOR_VER=8
-      if: branch != dev
+      if: branch != dev   # there is no dev repo for TYPO3 v8.7
 
-    - <<: *build
+    - <<: *build_test
       env: MAJOR_VER=9
 
-    - <<: *build
-      env: MAJOR_VER=10 MOST_RECENT=true
-
-
-    # Test images and scripts under Linux and save the test sequence for macOS
-    - <<: *test_linux
-      env: MAJOR_VER=8
-      if: branch != dev
-
-    - <<: *test_linux
-      env: MAJOR_VER=9
-
-    - <<: *test_linux
+    - <<: *build_test
       env: MAJOR_VER=10 MOST_RECENT=true
 
 
