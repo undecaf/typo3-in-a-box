@@ -137,6 +137,7 @@ docker volume prune --force >/dev/null
 
 # Test HTTP and HTTPS connectivity
 RETRIES=15
+POLLS=5
 
 echo $'\n*************** HTTP and HTTPS connectivity'
 t3_ run
@@ -154,7 +155,7 @@ t3_ run -p $TEST_PORT,
 
 echo "Getting $TEST_URL, $INSTALL_URL_SECURE not listening"
 verify_cmd_success $RETRIES curl -Is $TEST_URL | grep -q '200 OK'
-! curl -Isk $INSTALL_URL_SECURE
+! verify_cmd_success $POLLS curl -Isk $INSTALL_URL_SECURE
 
 cleanup
 
@@ -164,7 +165,7 @@ t3_ run -p ,$TEST_PORT
 
 echo "Getting $TEST_URL, $INSTALL_URL not listening"
 verify_cmd_success $RETRIES curl -Isk $TEST_URL | grep -q '200 OK'
-! curl -Is $INSTALL_URL
+! verify_cmd_success $POLLS curl -Is $INSTALL_URL
 
 cleanup
 
