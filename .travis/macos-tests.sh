@@ -62,4 +62,5 @@ cat .travis/linux.log | while read -r LOG_LINE; do
     esac
 done
 
-true
+# If we have arrived here then exit successfully
+exit 0

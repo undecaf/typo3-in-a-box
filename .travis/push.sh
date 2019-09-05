@@ -19,7 +19,8 @@ docker push $TRAVIS_REPO_SLUG
 test -n "$MOST_RECENT" && \
     curl -X POST https://hooks.microbadger.com/images/undecaf/typo3-in-a-box/$MICROBADGER_WEBHOOK
 
-exit
+# If we have arrived here then exit successfully
+exit 0
 
 # README.md exceeds the size limit of Dockerhub, it has to be excerpted manually
 echo $'\n*************** Pushing README.md'

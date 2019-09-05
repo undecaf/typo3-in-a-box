@@ -252,22 +252,19 @@ echo $'\n*************** Host environment settings'
 t3_ run --env MODE=dev
 
 echo "Verifying development mode"
-sleep 10
-curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
-curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
+verify_cmd_success $RETRIES curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
+verify_cmd_success $RETRIES curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
 
 t3_ env MODE=prod
 
 echo "Verifying production mode"
-sleep 10
-curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
-curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
+verify_cmd_success $RETRIES curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
+verify_cmd_success $RETRIES curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
 
 t3_ env php_${PHP_SETTING//\"/}
 
 echo "Verifying php.ini setting"
-sleep 10
-docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F "$PHP_SETTING"
+verify_cmd_success $RETRIES docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F "$PHP_SETTING"
 
 cleanup
 
@@ -286,7 +283,7 @@ openssl req -x509 -sha256 -days 1 \
 t3_ run -k "$CERTFILE.key,$CERTFILE.pem"
 
 echo "Waiting for certificate"
-sleep 10
+verify_cmd_success $RETRIES curl -Isk $INSTALL_URL_SECURE | grep -q '200 OK'
 echo | \
     openssl s_client -showcerts -servername -connect $HOST_IP:$HTTPS_PORT 2>/dev/null | \
     grep -q -F "subject=CN = $CN"
@@ -305,5 +302,5 @@ if [ -s "$LOGFILE" ]; then
     rm $LOGFILE
 fi
 
-# Finish successfully
-true
+# If we have arrived here then exit successfully
+exit 0
