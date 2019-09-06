@@ -38,36 +38,34 @@ common_name() {
 # Use the same environment as during build
 . /etc/environment
 
-# Show version info, trying to get the actual TYPO3 version from composer.lock
-RE='^([0-9]+\.){2,}[0-9]+'
-CURRENT_TYPO3_VER=$(jq --raw-output '[.packages|.[]|{(.name): .version}]|add|."typo3/cms-core"' $TYPO3_ROOT/composer.lock 2>/dev/null) \
-    && [[ "$CURRENT_TYPO3_VER" =~ $RE ]] && TYPO3_VER=$CURRENT_TYPO3_VER
-
-cat <<EOF
-
-*** TYPO3 ${TYPO3_VER}, container image tags: $DEPLOY_TAGS (built on $(date --reference ${TYPO3_ROOT} --rfc-2822)) ***
-
-Alpine Linux $(cat /etc/alpine-release)
-$(httpd -v)
-$(php --version)
-
-EOF
-
 # Things to do only on startup (but not on subsequent t3 commands)
 if [ $$ -eq 1 ]; then
+    # Start the syslog daemon, log to stdout
+    syslogd -O -
+
+    # Show version info, trying to get the actual TYPO3 version from composer.lock
+    RE='^([0-9]+\.){2,}[0-9]+'
+    CURRENT_TYPO3_VER=$(jq --raw-output '[.packages|.[]|{(.name): .version}]|add|."typo3/cms-core"' $TYPO3_ROOT/composer.lock 2>/dev/null) \
+        && [[ "$CURRENT_TYPO3_VER" =~ $RE ]] && TYPO3_VER=$CURRENT_TYPO3_VER
+
+    logger "*** TYPO3 ${TYPO3_VER}, container image tags: $DEPLOY_TAGS (built on $(date --reference ${TYPO3_ROOT} --rfc-2822)) ***"
+    logger "Alpine Linux $(cat /etc/alpine-release)"
+    logger "$(httpd -v)"
+    logger "$(php --version)"
+
     # Try to determine the local timezone if none was specified
     [ -z "$TIMEZONE" ] && TIMEZONE="$(curl -s https://ipapi.co/timezone)"
 
     # Use timezone if specified and supported
     if [ -n "$TIMEZONE" -a -f "/usr/share/zoneinfo/${TIMEZONE}" ]; then
         cp /usr/share/zoneinfo/${TIMEZONE} /etc/localtime
-        echo "Timezone: $TIMEZONE"
+        logger "Timezone: $TIMEZONE"
     else
-        echo "Timezone: UTC"
+        logger "Timezone: UTC"
     fi
 
     # Show locale
-    echo "Locale: $LANG"
+    logger "Locale: $LANG"
 
     # Disable the default SSL configuration in favor of the TYPO3 SSL configuration
     mv /etc/apache2/conf.d/ssl.conf /etc/apache2/conf.d/ssl.conf.disabled
@@ -82,14 +80,14 @@ if [ $$ -eq 1 ]; then
         chmod 644 $APACHE_CUSTOM_CERT.pem
         ln -sf $APACHE_CUSTOM_CERT.key $APACHE_CERT.key
         ln -sf $APACHE_CUSTOM_CERT.pem $APACHE_CERT.pem
-        echo "Using custom SSL certificate, CN=$(common_name $APACHE_CUSTOM_CERT.pem)"
+        logger "Using custom SSL certificate, CN=$(common_name $APACHE_CUSTOM_CERT.pem)"
 
     else
         # Create a self-signed certificate for $HOSTNAME unless one already exists
         while true; do
             if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem ]; then
                 # Certificate found, does it match the current $HOSTNAME?
-                test "$(common_name $APACHE_CERT.pem)" = "$HOSTNAME" && echo "Using self-signed SSL certificate, CN=$HOSTNAME" && break
+                test "$(common_name $APACHE_CERT.pem)" = "$HOSTNAME" && logger "Using self-signed SSL certificate, CN=$HOSTNAME" && break
             fi
 
             # No certificate found that matches the current $HOSTNAME -- create a new one
@@ -101,46 +99,46 @@ if [ $$ -eq 1 ]; then
                 &>/dev/null
 
             chown $APACHE_USER: $APACHE_CERT.{key,pem}
-            echo "Created self-signed SSL certificate, CN=$HOSTNAME"
+            logger "Created self-signed SSL certificate, CN=$HOSTNAME"
             break
         done
     fi
 
     # Deactivate Composer Mode if so requested
     if [ -n "$T3_COMPOSER_MODE" ]; then
-        echo "Use Composer to add/remove TYPO3 extensions (Composer Mode)"
+        logger "Configured Composer to add/remove TYPO3 extensions (Composer Mode)"
 
     else
         sed -E \
             -e "s/define *\( *'TYPO3_COMPOSER_MODE' *, *TRUE *\) *;/define('TYPO3_COMPOSER_MODE', FALSE);/" \
             -i $TYPO3_ROOT/vendor/typo3/autoload-include.php
         rm -rf $TYPO3_ROOT/composer.* $APACHE_HOME/.composer
-        echo "Use the TYPO3 Extension Manager to add/remove extensions"
+        logger "Configured the TYPO3 Extension Manager to add/remove extensions"
     fi
 fi
 
 # Set up developer/XDebug/production mode
 case "${MODE,,}" in
 	dev)
-		echo "Apache/TYPO3 in developer mode"
+		logger "Apache/TYPO3 in developer mode"
 		MODE=dev
         XDEBUG=
 		;;
 
     xdebug)
-		echo "Apache/TYPO3 in developer mode with XDebug support"
+		logger "Apache/TYPO3 in developer mode with XDebug support"
 		MODE=dev
         XDEBUG=y
 		;;
 
 	prod|'')
-		echo "Apache/TYPO3 in production mode"
+		logger "Apache/TYPO3 in production mode"
 		MODE=prod
         XDEBUG=
 		;;
 
 	*)
-		echo "Unknown mode: '$MODE'. Defaulting to production mode"
+		logger "Unknown mode: '$MODE'. Defaulting to production mode"
 		MODE=prod
 		;;
 esac
@@ -156,7 +154,7 @@ export \
     > /etc/php7/conf.d/zz_99_overrides.ini
 
 if [ -s /etc/php7/conf.d/zz_99_overrides.ini ]; then
-	echo "Overriding these php.ini settings:"
+	logger "Overriding these php.ini settings:"
 	cat /etc/php7/conf.d/zz_99_overrides.ini | sed 's/\(.*\)/  \1/'
 fi
 
@@ -168,13 +166,13 @@ if [ -n "$XDEBUG" ]; then
     export REMOTE_CONNECT_BACK=$?
 
 	cat /etc/php7/xdebug.ini.template | envsubst > /etc/php7/conf.d/xdebug.ini
-	echo "XDebug enabled:"
+	logger "XDebug enabled:"
     grep -E '^xdebug\.remote_(host|connect_back)=' /etc/php7/conf.d/xdebug.ini \
         | sed 's/\(.*\)/  \1/'
 
 else
 	truncate -s 0 /etc/php7/conf.d/xdebug.ini
-	echo "XDebug disabled"
+	logger "XDebug disabled"
 fi
 
 # root created missing paths for volumes also in $APACHE_HOME, therefore:
@@ -187,10 +185,10 @@ if [ ! -z ${COMPOSER_EXCLUDE+x} ]; then
 fi
 
 if [ -f $COMPOSER_EXCLUDE_FILE ] && [ -n "$(cat $COMPOSER_EXCLUDE_FILE)" ]; then
-    echo "Excluded from Composer:"
+    logger "Excluded from Composer:"
     while IFS=':' read -ra DIRS; do
         for D in "${DIRS[@]}"; do
-            echo "  $D"
+            logger "  $D"
         done
     done <<< "$(cat $COMPOSER_EXCLUDE_FILE)"
 fi
@@ -198,7 +196,7 @@ fi
 # Start SQLite/MariaDB/PostgreSQL if so requested
 if [ $$ -eq 1 ]; then
     # Show this before the database log appears
-    echo $'Ctrl-C to stop the container\n'
+    logger 'Ctrl-C to stop the container'
     trap "echo \$'\nContainer stopped'" EXIT
 
     # Accept abbreviated database types
@@ -206,7 +204,7 @@ if [ $$ -eq 1 ]; then
     [[ -n $T3_DB_TYPE && mariadb == ${T3_DB_TYPE,,}* ]] && start_mysql && DB_SUCCESS=1
     [[ -n $T3_DB_TYPE && postgresql == ${T3_DB_TYPE,,}* ]] && start_pg && DB_SUCCESS=1
     [[ -z $T3_DB_TYPE || sqlite == ${T3_DB_TYPE,,}* ]] && start_sqlite && DB_SUCCESS=1
-    [[ -n $DB_SUCCESS ]] || { echo "Unknown database type or startup failure: '$T3_DB_TYPE'"; exit 1; }
+    [[ -n $DB_SUCCESS ]] || { logger "Unknown database type or startup failure: '$T3_DB_TYPE'"; exit 1; }
 fi
 
 # Execute Dockerfile CMD or command line, passing host signals to the exec'd process
