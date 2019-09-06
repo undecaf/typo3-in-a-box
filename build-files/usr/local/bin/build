@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Show what is being built
-echo $'\n*************** '"Building TYPO3 $TYPO3_VER, container image tags: ${DEPLOY_TAGS// /, } commit: $COMMIT"
+echo $'\n*************** '"Building TYPO3 $TYPO3_VER, container image tag(s): ${DEPLOY_TAGS// /, }, commit: $COMMIT"
 
 # Prepend the build arguments and constants to /etc/environment
 E=$(mktemp)
