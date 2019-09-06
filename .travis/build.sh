@@ -3,7 +3,7 @@
 # Set environment variables for the current job
 source .travis/setenv.inc
 
-echo $'\n*************** '"Building image for tag(s) $DEPLOY_TAGS"
+echo $'\n*************** '"Building image for tags: $DEPLOY_TAGS"
 
 set -x
 

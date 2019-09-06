@@ -44,8 +44,7 @@ esac
 
 # Most concise tag for this build
 export PRIMARY_TAG=$TYPO3_TAG-$BRANCH
-export DEPLOY_TAGS="$PRIMARY_TAG $DEPLOY_TAGS"
-export DEPLOY_TAGS="${DEPLOY_TAGS%% }"
+export DEPLOY_TAGS=$(echo "$PRIMARY_TAG $DEPLOY_TAGS" | awk '{ $1 = $1; gsub(/ /, ", "); print; }')
 
 # Image-under-test
 export PRIMARY_IMG=$TRAVIS_REPO_SLUG:$PRIMARY_TAG
