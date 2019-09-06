@@ -131,6 +131,11 @@ verify_volumes_exist typo3-root typo3-data
 
 docker volume prune --force >/dev/null
 
+t3_ run --label foo=bar
+test "$(docker inspect --format '{{.Config.Labels.foo}}' typo3)" = 'bar'
+
+cleanup
+
 
 # Test HTTP and HTTPS connectivity
 RETRIES=15

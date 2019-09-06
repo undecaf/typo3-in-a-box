@@ -53,7 +53,7 @@ $(php --version)
 
 EOF
 
-# Things to do only on startup (but not on 't3 env')
+# Things to do only on startup (but not on subsequent t3 commands)
 if [ $$ -eq 1 ]; then
     # Try to determine the local timezone if none was specified
     [ -z "$TIMEZONE" ] && TIMEZONE="$(curl -s https://ipapi.co/timezone)"
