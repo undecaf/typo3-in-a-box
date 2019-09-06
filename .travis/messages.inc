@@ -38,6 +38,7 @@ verify_msg 'Composer command' ./t3 c -h
 echo $'\n*************** Error handling'
 verify_error 'Missing command' ./t3
 verify_error 'Unknown command' ./t3 nosuchcommand
+verify_error 'Unknown command' ./t3 s
 verify_error 'No option was found' ./t3 env
 verify_error 'Container engine' ./t3 run -e nosuchengine
 verify_error 'Invalid option' ./t3 run -k missingcertfile
