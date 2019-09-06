@@ -228,16 +228,19 @@ canonicalize() {
 #       autocompleted strings
 #
 autocomplete() {
+    local MATCHES=0
+    local COMPLETED
     local ARG="$1"
     shift
     for AC in "$@"; do
         if [ "${AC##$ARG}" != "$AC" ]; then
-            echo "$AC"
-            return
+            COMPLETED=$AC
+            MATCHES=$((MATCHES+1))
         fi
     done
 
-    echo "$ARG"
+    # Consider autocompleted only if the abbreviation was unambiguous
+    test $MATCHES -eq 1 && echo "$COMPLETED" || echo "$ARG"
 }
 
 
@@ -408,7 +411,7 @@ unmount_workdir() {
 test_shell 'zsh' && setopt SH_WORD_SPLIT
 
 # Autocomplete command
-CMD=$(autocomplete "$1" run stop env composer mount unmount)
+CMD=$(autocomplete "$1" run stop env composer shell mount unmount)
 
 shift
 OPT_COUNT=$#
@@ -763,7 +766,7 @@ Available commands:
   --help, -h    Displays this text and exits. Displays command-specific help if 
                 combined with a command.
 
-Each command can be abbreviated to an unambiguous verb, e.g. '$($BASENAME $0) run' -> '$($BASENAME $0) r'
+Each command can be abbreviated to an unambiguous verb, e.g. '$($BASENAME $0) stop' -> '$($BASENAME $0) st'
  
 EOT
         )
