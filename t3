@@ -276,6 +276,25 @@ run_engine() {
 
 # --------------------------------------------------------------------------
 
+# Execs the selected container engine with the given arguments. Echoes the
+# run command to the console if T3_SHOW is non-empty.
+#
+# Arguments:
+#   $1, $2, ...
+#       arguments to be passed to the container engine
+#
+# Environment:
+#   $T3_ENGINE
+#   $T3_SHOW
+#
+exec_engine() {
+    [ -n "$T3_SHOW" ] && echo "$T3_ENGINE $@"
+    exec $T3_ENGINE "$@"
+}
+
+
+# --------------------------------------------------------------------------
+
 # Bind-mounts a working directory to a container volume so that files and
 # directories of that volume appear to be owned by the current user.
 # Returns failure if no suitable path was given.
@@ -612,6 +631,44 @@ EOT
         ;;
 
 
+    # Open an interactive Bash shell in a running TYPO3 container
+    shell)
+        USAGE=$($CAT <<EOT
+
+Usage:
+  $($BASENAME $0) shell [option]... [shell option]...
+  $($BASENAME $0) shell [-h|--help]
+
+Opens an interactive Bash shell in a running TYPO3 container.
+
+Options (default values can be overridden by environment variables):
+
+  --engine=ENGINE, -e ENGINE
+      Container engine being used: 'docker', 'podman' or an absolute path
+      to the engine executable.
+      Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
+
+  --name=NAME, -n NAME
+      Same container name as specified for 't3 run'.
+      Default: \$T3_NAME, or 'typo3'.
+ 
+  --show, -s
+      If this option is present then the generated Docker/Podman command will be
+      shown on the console.
+      Default: \$T3_SHOW, or not set.
+
+  --help, -h
+      Displays this text and exits.
+ 
+EOT
+        )
+        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-s|--show'
+
+        # No additional options required
+        OPT_COUNT=1
+        ;;
+
+
     # Bind-mount a directory to a container volume
     mount)
         USAGE=$($CAT <<EOT
@@ -695,6 +752,8 @@ Available commands:
 
   composer      When in Composer Mode, executes a Composer command inside a 
                 running TYPO3 container.
+
+  shell         Opens an interactive Bash shell in a running TYPO3 container.
 
   mount         Mounts a working directory to a container volume so that the
                 volume appears to be owned and can be managed by the current user.
@@ -1074,6 +1133,11 @@ case "$CMD" in
 
     composer)
         run_engine exec "$T3_NAME" composer "$@"
+        ;;
+
+
+    shell)
+        exec_engine exec -it "$T3_NAME" /bin/bash "$@"
         ;;
 
 
