@@ -1,14 +1,14 @@
 #!/bin/sh
 
 # Show what is being built
-echo $'\n*************** '"Building TYPO3 $TYPO3_VER, container image: $IMAGE_VER, commit: $COMMIT"
+echo $'\n*************** '"Building TYPO3 $TYPO3_VER, container image tags: ${DEPLOY_TAGS// /, } commit: $COMMIT"
 
 # Prepend the build arguments and constants to /etc/environment
 E=$(mktemp)
 cat - /etc/environment >$E <<EOF
 # Build arguments
 export TYPO3_VER=$TYPO3_VER
-export IMAGE_VER=$IMAGE_VER
+export DEPLOY_TAGS='$DEPLOY_TAGS'
 export BUILD_DATE='${BUILD_DATE:-$(date --utc +'%Y-%m-%dT%H:%M:%SZ')}'
 
 # Build constants
