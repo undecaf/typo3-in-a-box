@@ -30,7 +30,7 @@ You can use your favorite IDE at the host to
 [develop for TYPO3](#developing-for-typo3) in the container without having to
 fiddle with host permissions.
 
-[Secure connections](#https-connection),
+[Secure connections](#https-connections),
 [Composer Mode](https://getcomposer.org/#Composer_Mode),
 [remote debugging with XDebug](#debugging-with-xdebug) and
 [database access](#accessing-the-typo3-database) are supported.
@@ -70,7 +70,7 @@ Your personal extension directories can be
     -   [Options](#options)
     -   [Host environment variables](#host-environment-variables)
     -   [Container environment variables](#container-environment-variables)
--   [Credits to ...](#credits-to--)
+-   [Credits to ...](#credits-to-)
 -   [Licenses](#licenses)
 
 
