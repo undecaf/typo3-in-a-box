@@ -16,13 +16,13 @@ t3_() {
     test "$CMD" = 'run' && TAG="-t $PRIMARY_TAG"
 
     if [ -f "$LOGFILE" ]; then
-        local SHOW
+        local DEBUG
         local RE
         RE='run|stop|env|composer'
-        [[ "$CMD" =~ $RE ]] && SHOW=-s
+        [[ "$CMD" =~ $RE ]] && DEBUG=-d
 
-        echo "+ ./t3 $CMD $TAG $SHOW $@" | tee -a $LOGFILE
-        ./t3 $CMD $TAG $SHOW "$@" | \
+        echo "+ ./t3 $CMD $TAG $DEBUG $@" | tee -a $LOGFILE
+        ./t3 $CMD $TAG $DEBUG "$@" | \
             tee -p | \
             sed -e 's/typo3\.'$HOSTNAME'/typo3.travis-job/' >>$LOGFILE
         echo "= ${PIPESTATUS[0]}" >>$LOGFILE
@@ -175,7 +175,7 @@ cleanup
 # Test database connectivity
 for DB_TYPE in mariadb postgresql; do
     echo $'\n*************** '"$DB_TYPE connectivity"
-    t3_ run -d $DB_TYPE -P $HOST_IP:$DB_PORT
+    t3_ run -D $DB_TYPE -P $HOST_IP:$DB_PORT
 
     echo "Pinging $DB_TYPE"
     case $DB_TYPE in

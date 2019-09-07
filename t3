@@ -260,8 +260,8 @@ test_container() {
 
 # --------------------------------------------------------------------------
 
-# Runs the selected container engine with the given arguments. Echoes the
-# run command to the console if T3_SHOW is non-empty.
+# Runs/execs the selected container engine with the given arguments.
+# Echoes the run command to the console if T3_DEBUG is non-empty.
 #
 # Arguments:
 #   $1, $2, ...
@@ -269,29 +269,20 @@ test_container() {
 #
 # Environment:
 #   $T3_ENGINE
-#   $T3_SHOW
+#   $T3_DEBUG
 #
 run_engine() {
-    [ -n "$T3_SHOW" ] && echo "$T3_ENGINE $@"
+    [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
+    $T3_ENGINE "$@"
+}
+
+run_engine_quietly() {
+    [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
     $T3_ENGINE "$@" >/dev/null
 }
 
-
-# --------------------------------------------------------------------------
-
-# Execs the selected container engine with the given arguments. Echoes the
-# run command to the console if T3_SHOW is non-empty.
-#
-# Arguments:
-#   $1, $2, ...
-#       arguments to be passed to the container engine
-#
-# Environment:
-#   $T3_ENGINE
-#   $T3_SHOW
-#
 exec_engine() {
-    [ -n "$T3_SHOW" ] && echo "$T3_ENGINE $@"
+    [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
     exec $T3_ENGINE "$@"
 }
 
@@ -479,7 +470,7 @@ Options (default values can be overridden by environment variables):
       for HTTPS connections.
       Default: \$T3_CERTFILES, or not set.
 
-  --db-type=TYPE, -d TYPE
+  --db-type=TYPE, -D TYPE
       Type of database to use: 'sqlite' or empty for SQLite, 'mariadb' for 
       MariaDB or 'postgresql' for PostgreSQL (can be abbreviated).
       Default: \$T3_DB_TYPE, or 'sqlite'.
@@ -494,11 +485,11 @@ Options (default values can be overridden by environment variables):
       Defaults: \$T3_DB_PORT, or '127.0.0.1:3306' for MariaDB and '127.0.0.1:5432'
       for PostgreSQL.
  
-  --show, -s
-      If this option is present then the generated Docker/Podman command will be
+  --debug, -d
+      If this option is present then generated Docker/Podman commands will be
       shown on the console.
       Warning: your database credentials will be visible on the console.
-      Default: \$T3_SHOW, or not set.
+      Default: \$T3_DEBUG, or not set.
 
   --env NAME=VALUE
       Sets the (initial) value of a container environment variable. The values of
@@ -514,7 +505,7 @@ described above. If necessary, '--' can be used to separate them from the $($BAS
  
 EOT
         )
-        ALLOWED_OPTS='-d|--db-type(=.*)?|-e|--engine(=.+)?|-H|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-V|--db-data(=.+)?|-p|--typo3-ports(=.+)?|-k|--certfiles(=.+)?|-P|--db-port(=.+)?|-s|--show'
+        ALLOWED_OPTS='-e|--engine(=.+)?|-H|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-p|--typo3-ports(=.+)?|-k|--certfiles(=.+)?|-D|--db-type(=.*)?|-V|--db-data(=.+)?|-P|--db-port(=.+)?|-d|--debug'
 
         # No additional options required
         OPT_COUNT=1
@@ -543,10 +534,10 @@ Options (default values can be overridden by environment variables):
       Same container name as specified for 't3 run'.
       Default: \$T3_NAME, or 'typo3'.
  
-  --show, -s
-      If this option is present then the generated Docker/Podman command will be
+  --debug, -d
+      If this option is present then generated Docker/Podman commands will be
       shown on the console.
-      Default: \$T3_SHOW, or not set.
+      Default: \$T3_DEBUG, or not set.
  
   --rm
       Causes the TYPO3 container to be removed after is was stopped.
@@ -557,7 +548,7 @@ Options (default values can be overridden by environment variables):
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-s|--show|--rm'
+        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-d|--debug|--rm'
 
         # No additional options required
         OPT_COUNT=1
@@ -585,17 +576,17 @@ Options (default values can be overridden by environment variables):
       Same container name as specified for 't3 run'.
       Default: \$T3_NAME, or 'typo3'.
  
-  --show, -s
-      If this option is present then the generated Docker/Podman command will be
+  --debug, -d
+      If this option is present then generated Docker/Podman commands will be
       shown on the console.
-      Default: \$T3_SHOW, or not set.
+      Default: \$T3_DEBUG, or not set.
 
   --help, -h
       Displays this text and exits.
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-s|--show'
+        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-d|--debug'
         ;;
 
 
@@ -620,17 +611,17 @@ Options (default values can be overridden by environment variables):
       Same container name as specified for 't3 run'.
       Default: \$T3_NAME, or 'typo3'.
  
-  --show, -s
-      If this option is present then the generated Docker/Podman command will be
+  --debug, -d
+      If this option is present then generated Docker/Podman commands will be
       shown on the console.
-      Default: \$T3_SHOW, or not set.
+      Default: \$T3_DEBUG, or not set.
 
   --help, -h
       Displays this text and exits.
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-s|--show'
+        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-d|--debug'
         ;;
 
 
@@ -655,17 +646,17 @@ Options (default values can be overridden by environment variables):
       Same container name as specified for 't3 run'.
       Default: \$T3_NAME, or 'typo3'.
  
-  --show, -s
-      If this option is present then the generated Docker/Podman command will be
+  --debug, -d
+      If this option is present then generated Docker/Podman commands will be
       shown on the console.
-      Default: \$T3_SHOW, or not set.
+      Default: \$T3_DEBUG, or not set.
 
   --help, -h
       Displays this text and exits.
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-s|--show'
+        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-d|--debug'
 
         # No additional options required
         OPT_COUNT=1
@@ -798,7 +789,7 @@ while [[ $# -gt 0 ]]; do
 
     case "$1" in
         # Database type
-        -d|--db-type)
+        -D|--db-type)
             shift
             ;&
 
@@ -843,9 +834,9 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
 
-        # Show container engine commands
-        -s|--show)
-            T3_SHOW=on
+        # Debug container engine commands
+        -d|--debug)
+            T3_DEBUG=on
             shift
             ;;
 
@@ -1068,7 +1059,7 @@ case "$CMD" in
         # Create the TYPO3 container
         set -e
         echo '*** '"Creating container '$T3_NAME'"' ***'
-        run_engine create \
+        run_engine_quietly create \
             --name "$T3_NAME" \
             --hostname "$T3_HOSTNAME" \
             --ulimit $FILE_LIMIT \
@@ -1083,8 +1074,8 @@ case "$CMD" in
 
         # Copy certificate files, if any
         if [ -n "$T3_CERTFILES" ]; then
-            run_engine cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
-            run_engine cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
+            run_engine_quietly cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
+            run_engine_quietly cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
         fi
         echo '*** '"Container '$T3_NAME' created"' ***'
 
@@ -1116,12 +1107,12 @@ case "$CMD" in
 
         # Stop and eventually remove the container
         #stop_container "$T3_NAME"
-        if run_engine kill --signal SIGINT "$T3_NAME" && run_engine stop --time 5 "$T3_NAME"; then
+        if run_engine_quietly kill --signal SIGINT "$T3_NAME" && run_engine_quietly stop --time 5 "$T3_NAME"; then
             echo '*** '"Container '$T3_NAME' stopped"' ***'
         fi
 
         # Remove the container(s) if so requested
-        [ -n "$REMOVE_OPTION" ] && run_engine container rm "$T3_NAME"
+        [ -n "$REMOVE_OPTION" ] && run_engine_quietly container rm "$T3_NAME"
 
         # Wait until the container was removed eventually
         $SLEEP 1
