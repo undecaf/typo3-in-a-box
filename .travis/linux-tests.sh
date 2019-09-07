@@ -174,16 +174,12 @@ cleanup
 
 
 # Test database connectivity
-for DB_TYPE in sqlite mariadb postgresql; do
+for DB_TYPE in mariadb postgresql; do
     echo $'\n*************** '"$DB_TYPE connectivity"
     t3_ run -D $DB_TYPE -P $HOST_IP:$DB_PORT
 
     echo "Pinging $DB_TYPE"
     case $DB_TYPE in
-        sqlite)
-            verify_logs 'SQLite ready'
-            ;;
-
         mariadb)
             verify_cmd_success $RETRIES mysql -h $HOST_IP -P $DB_PORT -D t3 -u t3 --password=t3 -e 'quit' t3
             verify_logs 'mysqld: ready for connections'
