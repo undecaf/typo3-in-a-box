@@ -51,16 +51,33 @@ verify_volumes_exist() {
     docker volume inspect "$@" &>/dev/null
 }
 
-# Verify that the specified command ($2, $3, ...) succeeds after some timeout ($1 in s)
+# Returns success if the specified command ($2, $3, ...) succeeds 
+# after some timeout ($1 in s).
 verify_cmd_success() {
-    local T
-    T=$1
+    local STEP=2
+    local T=$1
     shift
 
-    local STEP
-    STEP=2
+    echo "verify_cmd_success $@"
 
     while ! "$@"; do
+        sleep $STEP
+        T=$((T-STEP))
+        test $T -gt 0 || return 1
+    done
+
+    return 0
+}
+
+# Returns success if a message ($2) is found after some timeout ($1 in s)
+# in the Docker logs for container $3 (defaults to 'typo3').
+verify_logs() {
+    echo "verify_logs '$2'"
+
+    local STEP=2
+    local T=$1
+
+    while ! docker logs "${3:-typo3}" 2>&1 | grep -q -F "$2"; do
         sleep $STEP
         T=$((T-STEP))
         test $T -gt 0 || return 1
@@ -94,6 +111,10 @@ DB_PORT=3000
 INSTALL_URL=http://$HOST_IP:$HTTP_PORT/typo3/install.php
 INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
 
+# Timeouts in s
+SUCCESS_TIMEOUT=15
+FAILURE_TIMEOUT=5
+
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG"
 
@@ -113,7 +134,7 @@ echo $'\n*************** Basic container and volume status'
 t3_ run
 verify_containers_running typo3
 verify_volumes_exist typo3-root typo3-data
-verify_logs "TYPO3 $TYPO3_VER"
+verify_logs $SUCCESS_TIMEOUT "TYPO3 $TYPO3_VER"
 
 verify_error 'Cannot run container' ./t3 run
 
@@ -139,15 +160,12 @@ cleanup
 
 
 # Test HTTP and HTTPS connectivity
-RETRIES=15
-POLLS=5
-
 echo $'\n*************** HTTP and HTTPS connectivity'
 t3_ run
 
 echo "Getting $INSTALL_URL and $INSTALL_URL_SECURE"
-verify_cmd_success $RETRIES curl -Is $INSTALL_URL | grep -q '200 OK'
-verify_cmd_success $RETRIES curl -Isk $INSTALL_URL_SECURE | grep -q '200 OK'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '200 OK'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Isk $INSTALL_URL_SECURE | grep -q '200 OK'
 
 cleanup
 
@@ -157,8 +175,8 @@ TEST_URL=${INSTALL_URL/$HTTP_PORT/$TEST_PORT}
 t3_ run -p $TEST_PORT,
 
 echo "Getting $TEST_URL, $INSTALL_URL_SECURE not listening"
-verify_cmd_success $RETRIES curl -Is $TEST_URL | grep -q '200 OK'
-! verify_cmd_success $POLLS curl -Isk $INSTALL_URL_SECURE
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $TEST_URL | grep -q '200 OK'
+! verify_cmd_success $FAILURE_TIMEOUT curl -Isk $INSTALL_URL_SECURE
 
 cleanup
 
@@ -167,8 +185,8 @@ TEST_URL=${TEST_URL/http:/https:}
 t3_ run -p ,$TEST_PORT
 
 echo "Getting $TEST_URL, $INSTALL_URL not listening"
-verify_cmd_success $RETRIES curl -Isk $TEST_URL | grep -q '200 OK'
-! verify_cmd_success $POLLS curl -Is $INSTALL_URL
+verify_cmd_success $SUCCESS_TIMEOUT curl -Isk $TEST_URL | grep -q '200 OK'
+! verify_cmd_success $FAILURE_TIMEOUT curl -Is $INSTALL_URL
 
 cleanup
 
@@ -181,15 +199,13 @@ for DB_TYPE in mariadb postgresql; do
     echo "Pinging $DB_TYPE"
     case $DB_TYPE in
         mariadb)
-            verify_cmd_success $RETRIES mysql -h $HOST_IP -P $DB_PORT -D t3 -u t3 --password=t3 -e 'quit' t3
-            sleep 5
-            verify_logs 'mysqld: ready for connections'
+            verify_cmd_success $SUCCESS_TIMEOUT mysql -h $HOST_IP -P $DB_PORT -D t3 -u t3 --password=t3 -e 'quit' t3
+            verify_logs $SUCCESS_TIMEOUT 'mysqld: ready for connections'
             ;;
 
         postgresql)
-            verify_cmd_success $RETRIES pg_isready -h $HOST_IP -p $DB_PORT -d t3 -U t3 -q
-            sleep 5
-            verify_logs 'ready to accept connections'
+            verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d t3 -U t3 -q
+            verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
             ;;
     esac
 
@@ -252,7 +268,7 @@ cleanup
 
 t3_ run -c
 t3_ composer show
-verify_logs 'typo3/cms-core'
+verify_logs $SUCCESS_TIMEOUT 'typo3/cms-core'
 cleanup
 
 
@@ -263,19 +279,19 @@ echo $'\n*************** Host environment settings'
 t3_ run --env MODE=dev
 
 echo "Verifying development mode"
-verify_cmd_success $RETRIES curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
-verify_cmd_success $RETRIES curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
 
 t3_ env MODE=prod
 
 echo "Verifying production mode"
-verify_cmd_success $RETRIES curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
-verify_cmd_success $RETRIES curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
 
 t3_ env php_${PHP_SETTING//\"/}
 
 echo "Verifying php.ini setting"
-verify_cmd_success $RETRIES docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F "$PHP_SETTING"
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F "$PHP_SETTING"
 
 cleanup
 
@@ -294,7 +310,7 @@ openssl req -x509 -sha256 -days 1 \
 t3_ run -k "$CERTFILE.key,$CERTFILE.pem"
 
 echo "Waiting for certificate"
-verify_cmd_success $RETRIES curl -Isk $INSTALL_URL_SECURE | grep -q '200 OK'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Isk $INSTALL_URL_SECURE | grep -q '200 OK'
 echo | \
     openssl s_client -showcerts -servername -connect $HOST_IP:$HTTPS_PORT 2>/dev/null | \
     grep -q -F "subject=CN = $CN"
