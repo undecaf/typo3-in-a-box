@@ -268,7 +268,6 @@ cleanup
 
 t3_ run -c
 t3_ composer show
-verify_logs $SUCCESS_TIMEOUT 'typo3/cms-core'
 cleanup
 
 
