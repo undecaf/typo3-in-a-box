@@ -14,16 +14,16 @@ chown -R ${MYSQL_USER}: $MYSQL_DATA $MYSQL_RUN
 
 # Initialize MariaDB if necessary
 if [ ! -d $MYSQL_DATA/mysql ]; then
-    echo "Initializing MariaDB ..."
+    echo 'Initializing MariaDB ...'
 
     # Initialize MariaDB
-    mysql_install_db --user=mysql --ldata=$MYSQL_DATA >/dev/null
+    mysql_install_db --user=mysql --ldata=$MYSQL_DATA
 
     # Create the TYPO3 database and the users
     SQLFILE=$(mktemp -u)
     trap "rm -f $SQLFILE" EXIT
 
-    cat << EOF > $SQLFILE
+    cat <<EOF >$SQLFILE
 USE mysql;
 FLUSH PRIVILEGES;
 GRANT ALL ON *.* TO 'root'@'%' identified by '$T3_DB_ROOT_PW' WITH GRANT OPTION ;
@@ -40,5 +40,5 @@ EOF
 fi
 
 # Start MariaDB
-echo "Starting MariaDB server ..."
+echo $'\nStarting MariaDB server ...'
 mysqld --datadir=$MYSQL_DATA --user=mysql --console --skip-networking=0 &

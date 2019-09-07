@@ -14,7 +14,7 @@ chown -R ${PG_USER}: $PG_DATA $PG_RUN
 
 # Initialize PostgreSQL if necessary
 if [ ! -f $PG_DATA/PG_VERSION ]; then
-    echo "Initializing PostgreSQL ..."
+    echo 'Initializing PostgreSQL ...'
 
     # Initialize PostgreSQL
     PWFILE=$(mktemp -u)
@@ -44,5 +44,5 @@ EOF
 fi
 
 # Start PostgreSQL
-echo "Starting PostgreSQL server ..."
+echo $'\nStarting PostgreSQL server ...'
 su-exec $PG_USER postgres -D $PG_DATA -c 'listen_addresses=*' &

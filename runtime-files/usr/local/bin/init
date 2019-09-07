@@ -46,6 +46,7 @@ if [ $$ -eq 1 ]; then
         && [[ "$CURRENT_TYPO3_VER" =~ $RE ]] && TYPO3_VER=$CURRENT_TYPO3_VER
 
     cat <<EOF
+
 *** TYPO3 ${TYPO3_VER}, container image tags: $DEPLOY_TAGS (built on $(date --reference ${TYPO3_ROOT} --rfc-2822)) ***
 
 Alpine Linux $(cat /etc/alpine-release)
@@ -81,14 +82,14 @@ EOF
         chmod 644 $APACHE_CUSTOM_CERT.pem
         ln -sf $APACHE_CUSTOM_CERT.key $APACHE_CERT.key
         ln -sf $APACHE_CUSTOM_CERT.pem $APACHE_CERT.pem
-        echo "Using custom SSL certificate, CN=$(common_name $APACHE_CUSTOM_CERT.pem)"
+        echo "Using a custom SSL certificate, CN=$(common_name $APACHE_CUSTOM_CERT.pem)"
 
     else
         # Create a self-signed certificate for $HOSTNAME unless one already exists
         while true; do
             if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem ]; then
                 # Certificate found, does it match the current $HOSTNAME?
-                test "$(common_name $APACHE_CERT.pem)" = "$HOSTNAME" && echo "Using self-signed SSL certificate, CN=$HOSTNAME" && break
+                test "$(common_name $APACHE_CERT.pem)" = "$HOSTNAME" && echo "Using a self-signed SSL certificate, CN=$HOSTNAME" && break
             fi
 
             # No certificate found that matches the current $HOSTNAME -- create a new one
@@ -100,7 +101,7 @@ EOF
                 &>/dev/null
 
             chown $APACHE_USER: $APACHE_CERT.{key,pem}
-            echo "Created self-signed SSL certificate, CN=$HOSTNAME"
+            echo "Created a self-signed SSL certificate, CN=$HOSTNAME"
             break
         done
     fi
@@ -194,12 +195,11 @@ if [ -f $COMPOSER_EXCLUDE_FILE ] && [ -n "$(cat $COMPOSER_EXCLUDE_FILE)" ]; then
     done <<< "$(cat $COMPOSER_EXCLUDE_FILE)"
 fi
 
-# Start SQLite/MariaDB/PostgreSQL if so requested
 if [ $$ -eq 1 ]; then
-    # Show this before the database log appears
-    echo 'Ctrl-C to stop the container'
-    trap "echo \$'\nContainer stopped'" EXIT
+    # Notify when this process exits
+    trap "echo \$'\n*** Container stopped ***'" EXIT
 
+    # Start SQLite/MariaDB/PostgreSQL if so requested
     # Accept abbreviated database types
     DB_SUCCESS=
     [[ -n $T3_DB_TYPE && mariadb == ${T3_DB_TYPE,,}* ]] && start_mysql && DB_SUCCESS=1
@@ -207,6 +207,13 @@ if [ $$ -eq 1 ]; then
     [[ -z $T3_DB_TYPE || sqlite == ${T3_DB_TYPE,,}* ]] && start_sqlite && DB_SUCCESS=1
     [[ -n $DB_SUCCESS ]] || { echo "Unknown database type or startup failure: '$T3_DB_TYPE'"; exit 1; }
 fi
+
+# Reroute Apache log files to the Docker log
+for LF in /var/log/apache2/{,ssl_}{access,error}.log; do
+    touch $LF
+    chown root:wheel $LF
+    ln -sf /dev/stdout $LF
+done
 
 # Execute Dockerfile CMD or command line, passing host signals to the exec'd process
 exec "$@"
