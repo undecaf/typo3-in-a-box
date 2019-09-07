@@ -128,6 +128,14 @@ EOF
 fi
 
 # Set up developer/XDebug/production mode
+# Use the current mode (if any is set) as default
+APACHE_MODE_CONF=/etc/apache2/conf.d/mode.conf
+CURRENT_MODE=$(readlink -f $APACHE_MODE_CONF) && test -r $CURRENT_MODE && \
+    CURRENT_MODE=${CURRENT_MODE##*.} || \
+    CURRENT_MODE=
+    
+MODE=${MODE:-$CURRENT_MODE}
+
 case "${MODE,,}" in
 	dev)
 		echo "Apache/TYPO3 in developer mode"
@@ -153,7 +161,7 @@ case "${MODE,,}" in
 		;;
 esac
 
-ln -sf /etc/apache2/conf.d/mode.conf.${MODE} /etc/apache2/conf.d/mode.conf
+ln -sf /etc/apache2/conf.d/mode.conf.${MODE} $APACHE_MODE_CONF
 ln -sf /etc/php7/mode.${MODE}.template /etc/php7/conf.d/zz_50_mode.ini
 
 # php.ini setting overrides

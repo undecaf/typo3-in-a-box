@@ -269,11 +269,11 @@ verify_error 'Unable to unmount' ./t3 unmount "$DB_VOL"
 cleanup
 
 
-# Test container name and hostname
+# Test non-standard container name and hostname
 CONT_NAME=foo
 HOST_NAME=bar
 
-echo $'\n*************** '"Container name '$CONT_NAME' and hostname '$HOST_NAME'"
+echo $'\n*************** Non-standard container name and hostname'
 t3_ run
 test "$(docker exec typo3 hostname)" = typo3.${HOSTNAME}
 cleanup
