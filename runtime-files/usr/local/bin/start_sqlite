@@ -15,7 +15,7 @@ if [ ! -d $SQLITE_DIR ]; then
 
     # Point the SQLite directory at the database volume
     mkdir -p $TYPO3_ROOT/var
-    ln -s $TYPO3_DATADIR $TYPO3_ROOT/var/sqlite
+    ln -s $TYPO3_DATADIR $SQLITE_DIR
     chown -R ${APACHE_USER}: $TYPO3_ROOT/var $TYPO3_DATADIR
 fi
 

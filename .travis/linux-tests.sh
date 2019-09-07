@@ -299,19 +299,26 @@ cleanup
 PHP_SETTING='foo="bar"'
 
 echo $'\n*************** Host environment settings'
-t3_ run --env MODE=dev
+t3_ run --env MODE=dev | grep -q -F 'developer mode'
 
-echo "Verifying development mode"
+echo "Verifying developer mode"
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
 
-t3_ env MODE=prod
+cleanup
+
+T3_MODE=dev t3_ run | grep -q -F 'developer mode'
+t3_ env MODE=prod | grep -q -F 'production mode'
 
 echo "Verifying production mode"
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
 
-t3_ env php_${PHP_SETTING//\"/}
+echo "Verifying developer mode with XDebug"
+T3_MODE=xdebug t3_ env UNUSED=unused | grep -q -F 'developer mode with XDebug'
+
+echo "Verifying MODE persistence"
+t3_ env php_${PHP_SETTING//\"/} | grep -q -F 'developer mode with XDebug'
 
 echo "Verifying php.ini setting"
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F "$PHP_SETTING"
