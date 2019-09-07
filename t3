@@ -276,7 +276,7 @@ run_engine() {
     $T3_ENGINE "$@"
 }
 
-run_engine_quietly() {
+run_engine_silently() {
     [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
     $T3_ENGINE "$@" >/dev/null
 }
@@ -1059,7 +1059,7 @@ case "$CMD" in
         # Create the TYPO3 container
         set -e
         echo '*** '"Creating container '$T3_NAME'"' ***'
-        run_engine_quietly create \
+        run_engine_silently create \
             --name "$T3_NAME" \
             --hostname "$T3_HOSTNAME" \
             --ulimit $FILE_LIMIT \
@@ -1074,13 +1074,13 @@ case "$CMD" in
 
         # Copy certificate files, if any
         if [ -n "$T3_CERTFILES" ]; then
-            run_engine_quietly cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
-            run_engine_quietly cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
+            run_engine_silently cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
+            run_engine_silently cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
         fi
         echo '*** '"Container '$T3_NAME' created"' ***'
 
         # Start the container
-        run_engine start "$T3_NAME"
+        run_engine_silently start "$T3_NAME"
         echo '*** '"Container '$T3_NAME' started"' ***'
 
         # Eventually bind-mount container volumes in userspace
@@ -1107,12 +1107,12 @@ case "$CMD" in
 
         # Stop and eventually remove the container
         #stop_container "$T3_NAME"
-        if run_engine_quietly kill --signal SIGINT "$T3_NAME" && run_engine_quietly stop --time 5 "$T3_NAME"; then
+        if run_engine_silently kill --signal SIGINT "$T3_NAME" && run_engine_silently stop --time 5 "$T3_NAME"; then
             echo '*** '"Container '$T3_NAME' stopped"' ***'
         fi
 
         # Remove the container(s) if so requested
-        [ -n "$REMOVE_OPTION" ] && run_engine_quietly container rm "$T3_NAME"
+        [ -n "$REMOVE_OPTION" ] && run_engine_silently container rm "$T3_NAME"
 
         # Wait until the container was removed eventually
         $SLEEP 1

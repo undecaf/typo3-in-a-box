@@ -200,6 +200,8 @@ if [ $$ -eq 1 ]; then
     trap "echo \$'\n*** Container stopped ***'" EXIT
 
     # Start SQLite/MariaDB/PostgreSQL if so requested
+    echo
+    
     # Accept abbreviated database types
     DB_SUCCESS=
     [[ -n $T3_DB_TYPE && mariadb == ${T3_DB_TYPE,,}* ]] && start_mysql && DB_SUCCESS=1
@@ -207,13 +209,6 @@ if [ $$ -eq 1 ]; then
     [[ -z $T3_DB_TYPE || sqlite == ${T3_DB_TYPE,,}* ]] && start_sqlite && DB_SUCCESS=1
     [[ -n $DB_SUCCESS ]] || { echo "Unknown database type or startup failure: '$T3_DB_TYPE'"; exit 1; }
 fi
-
-# Reroute Apache log files to the Docker log
-for LF in /var/log/apache2/{,ssl_}{access,error}.log; do
-    touch $LF
-    chown root:wheel $LF
-    ln -sf /dev/stdout $LF
-done
 
 # Execute Dockerfile CMD or command line, passing host signals to the exec'd process
 exec "$@"
