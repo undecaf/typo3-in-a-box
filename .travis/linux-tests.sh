@@ -299,23 +299,25 @@ cleanup
 PHP_SETTING='foo="bar"'
 
 echo $'\n*************** Host environment settings'
-t3_ run --env MODE=dev | grep -q -F 'developer mode'
+t3_ run --env MODE=dev
 
 echo "Verifying developer mode"
+verify_logs $SUCCESS_TIMEOUT 'developer mode'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
 
 cleanup
 
-T3_MODE=dev t3_ run | grep -q -F 'developer mode'
-t3_ env MODE=prod | grep -q -F 'production mode'
+T3_MODE=dev t3_ run
+verify_logs $SUCCESS_TIMEOUT 'developer mode'
 
 echo "Verifying production mode"
+t3_ env MODE=prod | grep -q -F 'production mode'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
 
 echo "Verifying developer mode with XDebug"
-T3_MODE=xdebug t3_ env UNUSED=unused | grep -q -F 'developer mode with XDebug'
+t3_ env MODE=xdebug | grep -q -F 'developer mode with XDebug'
 
 echo "Verifying MODE persistence"
 t3_ env php_${PHP_SETTING//\"/} | grep -q -F 'developer mode with XDebug'
