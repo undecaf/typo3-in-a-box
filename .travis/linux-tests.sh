@@ -182,11 +182,13 @@ for DB_TYPE in mariadb postgresql; do
     case $DB_TYPE in
         mariadb)
             verify_cmd_success $RETRIES mysql -h $HOST_IP -P $DB_PORT -D t3 -u t3 --password=t3 -e 'quit' t3
+            sleep 5
             verify_logs 'mysqld: ready for connections'
             ;;
 
         postgresql)
             verify_cmd_success $RETRIES pg_isready -h $HOST_IP -p $DB_PORT -d t3 -U t3 -q
+            sleep 5
             verify_logs 'ready to accept connections'
             ;;
     esac

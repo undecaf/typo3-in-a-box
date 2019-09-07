@@ -31,7 +31,7 @@ verify_error() {
 verify_logs() {
     echo "verify_logs '$1'"
 
-    docker logs "${2:-typo3}" 2>&1  | grep -q -F "$1"
+    docker logs "${2:-typo3}" 2>&1 | grep -q -F "$1"
 }
 
 
