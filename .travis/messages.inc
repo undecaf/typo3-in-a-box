@@ -1,7 +1,7 @@
 # Returns success if a certain message ($1) is generated at stdout
 # by a command ($2, ...).
 verify_msg() {
-    echo "verify_msg $1"
+    echo "verify_msg '$1'"
 
     local MSG
     local CMD
@@ -15,7 +15,7 @@ verify_msg() {
 # Returns success if a certain message ($1) is generated at stderr
 # by a command ($2, ...).
 verify_error() {
-    echo "verify_error $1"
+    echo "verify_error '$1'"
 
     local MSG
     local CMD
@@ -29,9 +29,9 @@ verify_error() {
 # Returns success if a certain message ($1) is found in the Docker
 # logs for container $2 (defaults to 'typo3').
 verify_logs() {
-    echo "verify_logs $1"
+    echo "verify_logs '$1'"
 
-    docker logs "${2:-typo3}"  | grep -q -F "$1"
+    docker logs "${2:-typo3}" 2>&1  | grep -q -F "$1"
 }
 
 

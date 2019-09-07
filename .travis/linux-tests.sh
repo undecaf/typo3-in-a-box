@@ -174,7 +174,7 @@ cleanup
 
 
 # Test database connectivity
-for DB_TYPE in mariadb postgresql; do
+for DB_TYPE in sqlite mariadb postgresql; do
     echo $'\n*************** '"$DB_TYPE connectivity"
     t3_ run -D $DB_TYPE -P $HOST_IP:$DB_PORT
 
