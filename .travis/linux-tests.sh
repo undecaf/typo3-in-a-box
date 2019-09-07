@@ -191,9 +191,9 @@ verify_cmd_success $SUCCESS_TIMEOUT curl -Isk $TEST_URL | grep -q '200 OK'
 cleanup
 
 
-# Test database connectivity
+# Test databases
 for DB_TYPE in mariadb postgresql; do
-    echo $'\n*************** '"$DB_TYPE connectivity"
+    echo $'\n*************** '"$DB_TYPE: connectivity"
     t3_ run -D $DB_TYPE -P $HOST_IP:$DB_PORT
 
     echo "Pinging $DB_TYPE"
@@ -205,6 +205,30 @@ for DB_TYPE in mariadb postgresql; do
 
         postgresql)
             verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d t3 -U t3 -q
+            verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
+            ;;
+    esac
+
+    cleanup
+done
+
+DB_NAME=bar
+DB_USER=foo
+DB_PW=123456
+
+for DB_TYPE in mariadb postgresql; do
+    echo $'\n*************** '"$DB_TYPE: non-standard credentials"
+    T3_DB_NAME=$DB_NAME T3_DB_USER=$DB_USER T3_DB_PW=$DB_PW t3_ run -D $DB_TYPE -P $HOST_IP:$DB_PORT
+
+    echo "Pinging $DB_TYPE"
+    case $DB_TYPE in
+        mariadb)
+            verify_cmd_success $SUCCESS_TIMEOUT mysql -h $HOST_IP -P $DB_PORT -D $DB_NAME -u $DB_USER --password=$DB_PW -e 'quit' $DB_NAME
+            verify_logs $SUCCESS_TIMEOUT 'mysqld: ready for connections'
+            ;;
+
+        postgresql)
+            verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d $DB_NAME -U $DB_USER -q
             verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
             ;;
     esac
