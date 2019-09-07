@@ -291,7 +291,7 @@ t3_ run
 cleanup
 
 t3_ run -c
-t3_ composer show && grep -q -F 'typo3/cms-'
+t3_ composer show | grep -q -F 'typo3/cms-'
 cleanup
 
 
