@@ -107,16 +107,27 @@ EOF
     fi
 
     # Deactivate Composer Mode if so requested
-    if [ -n "$T3_COMPOSER_MODE" ]; then
-        echo "Configured Composer to add/remove TYPO3 extensions (Composer Mode)"
+    while true; do
+        if [ -n "$T3_COMPOSER_MODE" ]; then
+            if [ -f $TYPO3_ROOT/composer.json ] && \
+                grep -q -E 'define *\( *'"'TYPO3_COMPOSER_MODE'"' *, *TRUE *\)' $TYPO3_ROOT/vendor/typo3/autoload-include.php; then
+                echo 'TYPO3 extensions to be added/removed by Composer (Composer Mode)'
+                break;
 
-    else
-        sed -E \
-            -e "s/define *\( *'TYPO3_COMPOSER_MODE' *, *TRUE *\) *;/define('TYPO3_COMPOSER_MODE', FALSE);/" \
-            -i $TYPO3_ROOT/vendor/typo3/autoload-include.php
-        rm -rf $TYPO3_ROOT/composer.* $APACHE_HOME/.composer
-        echo "Configured the TYPO3 Extension Manager to add/remove extensions"
-    fi
+            else
+                echo 'Cannot enable Composer Mode: already disabled in an existing volume'
+            fi
+
+        else
+            sed -E \
+                -e "s/define *\( *'TYPO3_COMPOSER_MODE' *, *TRUE *\) *;/define('TYPO3_COMPOSER_MODE', FALSE);/" \
+                -i $TYPO3_ROOT/vendor/typo3/autoload-include.php
+            rm -rf $TYPO3_ROOT/composer.* $APACHE_HOME/.composer
+        fi
+
+        echo 'TYPO3 extensions to be added/removed by the TYPO3 Extension Manager'
+        break
+    done
 fi
 
 # Set up developer/XDebug/production mode
@@ -201,7 +212,7 @@ if [ $$ -eq 1 ]; then
 
     # Start SQLite/MariaDB/PostgreSQL if so requested
     echo
-    
+
     # Accept abbreviated database types
     DB_SUCCESS=
     [[ -n $T3_DB_TYPE && mariadb == ${T3_DB_TYPE,,}* ]] && start_mysql && DB_SUCCESS=1
