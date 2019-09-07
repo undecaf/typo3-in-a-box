@@ -35,19 +35,19 @@ t3_() {
 
 # Returns success if all specified containers exist.
 verify_containers_exist() {
-    echo "verify_containers_exist $@"
+    echo "verify_containers_exist: $@"
     docker container inspect "$@" &>/dev/null
 }
 
 # Returns success if all specified containers are running.
 verify_containers_running() {
-    echo "verify_containers_running() $@"
+    echo "verify_containers_running: $@"
     ! docker container inspect --format='{{.State.Status}}' "$@" | grep -v -q 'running'
 }
 
 # Returns success if all specified volumes exist.
 verify_volumes_exist() {
-    echo "verify_volumes_exist $@"
+    echo "verify_volumes_exist: $@"
     docker volume inspect "$@" &>/dev/null
 }
 
@@ -58,7 +58,7 @@ verify_cmd_success() {
     local T=$1
     shift
 
-    echo "verify_cmd_success $@"
+    echo "verify_cmd_success: $@"
 
     while ! "$@"; do
         sleep $STEP
@@ -72,7 +72,7 @@ verify_cmd_success() {
 # Returns success if a message ($2) is found after some timeout ($1 in s)
 # in the Docker logs for container $3 (defaults to 'typo3').
 verify_logs() {
-    echo "verify_logs '$2'"
+    echo "verify_logs: '$2'"
 
     local STEP=2
     local T=$1
@@ -267,7 +267,7 @@ t3_ run
 cleanup
 
 t3_ run -c
-t3_ composer show
+t3_ composer show && grep -q -F 'typo3/cms-'
 cleanup
 
 

@@ -1,7 +1,7 @@
 # Returns success if a certain message ($1) is generated at stdout
 # by a command ($2, ...).
 verify_msg() {
-    echo "verify_msg '$1'"
+    echo "verify_msg: '$1'"
 
     local MSG
     local CMD
@@ -15,7 +15,7 @@ verify_msg() {
 # Returns success if a certain message ($1) is generated at stderr
 # by a command ($2, ...).
 verify_error() {
-    echo "verify_error '$1'"
+    echo "verify_error: '$1'"
 
     local MSG
     local CMD
