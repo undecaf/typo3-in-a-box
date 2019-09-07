@@ -132,7 +132,6 @@ fi
 # Set up developer/XDebug/production mode
 # Use the most recent mode (if any) as default
 set -x
-cat /etc/environment
 echo "MODE=$MODE RECENT_MODE=$RECENT_MODE"
 
 MODE=${MODE:-$RECENT_MODE}

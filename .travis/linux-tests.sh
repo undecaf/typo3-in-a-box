@@ -319,11 +319,11 @@ verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Power
 echo "Verifying developer mode with XDebug" >&2
 t3_ env MODE=xdebug | grep -q -F 'developer mode with XDebug'
 
-echo "Verifying MODE persistence" >&2
-t3_ env php_${PHP_SETTING//\"/} | grep -q -F 'developer mode with XDebug'
+# echo "Verifying MODE persistence" >&2
+# t3_ env php_${PHP_SETTING//\"/} | grep -q -F 'developer mode with XDebug'
 
-echo "Verifying php.ini setting" >&2
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F "$PHP_SETTING"
+# echo "Verifying php.ini setting" >&2
+# verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F "$PHP_SETTING"
 
 cleanup
 
