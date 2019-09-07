@@ -38,7 +38,6 @@ common_name() {
 # Use the same environment as during build
 . /etc/environment
 
-trap "echo \$'\n*** Fatal error, container not started ***'" EXIT
 
 # Things to do only on startup (but not on subsequent t3 commands)
 if [ $$ -eq 1 ]; then
@@ -129,9 +128,13 @@ EOF
     fi
 fi
 
+
 # Set up developer/XDebug/production mode
 # Use the most recent mode (if any) as default
 set -x
+cat /etc/environment
+echo "MODE=$MODE RECENT_MODE=$RECENT_MODE"
+
 MODE=${MODE:-$RECENT_MODE}
 RECENT_MODE=$MODE
 
