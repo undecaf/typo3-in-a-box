@@ -26,6 +26,14 @@ verify_error() {
     $CMD "$@" 2>&1 >/dev/null | grep -q -F "$MSG"
 }
 
+# Returns success if a certain message ($1) is found in the Docker
+# logs for container $2 (defaults to 'typo3').
+verify_logs() {
+    echo "verify_logs $1"
+
+    docker logs "${2:-typo3}"  | grep -q -F "$1"
+}
+
 
 echo $'\n*************** Command abbreviation and help messages'
 verify_msg 'Available commands' ./t3 -h

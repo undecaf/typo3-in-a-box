@@ -113,6 +113,7 @@ echo $'\n*************** Basic container and volume status'
 t3_ run
 verify_containers_running typo3
 verify_volumes_exist typo3-root typo3-data
+verify_logs "TYPO3 $TYPO3_VER"
 
 verify_error 'Cannot run container' ./t3 run
 
@@ -179,12 +180,18 @@ for DB_TYPE in mariadb postgresql; do
 
     echo "Pinging $DB_TYPE"
     case $DB_TYPE in
+        sqlite)
+            verify_logs 'SQLite ready'
+            ;;
+
         mariadb)
             verify_cmd_success $RETRIES mysql -h $HOST_IP -P $DB_PORT -D t3 -u t3 --password=t3 -e 'quit' t3
+            verify_logs 'mysqld: ready for connections'
             ;;
 
         postgresql)
             verify_cmd_success $RETRIES pg_isready -h $HOST_IP -p $DB_PORT -d t3 -U t3 -q
+            verify_logs 'ready to accept connections'
             ;;
     esac
 
@@ -247,6 +254,7 @@ cleanup
 
 t3_ run -c
 t3_ composer show
+verify_logs 'typo3/cms-core'
 cleanup
 
 
