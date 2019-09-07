@@ -42,6 +42,6 @@ verify_error 'Unknown command' ./t3 s
 verify_error 'No option was found' ./t3 env
 verify_error 'Container engine' ./t3 run -e nosuchengine
 verify_error 'Invalid option' ./t3 run -k missingcertfile
-verify_error 'Unknown database' ./t3 run -d nosuchdatabase
+verify_error 'Unknown database' ./t3 run -D nosuchdatabase
 verify_error 'is required' ./t3 mount --
 verify_error 'is required' ./t3 unmount --
