@@ -64,8 +64,9 @@ EOF
     # as set by '--env T3_NAME=VALUE'
     RE='^(T3_('$RE_CONT_ENV'))=(.*)$'
     while read -r ENV_VAR; do
-        if [[ "$ENV_VAR" =~ $RE ]]; then
-            export ${BASH_REMATCH[2]}=${BASH_REMATCH[3]}
+        if [[ $ENV_VAR =~ $RE ]]; then
+            NAME=${BASH_REMATCH[2]}
+            export ${NAME^^}=${BASH_REMATCH[3]}
         fi
     done <<< "$(printenv)"
 
@@ -147,38 +148,41 @@ else
     # with what may have been specified in the current 't3' command
     RE='^(SAVED_('$RE_CONT_ENV'))=(.*)$'
     while read -r ENV_VAR; do
-        if [[ "$ENV_VAR" =~ $RE ]]; then
-            eval "export ${BASH_REMATCH[2]}=\${${BASH_REMATCH[2]}:-\$SAVED_${BASH_REMATCH[2]}}"
+        if [[ $ENV_VAR =~ $RE ]]; then
+            NAME=${BASH_REMATCH[2]}
+            NAME=${NAME^^}
+            eval "export $NAME=\${$NAME:-\$SAVED_$NAME}"
         fi
     done <<< "$(printenv)"
 fi
 
 
-# Set up developer/XDebug/production mode
-case "${MODE,,}" in
-    dev)
+# Select developer/XDebug/production mode, accept abbreviations and ignore case
+while true; do
+    if [[ -n $MODE && dev == ${MODE,,}* ]]; then
         echo "Apache/TYPO3 in developer mode"
         EXT=dev
         XDEBUG=
-        ;;
+        break
+    fi
 
-    xdebug)
+    if [[ -n $MODE && xdebug == ${MODE,,}* ]]; then
         echo "Apache/TYPO3 in developer mode with XDebug support"
         EXT=dev
         XDEBUG=y
-        ;;
+        break
+    fi
 
-    prod|'')
+    if [[ -z $MODE || prod == ${MODE,,}* ]]; then
         echo "Apache/TYPO3 in production mode"
         EXT=prod
         XDEBUG=
-        ;;
+        break
+    fi
 
-    *)
-        echo "Unknown mode: '$MODE'" >&2
-        exit 1
-        ;;
-esac
+    echo "Unknown mode: '$MODE'" >&2
+    exit 1
+done
 
 ln -sf /etc/apache2/conf.d/mode.conf.${EXT} /etc/apache2/conf.d/mode.conf
 ln -sf /etc/php7/mode.${EXT}.template /etc/php7/conf.d/zz_50_mode.ini
@@ -228,27 +232,31 @@ if [ -n "$COMPOSER_EXCLUDE" ]; then
 fi
 
 # Save the container environment state for the next invocation of this script
-sed -e '/^ *export +('$RE_CONT_ENV') *=/d' -i /etc/environment
+sed -e '/^ *export +SAVED_.+=/d' -i /etc/environment
 
 RE='^('$RE_CONT_ENV')=(.*)$'
 while read -r ENV_VAR; do
-    if [[ "$ENV_VAR" =~ $RE ]]; then
+    if [[ $ENV_VAR =~ $RE ]]; then
+        NAME=${BASH_REMATCH[1]}
         VALUE=${BASH_REMATCH[2]}
         VALUE=${VALUE//"'"/"'"\""'"\""'"}  # insert double-quotes around each single quote
-        echo "export SAVED_${BASH_REMATCH[1]}='$VALUE'" >>/etc/environment
+        echo "export SAVED_${NAME^^}='$VALUE'" >>/etc/environment
     fi
 done <<< "$(printenv)"
 
+# Start the database on the first run of this script
 if [ $$ -eq 1 ]; then
-    # Start SQLite/MariaDB/PostgreSQL if so requested,
     echo
 
-    # Accept abbreviated database types
-    DB_SUCCESS=
-    [[ -n $T3_DB_TYPE && mariadb == ${T3_DB_TYPE,,}* ]] && start_mysql && DB_SUCCESS=1
-    [[ -n $T3_DB_TYPE && postgresql == ${T3_DB_TYPE,,}* ]] && start_pg && DB_SUCCESS=1
-    [[ -z $T3_DB_TYPE || sqlite == ${T3_DB_TYPE,,}* ]] && start_sqlite && DB_SUCCESS=1
-    [[ -n $DB_SUCCESS ]] || { echo "Unknown database type or startup failure: '$T3_DB_TYPE'" >&2; exit 1; }
+    # Accept abbreviated database types, ignore case
+    while true; do
+        [[ -n $T3_DB_TYPE && mariadb == ${T3_DB_TYPE,,}* ]] && start_mysql && break
+        [[ -n $T3_DB_TYPE && postgresql == ${T3_DB_TYPE,,}* ]] && start_pg && break
+        [[ -z $T3_DB_TYPE || sqlite == ${T3_DB_TYPE,,}* ]] && start_sqlite && break
+
+        echo "Unknown database type or startup failure: '$T3_DB_TYPE'" >&2
+        exit 1
+    done
 fi
 
 # Execute Dockerfile CMD or command line, passing host signals to the exec'd process
