@@ -5,8 +5,11 @@ export T3_DB_PW=${T3_DB_PW:-t3}
 export T3_DB_ROOT_PW=${T3_DB_ROOT_PW:-toor}
 
 # Container environment variables
-export HOSTNAME=${HOSTNAME:-localhost}
-export LANG=${LANG:-C.UTF-8}
+export HOSTNAME=${T3_HOSTNAME:-localhost}
+export LANG=${T3_LANG:-C.UTF-8}
+
+# Environment variables that can be altered after 't3 run'
+export ALTERABLES='MODE|COMPOSER_EXCLUDE|PHP_.+|php_.+'
 
 # Derived environment variables
 export APACHE_USER=apache
