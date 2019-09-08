@@ -66,7 +66,7 @@ EOF
     while read -r ENV_VAR; do
         if [[ $ENV_VAR =~ $RE ]]; then
             NAME=${BASH_REMATCH[2]}
-            export ${NAME^^}=${BASH_REMATCH[3]}
+            export $NAME=${BASH_REMATCH[3]}
         fi
     done <<< "$(printenv)"
 
@@ -149,10 +149,8 @@ else
     RE='^(SAVED_('$RE_CONT_ENV'))=(.*)$'
     while read -r ENV_VAR; do
         if [[ $ENV_VAR =~ $RE ]]; then
-            NAME=${BASH_REMATCH[2]}
-            NAME=${NAME^^}
-
             # Restore SAVED_$NAME only if $NAME is not set, not even to an empty value
+            NAME=${BASH_REMATCH[2]}
             eval "test -z \${$NAME+x} && export $NAME=\$SAVED_$NAME"
         fi
     done <<< "$(printenv)"
@@ -234,7 +232,7 @@ if [ -n "$COMPOSER_EXCLUDE" ]; then
 fi
 
 # Save the container environment state for the next invocation of this script
-sed -e '/^ *export +SAVED_.+=/d' -i /etc/environment
+sed -E '/^ *export +SAVED_.+=/d' -i /etc/environment
 
 RE='^('$RE_CONT_ENV')=(.*)$'
 while read -r ENV_VAR; do
@@ -242,7 +240,7 @@ while read -r ENV_VAR; do
         NAME=${BASH_REMATCH[1]}
         VALUE=${BASH_REMATCH[2]}
         VALUE=${VALUE//"'"/"'"\""'"\""'"}  # insert double-quotes around each single quote
-        echo "export SAVED_${NAME^^}='$VALUE'" >>/etc/environment
+        echo "export SAVED_$NAME='$VALUE'" >>/etc/environment
     fi
 done <<< "$(printenv)"
 
