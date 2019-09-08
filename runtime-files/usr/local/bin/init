@@ -151,7 +151,9 @@ else
         if [[ $ENV_VAR =~ $RE ]]; then
             NAME=${BASH_REMATCH[2]}
             NAME=${NAME^^}
-            eval "export $NAME=\${$NAME:-\$SAVED_$NAME}"
+
+            # Restore SAVED_$NAME only if $NAME is not set, not even to an empty value
+            eval "test -z \${$NAME+x} && export $NAME=\$SAVED_$NAME"
         fi
     done <<< "$(printenv)"
 fi
@@ -221,7 +223,7 @@ chown -R $APACHE_USER: $APACHE_HOME
 
 # Show the list of directories to be excluded from Composer operations
 if [ -n "$COMPOSER_EXCLUDE" ]; then
-    echo "Excluded from Composer operations:"
+    echo "Directories excluded from Composer operations:"
 
     echo $COMPOSER_EXCLUDE | \
     while IFS=':' read -ra DIRS; do
