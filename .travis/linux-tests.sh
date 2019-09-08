@@ -296,36 +296,36 @@ cleanup
 
 
 # Test host environment settings
-# PHP_SETTING='foo="bar"'
+PHP_SETTING='foo="bar"'
 
-# echo $'\n*************** Host environment settings' >&2
-# t3_ run --env MODE=dev
+echo $'\n*************** Host environment settings' >&2
+t3_ run --env MODE=dev
 
-# echo "Verifying developer mode" >&2
-# verify_logs $SUCCESS_TIMEOUT 'developer mode'
-# verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
-# verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
+echo "Verifying developer mode" >&2
+verify_logs $SUCCESS_TIMEOUT 'developer mode'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
 
-# cleanup
+cleanup
 
-# T3_MODE=dev t3_ run
-# verify_logs $SUCCESS_TIMEOUT 'developer mode'
+T3_MODE=dev t3_ run
+verify_logs $SUCCESS_TIMEOUT 'developer mode'
 
-# echo "Verifying production mode" >&2
-# t3_ env MODE=prod | grep -q -F 'production mode'
-# verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
-# verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
+echo "Verifying production mode" >&2
+t3_ env MODE=prod | grep -q -F 'production mode'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
 
-# echo "Verifying developer mode with XDebug" >&2
-# t3_ env MODE=xdebug | grep -q -F 'developer mode with XDebug'
+echo "Verifying developer mode with XDebug" >&2
+t3_ env MODE=xdebug | grep -q -F 'developer mode with XDebug'
 
-# echo "Verifying MODE persistence" >&2
-# t3_ env php_${PHP_SETTING//\"/} | grep -q -F 'developer mode with XDebug'
+echo "Verifying MODE persistence" >&2
+t3_ env PHP_${PHP_SETTING//\"/} | grep -q -F 'developer mode with XDebug'
 
-# echo "Verifying php.ini setting" >&2
-# verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F "$PHP_SETTING"
+echo "Verifying php.ini setting" >&2
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F "$PHP_SETTING"
 
-# cleanup
+cleanup
 
 
 # Test custom certificate
