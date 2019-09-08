@@ -28,6 +28,7 @@ T3_ROOTDIR=/var/www/localhost
 T3_DATADIR=/var/lib/typo3-db
 CERT_BASENAME=/etc/ssl/apache2/custom
 FILE_LIMIT='nofile=10000:15000'
+RE_CONT_ENV='TIMEZONE|LANG|MODE|COMPOSER_EXCLUDE|PHP_.+|php_.+'
 
 # Bypass aliases
 AWK=$(which awk)
@@ -276,9 +277,14 @@ run_engine() {
     $T3_ENGINE "$@"
 }
 
-run_engine_silently() {
+run_engine_stderr() {
     [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
     $T3_ENGINE "$@" >/dev/null
+}
+
+run_engine_muted() {
+    [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
+    $T3_ENGINE "$@" &>/dev/null
 }
 
 exec_engine() {
@@ -374,7 +380,7 @@ unmount_volume() {
 
     # Find the directory bind-mounted to the container volume mountpoint
     RE='^/.+( +[0-9]+){4}% +(/.+)$'
-    if LINE=$($DF -P | $GREP --fixed-string "$VOL_MP ") && re_match "$LINE" "$RE"; then
+    if LINE=$($DF -P | $GREP --fixed-string "$VOL_MP ") && re_match "$LINE" $RE; then
         unmount_workdir "$1" "${RE_MATCH[2]}"
     fi
 }
@@ -484,18 +490,19 @@ Options (default values can be overridden by environment variables):
       effective only for MariaDB and PostgreSQL.
       Defaults: \$T3_DB_PORT, or '127.0.0.1:3306' for MariaDB and '127.0.0.1:5432'
       for PostgreSQL.
+
+  --env NAME=VALUE
+      Sets the (initial) value of a container environment variable. Most variables
+      can be changed afterwards by '$($BASENAME $0) env'. This option may appear
+      multiple times.
+      Defaults: \$T3_TIMEZONE, \$T3_LANG, \$T3_MODE, \$T3_COMPOSER_EXCLUDE,
+                \$T3_PHP_..., \$T3_php_...
  
   --debug, -d
       If this option is present then generated Docker/Podman commands will be
       shown on the console.
       Warning: your database credentials will be visible on the console.
       Default: \$T3_DEBUG, or not set.
-
-  --env NAME=VALUE
-      Sets the (initial) value of a container environment variable. The values of
-      certain variables can be changed afterwards by '$($BASENAME $0) env'.
-      This option may appear multiple times. '--env' options must be the last options
-      on the command line.
  
   --help, -h
       Displays this text and exits.
@@ -505,7 +512,7 @@ described above. If necessary, '--' can be used to separate them from the $($BAS
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-H|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-p|--typo3-ports(=.+)?|-k|--certfiles(=.+)?|-D|--db-type(=.*)?|-V|--db-data(=.+)?|-P|--db-port(=.+)?|-d|--debug'
+        ALLOWED_OPTS='-e|--engine(=.+)?|-H|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-p|--typo3-ports(=.+)?|-k|--certfiles(=.+)?|-D|--db-type(=.*)?|-V|--db-data(=.+)?|-P|--db-port(=.+)?|--env|-d|--debug'
 
         # No additional options required
         OPT_COUNT=1
@@ -906,6 +913,15 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
 
+        # Container environment setting
+        --env)
+            shift
+            RE='^('$RE_CONT_ENV')=(.*)$'
+            re_match "$1" $RE || usage "Not a valid NAME=VALUE pair: '$1'"
+            export T3_${RE_MATCH[1]}=${RE_MATCH[2]}
+            shift
+            ;;
+
         # Remove container(s) after being stopped
         --rm)
             REMOVE_OPTION='--rm'
@@ -993,13 +1009,13 @@ if test_path "$T3_DB_DATA"; then
     T3_DB_DATA=$($BASENAME "$T3_DB_DATA")
 fi
 
-# Initialize container environment variables
-RE='^T3_(TIMEZONE|LANG|MODE|COMPOSER_EXCLUDE|PHP_.+|php_.+)=(.*)$'
+# Initialize container environment variables, keep 'T3_' prefix
+RE='^(T3_('$RE_CONT_ENV'))=(.*)$'
 
 while read -r ENV_VAR; do
     if re_match "$ENV_VAR" $RE; then
         ENV_OPTIONS="$ENV_OPTIONS \
-            --env ${RE_MATCH[1]}=${RE_MATCH[2]}"
+            --env ${RE_MATCH[1]}=${RE_MATCH[3]}"
     fi
 done <<< "$($PRINTENV)"
 
@@ -1059,7 +1075,7 @@ case "$CMD" in
         # Create the TYPO3 container
         set -e
         echo '*** '"Creating container '$T3_NAME'"' ***'
-        run_engine_silently create \
+        run_engine_stderr create \
             --name "$T3_NAME" \
             --hostname "$T3_HOSTNAME" \
             --ulimit $FILE_LIMIT \
@@ -1074,13 +1090,13 @@ case "$CMD" in
 
         # Copy certificate files, if any
         if [ -n "$T3_CERTFILES" ]; then
-            run_engine_silently cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
-            run_engine_silently cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
+            run_engine_muted cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
+            run_engine_muted cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
         fi
         echo '*** '"Container '$T3_NAME' created"' ***'
 
         # Start the container
-        run_engine_silently start "$T3_NAME"
+        run_engine_muted start "$T3_NAME"
         echo '*** '"Container '$T3_NAME' started"' ***'
 
         # Eventually bind-mount container volumes in userspace
@@ -1107,12 +1123,12 @@ case "$CMD" in
 
         # Stop and eventually remove the container
         #stop_container "$T3_NAME"
-        if run_engine_silently kill --signal SIGINT "$T3_NAME" && run_engine_silently stop --time 5 "$T3_NAME"; then
+        if run_engine_muted kill --signal SIGINT "$T3_NAME" && run_engine_muted stop --time 5 "$T3_NAME"; then
             echo '*** '"Container '$T3_NAME' stopped"' ***'
         fi
 
         # Remove the container(s) if so requested
-        [ -n "$REMOVE_OPTION" ] && run_engine_silently container rm "$T3_NAME"
+        [ -n "$REMOVE_OPTION" ] && run_engine_muted container rm "$T3_NAME"
 
         # Wait until the container was removed eventually
         $SLEEP 1

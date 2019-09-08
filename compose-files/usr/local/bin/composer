@@ -3,27 +3,27 @@
 #
 # Runs Composer as user $APACHE_USER and in working directory $TYPO3_ROOT.
 #
-# Beforehand, all directories listed in $COMPOSER_EXCLUDE_FILE are copied to
+# Beforehand, all directories listed in $COMPOSER_EXCLUDE are copied to
 # temporary directories. Afterwards, these directories are restored.
 #
 
 . /etc/environment
 
 if [ ! -r $TYPO3_ROOT/composer.json ]; then
-    echo "File $TYPO3_ROOT/composer.json not found; Composer Mode apparently not active" 1>&2
-    exit -1
+    echo "File $TYPO3_ROOT/composer.json not found; Composer Mode apparently not active" >&2
+    exit 1
 fi
 
 RUN_COMPOSER=1
 
-if [ -f $COMPOSER_EXCLUDE_FILE ] && [ -n "$(cat $COMPOSER_EXCLUDE_FILE)" ]; then
+if [ -n "$COMPOSER_EXCLUDE" ]; then
     COMPOSER_EXCLUDE_ROOT=$APACHE_HOME/composer-exclude
 
     # Copy directories to exclude, making sure that each one is restored afterwards
     set -e
     TRAP_CMDS=
 
-    while IFS=':' read -ra DIRS; do
+    echo $COMPOSER_EXCLUDE | while IFS=':' read -ra DIRS; do
         for D in "${DIRS[@]}"; do
             if [ -n "$D" -a -d $TYPO3_ROOT/$D ]; then
                 SAVE_DIR=$(mktemp -d)
@@ -37,7 +37,7 @@ if [ -f $COMPOSER_EXCLUDE_FILE ] && [ -n "$(cat $COMPOSER_EXCLUDE_FILE)" ]; then
                 RUN_COMPOSER=
             fi
         done
-    done <<< "$(cat $COMPOSER_EXCLUDE_FILE)"
+    done
 fi
 
 # Run Composer in TYPO3 context

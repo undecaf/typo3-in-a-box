@@ -8,8 +8,8 @@ export T3_DB_ROOT_PW=${T3_DB_ROOT_PW:-toor}
 export HOSTNAME=${T3_HOSTNAME:-localhost}
 export LANG=${T3_LANG:-C.UTF-8}
 
-# Environment variables that can be altered after 't3 run'
-export ALTERABLES='MODE|COMPOSER_EXCLUDE|PHP_.+|php_.+'
+# Environment variables that can be altered by 't3 env'
+export RE_CONT_ENV='MODE|COMPOSER_EXCLUDE|PHP_.+|php_.+'
 
 # Derived environment variables
 export APACHE_USER=apache
@@ -25,6 +25,3 @@ export MYSQL_RUN=/run/mysqld
 export PG_USER=postgres
 export PG_DATA=$TYPO3_DATADIR
 export PG_RUN=/run/postgresql
-
-export COMPOSER_EXCLUDE_FILE=/etc/composer-exclude
-
