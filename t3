@@ -28,7 +28,7 @@ T3_ROOTDIR=/var/www/localhost
 T3_DATADIR=/var/lib/typo3-db
 CERT_BASENAME=/etc/ssl/apache2/custom
 FILE_LIMIT='nofile=10000:15000'
-RE_CONT_ENV='TIMEZONE|LANG|MODE|COMPOSER_EXCLUDE|PHP_.+|php_.+'
+RE_CONT_ENV='TIMEZONE|LANG|MODE|COMPOSER_EXCLUDE|PHP_.+'
 
 # Bypass aliases
 AWK=$(which awk)
