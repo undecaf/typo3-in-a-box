@@ -112,7 +112,7 @@ INSTALL_URL=http://$HOST_IP:$HTTP_PORT/typo3/install.php
 INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
 
 # Timeouts in s
-SUCCESS_TIMEOUT=15
+SUCCESS_TIMEOUT=30
 FAILURE_TIMEOUT=5
 
 

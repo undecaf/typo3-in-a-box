@@ -53,11 +53,11 @@ jobs:
       env: MAJOR_VER=8
       if: branch != dev   # there is no dev repo for TYPO3 v8.7
 
-    - <<: *build_test
-      env: MAJOR_VER=9
+    # - <<: *build_test
+    #   env: MAJOR_VER=9
 
-    - <<: *build_test
-      env: MAJOR_VER=10 MOST_RECENT=true
+    # - <<: *build_test
+    #   env: MAJOR_VER=10 MOST_RECENT=true
 
 
     # TODO Test scripts under macOS using the saved test sequence and a Docker mockup
