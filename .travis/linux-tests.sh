@@ -353,7 +353,10 @@ CERTFILE='cert file'
 CN=foo.bar
 
 echo $'\n*************** Self-signed certificate' >&2
-t3_ run 
+t3_ run -H $HOST_NAME
+verify_logs $SUCCESS_TIMEOUT "CN=$HOST_NAME"
+cleanup
+
 echo $'\n*************** Custom certificate' >&2
 openssl req -x509 -sha256 -days 1 \
     -newkey rsa:2048 -nodes \
