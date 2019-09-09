@@ -5,7 +5,7 @@ export T3_DB_PW=${T3_DB_PW:-t3}
 export T3_DB_ROOT_PW=${T3_DB_ROOT_PW:-toor}
 
 # Container environment variables
-export HOSTNAME=${T3_HOSTNAME:-localhost}
+export HOSTNAME=$(hostname)
 export LANG=${T3_LANG:-C.UTF-8}
 
 # Environment variables that can be changed by 't3 env'
