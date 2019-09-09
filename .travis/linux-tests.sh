@@ -337,7 +337,7 @@ verify_logs $SUCCESS_TIMEOUT 'developer mode'
 # echo "Verifying php.ini setting" >&2
 # verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
-# cleanup
+cleanup
 
 echo "Verifying settings precedence" >&2
 T3_MODE=dev PHP_foo=xyz t3_ run --env MODE=x --env PHP_foo=bar
