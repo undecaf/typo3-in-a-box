@@ -71,12 +71,12 @@ EOF
     done <<< "$(printenv)"
 
     # Try to determine the local timezone if none was specified
-    [ -z "$TIMEZONE" ] && TIMEZONE="$(curl -s https://ipapi.co/timezone)"
+    test -z "$T3_TIMEZONE" && T3_TIMEZONE="$(curl -s https://ipapi.co/timezone)"
 
     # Use timezone if specified and supported
-    if [ -n "$TIMEZONE" -a -f "/usr/share/zoneinfo/${TIMEZONE}" ]; then
-        cp /usr/share/zoneinfo/${TIMEZONE} /etc/localtime
-        echo "Timezone: $TIMEZONE"
+    if [ -n "$T3_TIMEZONE" -a -f "/usr/share/zoneinfo/${T3_TIMEZONE}" ]; then
+        cp /usr/share/zoneinfo/${T3_TIMEZONE} /etc/localtime
+        echo "Timezone: $T3_TIMEZONE"
     else
         echo "Timezone: UTC"
     fi

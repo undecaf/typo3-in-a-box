@@ -217,7 +217,7 @@ DB_USER=foo
 DB_PW=123456
 
 for DB_TYPE in mariadb postgresql; do
-    echo $'\n*************** '"$DB_TYPE: non-standard credentials" >&2
+    echo $'\n*************** '"$DB_TYPE: custom credentials" >&2
     T3_DB_NAME=$DB_NAME T3_DB_USER=$DB_USER T3_DB_PW=$DB_PW t3_ run -D $DB_TYPE -P $HOST_IP:$DB_PORT
 
     echo "Pinging $DB_TYPE" >&2
@@ -269,11 +269,11 @@ verify_error 'Unable to unmount' ./t3 unmount "$DB_VOL"
 cleanup
 
 
-# Test non-standard container name and hostname
+# Test custom container name and hostname
 CONT_NAME=foo
-HOST_NAME=bar
+HOST_NAME=dev.under.test
 
-echo $'\n*************** Non-standard container name and hostname' >&2
+echo $'\n*************** Custom container name and hostname' >&2
 t3_ run
 test "$(docker exec typo3 hostname)" = typo3.${HOSTNAME}
 cleanup
@@ -295,42 +295,67 @@ t3_ composer show | grep -q -F 'typo3/cms-'
 cleanup
 
 
-# Test host environment settings
-# PHP_SETTING='foo="bar"'
+# Test container environment settings
 
-# echo $'\n*************** Host environment settings' >&2
-# t3_ run --env MODE=dev
+echo $'\n*************** Container environment settings' >&2
 
-# echo "Verifying developer mode" >&2
-# verify_logs $SUCCESS_TIMEOUT 'developer mode'
-# verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
-# verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
+echo "Verifying timezone and language" >&2
+LOCALE=de_AT.UTF-8
+TZ=Australia/Melbourne
 
-# cleanup
+T3_LANG=$LOCALE t3_ run --env TIMEZONE=$TZ 
+verify_logs $SUCCESS_TIMEOUT $LOCALE
+verify_logs $SUCCESS_TIMEOUT $TZ
 
-# T3_MODE=dev t3_ run
-# verify_logs $SUCCESS_TIMEOUT 'developer mode'
+cleanup
 
-# echo "Verifying production mode" >&2
-# t3_ env MODE=prod | grep -q -F 'production mode'
-# verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
-# verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
+echo "Verifying developer mode" >&2
+t3_ run --env MODE=dev
+verify_logs $SUCCESS_TIMEOUT 'developer mode'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
 
-# echo "Verifying developer mode with XDebug" >&2
-# t3_ env MODE=xdebug | grep -q -F 'developer mode with XDebug'
+echo "Verifying MODE check" >&2
+t3_ env MODE=abc 2>&1 | grep -q -F 'Unknown mode'
 
-# echo "Verifying MODE persistence" >&2
-# t3_ env php_${PHP_SETTING//\"/} | grep -q -F 'developer mode with XDebug'
+cleanup
 
-# echo "Verifying php.ini setting" >&2
-# verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F "$PHP_SETTING"
+T3_MODE=dev t3_ run
+verify_logs $SUCCESS_TIMEOUT 'developer mode'
 
-# cleanup
+echo "Verifying production mode and abbreviations" >&2
+t3_ env MODE=pr | grep -q -F 'production mode'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
+
+echo "Verifying developer mode with XDebug" >&2
+t3_ env MODE=x | grep -q -F 'developer mode with XDebug'
+
+echo "Verifying MODE persistence" >&2
+t3_ env PHP_foo=bar | grep -q -F 'developer mode with XDebug'
+
+echo "Verifying php.ini setting" >&2
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
+
+cleanup
+
+echo "Verifying settings precedence" >&2
+T3_MODE=dev PHP_foo=xyz t3_ run --env MODE=x --env PHP_foo=bar
+verify_logs $SUCCESS_TIMEOUT 'developer mode with XDebug'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
+
+cleanup
 
 
-# Test custom certificate
+# Test certificates
+HOST_NAME=dev.under.test
 CERTFILE='cert file'
 CN=foo.bar
+
+echo $'\n*************** Self-signed certificate' >&2
+t3_ run -H $HOST_NAME
+verify_logs $SUCCESS_TIMEOUT "CN=$HOST_NAME"
+cleanup
 
 echo $'\n*************** Custom certificate' >&2
 openssl req -x509 -sha256 -days 1 \
