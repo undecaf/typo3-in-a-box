@@ -324,8 +324,8 @@ T3_MODE=dev t3_ run
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
 
 echo "Verifying production mode and abbreviations" >&2
+set -x
 t3_ env MODE=pr | grep -q -F 'production mode'
-sleep $FAILURE_TIMEOUT
 verify_cmd_success $FAILURE_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
 verify_cmd_success $FAILURE_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
 
