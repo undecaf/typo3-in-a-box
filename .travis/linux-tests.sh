@@ -323,19 +323,20 @@ cleanup
 T3_MODE=dev t3_ run
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
 
-# echo "Verifying production mode and abbreviations" >&2
-# t3_ env MODE=pr | grep -q -F 'production mode'
-# verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
-# verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
+echo "Verifying production mode and abbreviations" >&2
+t3_ env MODE=pr | grep -q -F 'production mode'
+sleep $FAILURE_TIMEOUT
+verify_cmd_success $FAILURE_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
+verify_cmd_success $FAILURE_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
 
-# echo "Verifying developer mode with XDebug" >&2
-# t3_ env MODE=x | grep -q -F 'developer mode with XDebug'
+echo "Verifying developer mode with XDebug" >&2
+t3_ env MODE=x | grep -q -F 'developer mode with XDebug'
 
-# echo "Verifying MODE persistence" >&2
-# t3_ env PHP_foo=bar | grep -q -F 'developer mode with XDebug'
+echo "Verifying MODE persistence" >&2
+t3_ env PHP_foo=bar | grep -q -F 'developer mode with XDebug'
 
-# echo "Verifying php.ini setting" >&2
-# verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
+echo "Verifying php.ini setting" >&2
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 cleanup
 
