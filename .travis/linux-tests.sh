@@ -302,6 +302,7 @@ echo $'\n*************** Container environment settings' >&2
 echo "Verifying timezone and language" >&2
 LOCALE=de_AT.UTF-8
 TZ=Australia/Melbourne
+TEMP_FILE=$(mktemp)
 
 T3_LANG=$LOCALE t3_ run --env TIMEZONE=$TZ 
 verify_logs $SUCCESS_TIMEOUT $LOCALE
@@ -312,25 +313,26 @@ cleanup
 echo "Verifying developer mode" >&2
 t3_ run --env MODE=dev
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
-verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$'
-verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '^X-Powered-By: PHP/.*$'
 
 echo "Verifying MODE check" >&2
 t3_ env MODE=abc 2>&1 | grep -q -F 'Unknown mode'
 
 cleanup
 
-T3_MODE=dev t3_ run
+echo "Verifying mode changes and abbreviations" >&2
+T3_MODE=d t3_ run
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
+grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$' $TEMP_FILE && grep -q '^X-Powered-By: PHP/.*$' $TEMP_FILE
 
-# echo "Verifying production mode and abbreviations" >&2
-# set -x
-# t3_ env MODE=pr | grep -q -F 'production mode'
-# verify_cmd_success $FAILURE_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^Server: Apache/'
-# verify_cmd_success $FAILURE_TIMEOUT curl -Is $INSTALL_URL | grep -q -v '^X-Powered-By:'
+t3_ env MODE=pr | grep -q -F 'production mode'
+verify_cmd_success $FAILURE_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
+! grep -q '^Server: Apache/' $TEMP_FILE && ! grep -q '^X-Powered-By:' $TEMP_FILE
 
 echo "Verifying developer mode with XDebug" >&2
 t3_ env MODE=x | grep -q -F 'developer mode with XDebug'
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
+grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$' $TEMP_FILE && grep -q '^X-Powered-By: PHP/.*$' $TEMP_FILE
 
 echo "Verifying MODE persistence" >&2
 t3_ env PHP_foo=bar | grep -q -F 'developer mode with XDebug'
@@ -338,11 +340,8 @@ t3_ env PHP_foo=bar | grep -q -F 'developer mode with XDebug'
 echo "Verifying php.ini setting" >&2
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
-cleanup
-
 echo "Verifying settings precedence" >&2
-T3_MODE=dev PHP_foo=xyz t3_ run --env MODE=x --env PHP_foo=bar
-verify_logs $SUCCESS_TIMEOUT 'developer mode with XDebug'
+T3_MODE=dev PHP_foo=xyz t3 env MODE=x PHP_foo=bar | grep -q -F 'developer mode with XDebug'
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 cleanup
