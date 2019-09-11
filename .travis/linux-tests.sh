@@ -341,7 +341,7 @@ echo "Verifying php.ini setting" >&2
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 echo "Verifying settings precedence" >&2
-T3_MODE=dev PHP_foo=xyz t3 env MODE=x PHP_foo=bar | grep -q -F 'developer mode with XDebug'
+T3_MODE=dev PHP_foo=xyz t3_ env MODE=x PHP_foo=bar | grep -q -F 'developer mode with XDebug'
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 cleanup
