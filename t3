@@ -414,7 +414,7 @@ shift
 OPT_COUNT=$#
 
 # Determine command
-[ -n "$CMD" ] && MSG="Unknown command: '$CMD'" || MSG="Missing command"
+[ -n "$CMD" ] && MSG="Unknown or ambiguous command: '$CMD'" || MSG="Missing command"
 
 case "$CMD" in
 
@@ -950,8 +950,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# At least one option must be present
-[ $OPT_COUNT -eq 0 ] && usage 'No option was found but at least one is required'
+# At least one (additional) argument must be present
+[ $OPT_COUNT -eq 0 ] && usage 'No argument was found but at least one is required'
 
 
 # --------------------------------------------------------------------------
@@ -1173,6 +1173,6 @@ case "$CMD" in
         ;;
 
     *)
-        usage "Unknown command: '$CMD'"
+        usage "Unknown or ambiguous command: '$CMD'"
         ;;
 esac
