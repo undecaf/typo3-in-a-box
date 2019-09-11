@@ -570,7 +570,8 @@ Usage:
   $($BASENAME $0) env [option]... [NAME=VALUE]...
   $($BASENAME $0) env [-h|--help]
 
-Modifies the environment of a running TYPO3 container.
+Modifies the environment of a running TYPO3 container. Shows the
+current environment if no NAME=VALUE pairs are given.
 
 Options (default values can be overridden by environment variables):
 
@@ -594,6 +595,9 @@ Options (default values can be overridden by environment variables):
 EOT
         )
         ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-d|--debug'
+ 
+        # No additional options required
+        OPT_COUNT=1
         ;;
 
 

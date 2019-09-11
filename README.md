@@ -644,6 +644,9 @@ Modifies the environment of a running TYPO3 container by setting
 $ t3 env [option]... [NAME=VALUE]...
 ```
 
+If no `NAME=VALUE` pairs were specified then this command shows the current
+enrivonment.
+
 __Container engine:__
 the same engine as for the corresponding `t3 run` command.
 Use option&nbsp;`-e` (or `T3_ENGINE`) if necessary.
