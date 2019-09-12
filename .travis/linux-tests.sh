@@ -353,7 +353,7 @@ EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
 
 t3_ env COMPOSER_EXCLUDE=$EXCLUDED >$TEMP_FILE
 for D in ${EXCLUDED//:/ }; do
-    grep -q -F $D $TEMP_FILE || echo "status = $?"
+    grep -q -F $D $TEMP_FILE
 done
 
 # echo "Verifying that COMPOSER_EXCLUDE is being excluded"
