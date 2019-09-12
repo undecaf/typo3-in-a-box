@@ -346,6 +346,24 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 
 cleanup
 
+echo "Verifying the effect of COMPOSER_EXCLUDE"
+EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
+
+t3_ run -c
+
+t3_ env COMPOSER_EXCLUDE=$EXCLUDED >$TEMP_FILE
+for D in ${EXCLUDED//:/ }; do
+    grep -q -F $D $TEMP_FILE
+done
+
+t3_ composer update >$TEMP_FILE
+for D in ${EXCLUDED//:/ }; do
+    grep -q -F "Excluded $D" $TEMP_FILE
+    grep -q -F "Restored $D" $TEMP_FILE
+done
+
+cleanup
+
 
 # Test certificates
 HOST_NAME=dev.under.test
@@ -373,16 +391,6 @@ echo | \
     openssl s_client -showcerts -servername -connect $HOST_IP:$HTTPS_PORT 2>/dev/null | \
     grep -q -F "subject=CN = $CN"
 cleanup
-
-
-# Test pulling
-echo $'\n*************** Pull "newer" image' >&2
-t3_ run -u -d
-cleanup
-
-
-# Test COMPOSER_EXCLUDE
-echo $'\n*************** COMPOSER_EXCLUDE' >&2
 
 
 # Remove trap
