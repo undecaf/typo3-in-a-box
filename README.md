@@ -159,7 +159,7 @@ will be preferred.
 To stop and remove the container, enter
 
 ```bash
-$ t3 stop --rm
+$ t3 stop -R
 ```
 
 State is preserved in volumes `typo3-root` and `typo3-data` so that a subsequent
@@ -192,7 +192,7 @@ $ t3 stop
 ```
 
 to stop the container. If you wish to have the stopped container removed, too,
-type `t3 stop --rm` instead.
+type `t3 stop -R` instead.
 
 
 #### Database credentials
@@ -544,10 +544,13 @@ If option&nbsp;`-d` is present (or `T3_DEBUG` is non-empty) then the commands se
 _Warning_: your database credentials will be visible if this option is set.
 
 __TYPO3:__
-by default, the latest image built for the most recent TYPO3 version is pulled
-from [`docker.io/undecaf/typo3-in-a-box`](https://hub.docker.com/r/undecaf/typo3-in-a-box).
+by default, the latest image built for the most recent TYPO3 version
+([`docker.io/undecaf/typo3-in-a-box`](https://hub.docker.com/r/undecaf/typo3-in-a-box))
+is started. 
 Option&nbsp;`-t` (or `T3_TAG`) selects a particular TYPO3 version and build by one of the
 [available tags](https://hub.docker.com/r/undecaf/typo3-in-a-box/tags).
+Use option&nbsp;`-u` (or `T3_PULL`) if you wish to pull an up-to-date version 
+of that image from the repository.
 
 TYPO3 is served at `http://127.0.0.1:8080` and  `https://127.0.0.1:8443` by default.
 Option&nbsp;`-p` (or `T3_PORTS`) lets you choose different host interfaces and/or ports.
@@ -644,7 +647,7 @@ __Show Docker/Podman commands:__
 If option&nbsp;`-d` is present (or `T3_DEBUG` is non-empty) then the commands sent to Docker/Podman will be shown on the console.
 
 __Remove stopped container:__
-add option&nbsp;`--rm` if the TYPO3 container should be removed after being stopped.
+add option&nbsp;`-R` if the TYPO3 container should be removed after being stopped.
 This can also be used to remove a container that is not running.
 
 Please note: `t3` never removes _volumes_.
@@ -807,11 +810,12 @@ that environment variable is not set.
 | Option | Commands | Description |
 |--------|----------|-------------|
 | `--engine=ENGINE`<br>`-e ENGINE` | all | Container engine to use: `docker`, `podman` (can be) abbreviated, or an _absolute path_ to the engine executable.<br>Default:  `$T3_ENGINE`, or `podman` if installed, else `docker`. |
-| `-h`<br>`--help` | none<br>all | Displays a list of commands, or help for the specified command. |
+| `-h`<br>`--help` | all | Displays a list of commands, or help for the specified command. |
 | `--name=NAME`<br>`-n NAME` | `run`<br>`stop`<br>`composer`<br>`shell`<br>`env` | Container name.<br>Default: `$T3_NAME`, or `typo3`. |
 | `--debug`<br>`-d` | `run`<br>`stop`<br>`composer`<br>`shell`<br>`env` | If this option is present then it shows Docker/Podman commands on the console.<br>_Warning:_ your database credentials will be visible on the console if this option is set for `t3 run`.<br>Default: `$T3_DEBUG`, or not set. |
 | `--hostname=HOSTNAME`<br>`-H HOSTNAME` | `run` | Hostname assigned to the TYPO3 container and to Apache `ServerName` and `ServerAdmin`.<br>Default: `$T3_HOSTNAME`, or `typo3.$(hostname)`. |
 | `--tag=TAG`<br>`-t TAG` | `run` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`.<br>Default: `$T3_TAG`, or `latest`, i.e. the latest build for the most recent TYPO3 version. |
+| `--pull`<br>`-u` | `run` | Pulls an up-to-date version of the image from the repository before running it.<br>Default: `$T3_PULL`, or not set. |
 | `--composer-mode`<br>`-c` | `run` | If this option is present then Composer is responsible for installing/removing TYPO3 extensions. Otherwise, this is handled by the TYPO3 Extension Manager.<br>Default: `$T3_COMPOSER_MODE`, or not set. |
 | `--typo3-root=VOLUME`<br>`-v VOLUME` | `run` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path (containing a `/`).<br>In the latter case, the directory basename is used as the volume name, and the directory is bind-mounted at that volume. Thus, volume content appears to be owned by the current user.<br>__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3.<br>Default: `$T3_ROOT`, or `typo3-root`. |
 | `--typo3-ports=HTTP,HTTPS`<br>`-p HTTP,HTTPS` | `run` | Host interfaces (optional) and ports where to publish the TYPO3 HTTP port and the TYPO3 HTTPS port. If one of the mappings is omitted then the respective port will not be published.<br>Default: `$T3_PORTS`, or `127.0.0.1:8080,127.0.0.1:8443`. |
@@ -820,7 +824,7 @@ that environment variable is not set.
 | `--db-vol=VOLUME`<br>`-V VOLUME` | `run` | Database volume name or working directory path (see `--typo3-root`).<br>Defaults: `$T3_DB_DATA`, or `typo3-data`. |
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option&nbsp;`--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). Most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. |
-| `--rm` | `stop` | Causes the TYPO3 container to be removed after being stopped. |
+| `--rm`<br>`-R` | `stop` | Causes the TYPO3 container to be removed after being stopped. |
 
 ---
 
@@ -839,6 +843,7 @@ thus establishing a consistent environment for all `t3` commands.
 | `T3_DEBUG` | If non-empty then this shows Docker/Podman commands on the console.<br>_Warning:_ your database credentials will be visible on the console if this option is set for `t3 run`. | empty |
 | `T3_HOSTNAME` | Hostname assigned to the TYPO3 container and to Apache `ServerName` and `ServerAdmin`. | `typo3.$(hostname)` |
 | `T3_TAG` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`. | `latest` |
+| `T3_PULL` | If non-empty then an up-to-date version of the image is pulled from the repository before running it. | empty |
 | `T3_COMPOSER_MODE` | If non-empty then Composer is responsible for installing/removing TYPO3 extensions. Otherwise, this is handled by the TYPO3 Extension Manager. | empty |
 | `T3_ROOT` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path (containing a `/`).<br>In the latter case, the directory basename is used as the volume name, and the directory is bind-mounted at that volume. Thus, volume content appears to be owned by the current user.<br>__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3. | `typo3-root` |
 | `T3_PORTS` | Host interfaces (optional) and ports where to publish the TYPO3 HTTP port and the TYPO3 HTTPS port. If one of the parts is omitted then the respective port will not be published. | `127.0.0.1:8080,`<br>`127.0.0.1:8443` |
