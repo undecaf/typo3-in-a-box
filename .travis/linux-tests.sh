@@ -362,7 +362,8 @@ openssl req -x509 -sha256 -days 1 \
     -newkey rsa:2048 -nodes \
     -keyout "$CERTFILE.key" \
     -subj "/CN=$CN" \
-    -out "$CERTFILE.pem"
+    -out "$CERTFILE.pem" \
+    2>/dev/null
 
 t3_ run -k "$CERTFILE.key,$CERTFILE.pem"
 
@@ -372,6 +373,12 @@ echo | \
     openssl s_client -showcerts -servername -connect $HOST_IP:$HTTPS_PORT 2>/dev/null | \
     grep -q -F "subject=CN = $CN"
 cleanup
+
+
+# Test image pulling
+
+echo $'\n*************** Pull, no update' >&2
+docker pull $PRIMARY_IMG
 
 
 # Remove trap
