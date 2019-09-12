@@ -126,7 +126,6 @@ EOF
         if [ -f $TYPO3_ROOT/composer.json ] && \
             grep -q -E 'define *\( *'"'TYPO3_COMPOSER_MODE'"' *, *TRUE *\)' $TYPO3_ROOT/vendor/typo3/autoload-include.php; then
             echo 'TYPO3 extensions have to be added/removed by Composer (Composer Mode)'
-            break;
 
         else
             echo 'Cannot enable Composer Mode: it is already disabled in an existing volume'
