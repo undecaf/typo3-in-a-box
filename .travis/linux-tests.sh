@@ -375,10 +375,14 @@ echo | \
 cleanup
 
 
-# Test image pulling
+# Test pulling
+echo $'\n*************** Pull "newer" image' >&2
+t3_ run -u -d
+cleanup
 
-echo $'\n*************** Pull, no update' >&2
-docker pull $PRIMARY_IMG
+
+# Test COMPOSER_EXCLUDE
+echo $'\n*************** COMPOSER_EXCLUDE' >&2
 
 
 # Remove trap
