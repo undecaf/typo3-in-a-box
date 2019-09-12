@@ -3,6 +3,13 @@
 #
 # Usage: source $0
 #
+# Required environment:
+#   TRAVIS_REPO_SLUG   undecaf/typo3-in-a-box (required)
+#   MAJOR_VER          major version number (required)
+#   TRAVIS_BRANCH      master, dev or Git tag (optional)
+#   TRAVIS_TAG         Git tag (optional)
+#   TRAVIS_COMMIT      commit hash (optional)
+#
 
 # Prints the MAJOR.MINOR version of a tag to stdout.
 major_minor() {
