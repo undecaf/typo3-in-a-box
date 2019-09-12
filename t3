@@ -251,7 +251,9 @@ test_container() {
 # --------------------------------------------------------------------------
 
 # Runs/execs the selected container engine with the given arguments.
-# Echoes the run command to the console if T3_DEBUG is non-empty.
+# If T3_DEBUG is non-empty then the run command is echoed to stdout,
+# and engine messages sent to stdout and stderr are visible at the
+# console. Otherwise, only stderr is displayed at the console.
 #
 # Arguments:
 #   $1, $2, ...
@@ -262,18 +264,12 @@ test_container() {
 #   $T3_DEBUG
 #
 run_engine() {
-    [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
-    $T3_ENGINE "$@"
-}
-
-run_engine_stderr() {
-    [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
-    $T3_ENGINE "$@" >/dev/null
-}
-
-run_engine_muted() {
-    [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
-    $T3_ENGINE "$@" &>/dev/null
+    if [ -n "$T3_DEBUG" ]; then
+        echo "$T3_ENGINE $@"
+        $T3_ENGINE "$@"
+    else
+        $T3_ENGINE "$@" >/dev/null
+    fi
 }
 
 exec_engine() {
@@ -409,7 +405,7 @@ case "$CMD" in
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) run [option]... [--] [Docker/Podman option]...
+  $($BASENAME $0) run [option]... [--] [Docker/Podman 'create' option]...
   $($BASENAME $0) run [-h|--help]
 
 Runs TYPO3 image 'undecaf/typo3-in-a-box' in a container in Docker or Podman.
@@ -490,15 +486,15 @@ Options (default values can be overridden by environment variables):
                 \$T3_PHP_..., \$T3_php_...
  
   --debug, -d
-      If this option is present then generated Docker/Podman commands will be
-      shown on the console.
-      Warning: your database credentials will be visible on the console.
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
+      Warning: your database credentials will be visible at the console.
       Default: \$T3_DEBUG, or not set.
  
   --help, -h
       Displays this text and exits.
 
-Additional options for the Docker/Podman 'run' command can be added after the options
+Additional options for the Docker/Podman 'create' command can be added after the options
 described above. If necessary, '--' can be used to separate them from the $($BASENAME $0) options.
  
 EOT
@@ -531,8 +527,8 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_NAME, or 'typo3'.
  
   --debug, -d
-      If this option is present then generated Docker/Podman commands will be
-      shown on the console.
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
       Default: \$T3_DEBUG, or not set.
  
   --rm
@@ -572,8 +568,8 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_NAME, or 'typo3'.
  
   --debug, -d
-      If this option is present then generated Docker/Podman commands will be
-      shown on the console.
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
       Default: \$T3_DEBUG, or not set.
 
   --help, -h
@@ -608,8 +604,8 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_NAME, or 'typo3'.
  
   --debug, -d
-      If this option is present then generated Docker/Podman commands will be
-      shown on the console.
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
       Default: \$T3_DEBUG, or not set.
 
   --help, -h
@@ -642,8 +638,8 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_NAME, or 'typo3'.
  
   --debug, -d
-      If this option is present then generated Docker/Podman commands will be
-      shown on the console.
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
       Default: \$T3_DEBUG, or not set.
 
   --help, -h
@@ -817,10 +813,11 @@ while [ $# -gt 0 ]; do
             ;;
 
         # Debug container engine commands
-        run:@(-d|--debug))
+        @(run|stop|composer|shell|env):@(-d|--debug))
             T3_DEBUG=on
             shift
             ;;
+
         # Image tag
         run:@(-t|--tag))
             shift
@@ -1066,12 +1063,12 @@ case "$CMD" in
         REPO=$T3_IMAGE${T3_TAG:+:$T3_TAG}
         if [ -n "$T3_PULL" ]; then
             echo '*** '"Pulling image '$REPO'"' ***'
-            run_engine_stderr pull $REPO
+            run_engine pull $REPO
         fi
 
         # Create the TYPO3 container
         echo '*** '"Creating container '$T3_NAME'"' ***'
-        run_engine_stderr create \
+        run_engine create \
             --name "$T3_NAME" \
             --hostname "$T3_HOSTNAME" \
             --ulimit $FILE_LIMIT \
@@ -1086,13 +1083,13 @@ case "$CMD" in
 
         # Copy certificate files, if any
         if [ -n "$T3_CERTFILES" ]; then
-            run_engine_muted cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
-            run_engine_muted cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
+            run_engine cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
+            run_engine cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
         fi
         echo '*** '"Container '$T3_NAME' created"' ***'
 
         # Start the container
-        run_engine_muted start "$T3_NAME"
+        run_engine start "$T3_NAME"
         echo '*** '"Container '$T3_NAME' started"' ***'
 
         # Eventually bind-mount container volumes in userspace
@@ -1119,12 +1116,12 @@ case "$CMD" in
 
         # Stop and eventually remove the container
         #stop_container "$T3_NAME"
-        if run_engine_muted kill --signal SIGINT "$T3_NAME" && run_engine_muted stop --time 5 "$T3_NAME"; then
+        if run_engine kill --signal SIGINT "$T3_NAME" && run_engine stop --time 5 "$T3_NAME"; then
             echo '*** '"Container '$T3_NAME' stopped"' ***'
         fi
 
         # Remove the container(s) if so requested
-        [ -n "$REMOVE_OPTION" ] && run_engine_muted container rm "$T3_NAME"
+        [ -n "$REMOVE_OPTION" ] && run_engine container rm "$T3_NAME"
 
         # Wait until the container was removed eventually
         $SLEEP 1
@@ -1133,12 +1130,12 @@ case "$CMD" in
 
 
     env)
-        run_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
+        exec_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
         ;;
 
 
     composer)
-        run_engine exec "$T3_NAME" composer "$@"
+        exec_engine exec "$T3_NAME" composer "$@"
         ;;
 
 
