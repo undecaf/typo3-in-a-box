@@ -1052,6 +1052,7 @@ case "$T3_DB_TYPE" in
         ;;
 
     sqlite|'')
+        ! [[ "$T3_TAG" =~ ^8 ]] || usage "TYPO3 '$T3_TAG' does not support SQLite"
         T3_DB_PORT=
         DB_PORT_OPTION=
         ;;

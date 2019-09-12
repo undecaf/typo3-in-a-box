@@ -5,9 +5,10 @@
 ![Image Size](https://img.shields.io/microbadger/image-size/undecaf/typo3-in-a-box/latest.svg)
 
 This project provides a ready-to-run and extensive
-[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.0 installation as a container image.
+[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.0 installation as a single container image.
 It is widely configurable, and thus it addresses TYPO3 editors and administrators
-as well as integrators and extension developers.
+as well as integrators and extension developers. Builds of the TYPO3 development
+branches are available, too.
 
 The image is based on [Alpine Linux](https://alpinelinux.org/), comes
 with up-to-date versions of [Apache](https://httpd.apache.org/),
