@@ -16,27 +16,24 @@ fi
 
 RUN_COMPOSER=1
 
-if [ -n "$COMPOSER_EXCLUDE" ]; then
-    COMPOSER_EXCLUDE_ROOT=$APACHE_HOME/composer-exclude
-
+if [ -n "$SAVED_COMPOSER_EXCLUDE" ]; then
     # Copy directories to exclude, making sure that each one is restored afterwards
-    set -e
     TRAP_CMDS=
+    set -e
 
-    echo $COMPOSER_EXCLUDE | while IFS=':' read -ra DIRS; do
-        for D in "${DIRS[@]}"; do
-            if [ -n "$D" -a -d $TYPO3_ROOT/$D ]; then
-                SAVE_DIR=$(mktemp -d)
-                rsync -aq $TYPO3_ROOT/$D/ $SAVE_DIR/
-                echo "Excluded $D"
-                TRAP_CMDS="rm -rf $TYPO3_ROOT/$D/"'*'"; rsync -aq $SAVE_DIR/ $TYPO3_ROOT/$D/ && echo 'Restored '$D; $TRAP_CMDS"
-                trap "set +e; $TRAP_CMDS" EXIT
+    IFS=: read -ra DIRS <<< "$SAVED_COMPOSER_EXCLUDE"
+    for D in "${DIRS[@]}"; do
+        if [ -n "$D" -a -d $TYPO3_ROOT/$D ]; then
+            SAVE_DIR=$(mktemp -d)
+            rsync -aq $TYPO3_ROOT/$D/ $SAVE_DIR/
+            echo "Excluded $D"
+            TRAP_CMDS="rm -rf $TYPO3_ROOT/$D/"'*'"; rsync -aq $SAVE_DIR/ $TYPO3_ROOT/$D/ && echo 'Restored '$D; $TRAP_CMDS"
+            trap "set +e; $TRAP_CMDS" EXIT
 
-            else
-                echo "Cannot exclude $D: no such directory in $TYPO3_ROOT" 1>&2
-                RUN_COMPOSER=
-            fi
-        done
+        else
+            echo "Cannot exclude $D: no such directory in $TYPO3_ROOT" >&2
+            RUN_COMPOSER=
+        fi
     done
 fi
 
@@ -46,6 +43,6 @@ if [ -n "$RUN_COMPOSER" ]; then
         -s /bin/sh -l \
         -c ". /etc/environment; /usr/local/bin/composer.phar --working-dir=\$TYPO3_ROOT $*"
 else
-    echo "Cannot comply with COMPOSER_EXCLUDE, Composer was not run" 1>&2
-    exit -1
+    echo "Cannot account for COMPOSER_EXCLUDE, therefore Composer was not run" >&2
+    exit 1
 fi
