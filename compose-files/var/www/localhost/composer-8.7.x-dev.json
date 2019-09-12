@@ -23,7 +23,6 @@
         "typo3/cms-form": "8.7.x-dev",
         "typo3/cms-frontend": "8.7.x-dev",
         "typo3/cms-func": "8.7.x-dev",
-        "typo3/cms-func-wizards": "8.7.x-dev",
         "typo3/cms-impexp": "8.7.x-dev",
         "typo3/cms-indexed-search": "8.7.x-dev",
         "typo3/cms-info": "8.7.x-dev",
@@ -51,7 +50,12 @@
         "typo3/cms-viewpage": "8.7.x-dev",
         "typo3/cms-wizard-crpages": "8.7.x-dev",
         "typo3/cms-wizard-sortpages": "8.7.x-dev",
-        "typo3/cms-workspaces": "8.7.x-dev",
-        "typo3-ter/func": "*"
+        "typo3/cms-workspaces": "8.7.x-dev"
+    },
+    "extra": {
+        "typo3/cms": {
+            "cms-package-dir": "{$vendor-dir}/typo3/cms",
+            "web-dir": "public"
+        }
     }
 }

@@ -16,7 +16,7 @@ mount options of `t3` on macOS.
     `9.5-dev`,  
     `10.0-dev`: weekly builds of the most recent _development image_ of the most
     recent TYPO3&nbsp;9.5/10.0 _development version_ (currently
-    [`dev-TYPO3_8-7`](https://packagist.org/packages/typo3/cms#dev-TYPO3_8-7),
+    [`8.7.x-dev`](https://packagist.org/packages/typo3/cms#dev-TYPO3_8-7),
     [`9.5.x-dev`](https://packagist.org/packages/typo3/cms#9.5.x-dev) and
     [`10.1.x-dev`](https://packagist.org/packages/typo3/cms#dev-master))
 -   `8.7-x.y`,  
