@@ -5,9 +5,10 @@
 ![Image Size](https://img.shields.io/microbadger/image-size/undecaf/typo3-in-a-box/latest.svg)
 
 This project provides a ready-to-run and extensive
-[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.0 installation as a container image.
+[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.0 installation as a single container image.
 It is widely configurable, and thus it addresses TYPO3 editors and administrators
-as well as integrators and extension developers.
+as well as integrators and extension developers. Builds of the TYPO3 development
+branches are available, too.
 
 The image is based on [Alpine Linux](https://alpinelinux.org/), comes
 with up-to-date versions of [Apache](https://httpd.apache.org/),
@@ -106,6 +107,7 @@ across container lifecycles.
 In order to view the version of this README file that matches the version of
 the running TYPO3 instance, browse to [`http://localhost:8080/readme.html`](http://localhost:8080/readme.html).
 
+---
 
 ### `t3` shell script
 
@@ -137,6 +139,8 @@ It should be saved to a directory which is part of the search path, e.g.
 $ sudo chmod 755 /usr/local/bin/t3
 ```
 
+---
+
 ### Quick start with `t3`
 
 To run a TYPO3 container [as in the example above](#quick-start) with `t3`,
@@ -161,6 +165,7 @@ $ t3 stop --rm
 State is preserved in volumes `typo3-root` and `typo3-data` so that a subsequent
 `t3 run` command will resume from where you left off.
 
+---
 
 ### MariaDB and PostgreSQL
 
@@ -196,6 +201,7 @@ Database credentials can be defined by [host environment variables](#host-enviro
 `T3_DB_NAME`, `T3_DB_USER`, `T3_DB_PW` and `T3_DB_ROOT_PW`. If not set then the database name, user and password all default to `t3` and `T3_DB_ROOT_PW` defaults
 to `toor`.
 
+---
 
 ### HTTPS connections
 
@@ -205,6 +211,7 @@ By default, TYPO3 is served both at `http://127.0.0.1:8080` and at
 [`t3 run` options ](#t3-run) can be used to change the port mapping and to specify
 a custom SSL certificate.
 
+---
 
 ## Developing for TYPO3
 
@@ -299,6 +306,7 @@ the files and directories in a volume with their UIDs and GIDs
 mapped to your own UID and GID. This does not affect UIDs and GIDs seen by the
 container.
 
+---
 
 ### Setting the container environment
 
@@ -321,6 +329,7 @@ $ t3 env MODE=xdebug PHP_post_max_size=1M
 
 Container environment settings are lost when the container is removed.
 
+---
 
 ### Composer
 
@@ -359,6 +368,7 @@ In order to prevent this, set the
 `COMPOSER_EXCLUDE` to a colon-separated list of _subdirectories_ of 
 `/var/www/localhost` which are to be excluded from changes made by Composer.
 
+---
 
 ### Debugging with XDebug
 
@@ -405,6 +415,7 @@ $ t3 env MODE=xdebug
 
 Now everything is ready to start a XDebug session.
 
+---
 
 ### Accessing the TYPO3 database
 
@@ -425,6 +436,7 @@ MariaDB is accessible at `127.0.0.1:3306` and PostgreSQL at `127.0.0.1:5432`.
 The [database credentials](#database-credentials) are defined by host
 environment variables.
 
+---
 
 ## Managing multiple TYPO3 instances
 
@@ -463,6 +475,7 @@ $ source my-t3-conf && t3 run
 $ source my-t3-conf && t3 stop
 ```
 
+---
 
 ## `t3` shell script reference
 
@@ -489,6 +502,7 @@ $ t3 st ...   # abbreviation for 't3 stop ...'
 $ t3 c ...    # abbreviation for 't3 composer ...'
 ```
 
+---
 
 ### Getting help
 
@@ -504,6 +518,7 @@ Getting help for a particular command:
 $ t3 COMMAND -h
 ```
 
+---
 
 ### `t3 run`
 
@@ -604,6 +619,7 @@ __Options to be passed to Docker/Podman:__
 must be placed at the end of the 
 command line and should be separated from `t3` options by `--`.
 
+---
 
 ### `t3 stop`
 
@@ -634,6 +650,7 @@ This can also be used to remove a container that is not running.
 Please note: `t3` never removes _volumes_.
 You have to use `docker/podman volume rm` to do that.
 
+---
 
 ### `t3 env`
 
@@ -666,6 +683,7 @@ This option may appear multiple times.
 
 Initial values can be assigned by command [`t3 run`](#t3-run).
 
+---
 
 ### `t3 composer`
 
@@ -701,6 +719,7 @@ directory, set the container environment variable
 to a colon-separated list of _subdirectories_ of 
 `/var/www/localhost` which are to be excluded from changes made by Composer.
 
+---
 
 ### `t3 shell`
 
@@ -727,6 +746,7 @@ __Shell options:__
 any remaining options are passed to the shell. This could be used to run
 arbitrary commands or scripts in the container.
 
+---
 
 ### `t3 mount`
 
@@ -755,6 +775,7 @@ a _directory path_ is required (it _must_ contain a `/`).
 The directory basename is taken as the volume name, and the directory
 is bind-mounted at that volume.
 
+---
 
 ### `t3 unmount`
 
@@ -774,6 +795,7 @@ __TYPO3 working directory, database directory:__
 specify the _working directory path_ to unmount. This is what is done automatically 
 by [`t3 stop`](#t3-stop).
 
+---
 
 ### Options
 
@@ -800,6 +822,7 @@ that environment variable is not set.
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). Most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. |
 | `--rm` | `stop` | Causes the TYPO3 container to be removed after being stopped. |
 
+---
 
 ### Host environment variables
 
@@ -829,7 +852,7 @@ thus establishing a consistent environment for all `t3` commands.
 | `T3_DB_ROOT_PW` | Password of the MariaDB root user; effective only for MariaDB and PostgreSQL. | `toor` |
 | `T3_TIMEZONE`<br>`T3_LANG`<br>`T3_MODE`<br>`T3_COMPOSER_EXCLUDE`<br>`T3_PHP_...` | Initial values for [container environment variables](#container-environment-variables) `TIMEZONE`, `LANG`, `MODE`, `COMPOSER_EXCLUDE` and `PHP_...`. | empty |
 
-
+---
 
 ### Container environment variables
 
@@ -848,6 +871,7 @@ the `t3 env` command.
 | `COMPOSER_EXCLUDE` | Colon-separated list of _subdirectories_ of `/var/www/localhost` which are to be excluded from the effects of [Composer operations](#composer).<br>This is intended e.g. to protect the current version of an extension you are developing from being overwritten by an older version stored in a repository.<br>These directories need to exist only by the time Composer is invoked. | empty |
 | `PHP_...` | Environment variables prefixed with `PHP_` become `php.ini` settings with the prefix removed, e.g. `--env PHP_post_max_size=5M` becomes `post_max_size=5M`. These settings override prior settings and `MODE`. | none |
 
+---
 
 ## Credits to ...
 

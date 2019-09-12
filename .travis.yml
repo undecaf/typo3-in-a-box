@@ -51,7 +51,6 @@ jobs:
     # and deploy each one if the tests passed
     - <<: *build_test
       env: MAJOR_VER=8
-      if: branch != dev   # there is no dev repo for TYPO3 v8.7
 
     # - <<: *build_test
     #   env: MAJOR_VER=9
