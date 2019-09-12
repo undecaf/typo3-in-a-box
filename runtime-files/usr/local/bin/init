@@ -222,11 +222,9 @@ chown -R $APACHE_USER: $APACHE_HOME
 if [ -n "$COMPOSER_EXCLUDE" ]; then
     echo "Directories excluded from Composer operations:"
 
-    echo $COMPOSER_EXCLUDE | \
-    while IFS=':' read -ra DIRS; do
-        for D in "${DIRS[@]}"; do
-            echo "  $D"
-        done
+    IFS=: read -ra DIRS <<< "$COMPOSER_EXCLUDE"
+    for D in "${DIRS[@]}"; do
+        echo "  $D"
     done
 fi
 

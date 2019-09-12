@@ -23,15 +23,15 @@ if [ -n "$SAVED_COMPOSER_EXCLUDE" ]; then
 
     IFS=: read -ra DIRS <<< "$SAVED_COMPOSER_EXCLUDE"
     for D in "${DIRS[@]}"; do
-        if [ -n "$D" -a -d $TYPO3_ROOT/$D ]; then
+        if [ -n "$D" -a -d "$TYPO3_ROOT/$D" ]; then
             SAVE_DIR=$(mktemp -d)
-            rsync -aq $TYPO3_ROOT/$D/ $SAVE_DIR/
-            echo "Excluded $D"
-            TRAP_CMDS="rm -rf $TYPO3_ROOT/$D/"'*'"; rsync -aq $SAVE_DIR/ $TYPO3_ROOT/$D/ && echo 'Restored '$D; $TRAP_CMDS"
+            rsync -aq "$TYPO3_ROOT/$D/" $SAVE_DIR/
+            echo "Excluded '$D'"
+            TRAP_CMDS="rm -rf '$TYPO3_ROOT/$D/'"'*'"; rsync -aq $SAVE_DIR/ '$TYPO3_ROOT/$D/' && echo \"Restored '$D'\"; $TRAP_CMDS"
             trap "set +e; $TRAP_CMDS" EXIT
 
         else
-            echo "Cannot exclude $D: no such directory in $TYPO3_ROOT" >&2
+            echo "Cannot exclude '$D': no such directory in $TYPO3_ROOT" >&2
             RUN_COMPOSER=
         fi
     done
@@ -43,6 +43,6 @@ if [ -n "$RUN_COMPOSER" ]; then
         -s /bin/sh -l \
         -c ". /etc/environment; /usr/local/bin/composer.phar --working-dir=\$TYPO3_ROOT $*"
 else
-    echo "Cannot account for COMPOSER_EXCLUDE, therefore Composer was not run" >&2
+    echo "Cannot satisfy COMPOSER_EXCLUDE constraints, therefore Composer was not run" >&2
     exit 1
 fi
