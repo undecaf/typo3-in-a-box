@@ -390,7 +390,7 @@ unmount_workdir() {
 # --------------------------------------------------------------------------
 
 # Autocomplete command
-CMD=$(autocomplete "$1" run stop env composer shell mount unmount)
+CMD=$(autocomplete "$1" run stop logs env composer shell mount unmount)
 
 shift
 OPT_COUNT=$#
@@ -426,7 +426,7 @@ Options (default values can be overridden by environment variables):
       ServerAdmin.
       Default: \$T3_HOSTNAME, or 'typo3.$($HOSTNAME)'.
 
-  --tag=TAG, -t TAG
+  --tag=TAG, -T TAG
       Tag of image to run, consisting of TYPO3 version and build version,
       e.g. '8.7-1.3' or '9.5-latest'.
       Default: \$T3_TAG, or 'latest', i.e. the latest build for the most recent
@@ -485,6 +485,15 @@ Options (default values can be overridden by environment variables):
       Defaults: \$T3_TIMEZONE, \$T3_LANG, \$T3_MODE, \$T3_COMPOSER_EXCLUDE,
                 \$T3_PHP_..., \$T3_php_...
  
+  --logs, -l
+      Streams the log output of the new TYPO3 instance at the console until 
+      CTRL-C is typed.
+      Default: \$T3_LOGS, or not set.
+ 
+  --timestamps, -t
+      Shows timestamps in the log output. Ignored if '--logs' is not set.
+      Default: \$T3_TIMESTAMPS, or not set.
+
   --debug, -d
       If this option is present then Docker/Podman commands and output appear
       at the console. Otherwise only 'stderr' is displayed.
@@ -531,9 +540,64 @@ Options (default values can be overridden by environment variables):
       at the console. Otherwise only 'stderr' is displayed.
       Default: \$T3_DEBUG, or not set.
  
-  --rm
+  --rm, -R
       Causes the TYPO3 container to be removed after is was stopped.
       This can also be used to remove a container that is not running.
+
+  --help, -h
+      Displays this text and exits.
+ 
+EOT
+        )
+        # No additional options required
+        OPT_COUNT=1
+        ;;
+
+
+    # Display the log output of a running TYPO3 container
+    logs)
+        USAGE=$($CAT <<EOT
+
+Usage:
+  $($BASENAME $0) logs [option]...
+  $($BASENAME $0) logs [-h|--help]
+
+Displays the log output of a running TYPO3 container.
+
+Options (default values can be overridden by environment variables):
+
+  --engine=ENGINE, -e ENGINE
+      Container engine being used: 'docker', 'podman' or an absolute path
+      to the engine executable.
+      Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
+
+  --name=NAME, -n NAME
+      Same container name as specified for 't3 run'.
+      Default: \$T3_NAME, or 'typo3'.
+ 
+  --follow, -f
+      Streams the log output to the console until CTRL-C is typed.
+      Default: \$T3_FOLLOW, or not set.
+ 
+  --since=TIMESTAMP, -s TIMESTAMP
+      Shows only log lines since a timestamp. This can be a Unix timestamp,
+      a date formatted timestamp, or a Go duration string (e.g. 10m, 1h30m)
+      computed relative to the client machine's time.
+      Default: \$T3_SINCE, or not set.
+ 
+  --tail=LINES, -l LINES
+      Shows only that many lines from the end of the log, or all lines
+      if 0.
+      Default: \$T3_TAIL, or not set.
+
+  --timestamps, -t
+      Shows timestamps in the log output.
+      Default: \$T3_TIMESTAMPS, or not set.
+
+  --debug, -d
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
+      Default: \$T3_DEBUG, or not set.
 
   --help, -h
       Displays this text and exits.
@@ -727,8 +791,10 @@ Available commands:
   run           Runs TYPO3 image 'undecaf/typo3-in-a-box' in a container in Docker or
                 Podman.
  
-  stop          Stops a running TYPO3 (and the associated database) container.
+  stop          Stops a running TYPO3 container.
 
+  logs          Displays the log output of a running TYPO3 container.
+ 
   env           Modifies the environment of a running TYPO3 container.
 
   composer      When in Composer Mode, executes a Composer command inside a 
@@ -767,6 +833,10 @@ T3_ROOT=${T3_ROOT:-typo3-root}
 T3_PORTS=${T3_PORTS:-127.0.0.1:8080,127.0.0.1:8443}
 
 REMOVE_OPTION=
+FOLLOW_OPTION=${T3_FOLLOW:+--follow}
+SINCE_OPTION=${T3_SINCE:+--since=$T3_SINCE}
+TIMESTAMPS_OPTION=${T3_TIMESTAMPS:+--timestamps}
+TAIL_OPTION=${T3_TAIL:+--tail=$T3_TAIL}
 
 while [ $# -gt 0 ]; do
     case $CMD:$1 in
@@ -776,7 +846,7 @@ while [ $# -gt 0 ]; do
             ;&
 
         *:--engine=*)
-            T3_ENGINE="${1##*--engine=}"  # basename or absolute path of an executable
+            T3_ENGINE="${1#--engine=}"  # basename or absolute path of an executable
             shift
             ;;
 
@@ -792,7 +862,7 @@ while [ $# -gt 0 ]; do
             ;&
 
         run:--hostname=*)
-            T3_HOSTNAME="${1##*--hostname=}"
+            T3_HOSTNAME="${1#--hostname=}"
             shift
             ;;
 
@@ -802,7 +872,7 @@ while [ $# -gt 0 ]; do
             ;&
 
         @(run|stop|composer|shell|env):--name=*)
-            T3_NAME="${1##*--name=}"
+            T3_NAME="${1#--name=}"
             shift
             ;;
 
@@ -813,18 +883,18 @@ while [ $# -gt 0 ]; do
             ;;
 
         # Debug container engine commands
-        @(run|stop|composer|shell|env):@(-d|--debug))
+        @(run|stop|logs|composer|shell|env):@(-d|--debug))
             T3_DEBUG=on
             shift
             ;;
 
         # Image tag
-        run:@(-t|--tag))
+        run:@(-T|--tag))
             shift
             ;&
 
         run:--tag=*)
-            T3_TAG="${1##*--tag=}"
+            T3_TAG="${1#--tag=}"
             shift
             ;;
 
@@ -836,7 +906,7 @@ while [ $# -gt 0 ]; do
             ;&
 
         run:--typo3-root=*)
-            T3_ROOT="${1##*--typo3-root=}"
+            T3_ROOT="${1#--typo3-root=}"
             test_dir "$T3_ROOT"
             shift
             ;;
@@ -847,7 +917,7 @@ while [ $# -gt 0 ]; do
             ;&
 
         run:--db-type=*)
-            T3_DB_TYPE="${1##*--db-type=}"   # validated later
+            T3_DB_TYPE="${1#--db-type=}"   # validated later
             shift
             ;;
 
@@ -859,7 +929,7 @@ while [ $# -gt 0 ]; do
             ;&
 
         run:--db-data=*)
-            T3_DB_DATA="${1##*--db-data=}"
+            T3_DB_DATA="${1#--db-data=}"
             test_dir "$T3_DB_DATA"
             shift
             ;;
@@ -870,7 +940,7 @@ while [ $# -gt 0 ]; do
             ;&
 
         run:--typo3-ports=*)
-            T3_PORTS="${1##*--typo3-ports=}"
+            T3_PORTS="${1#--typo3-ports=}"
             shift
             ;;
 
@@ -880,7 +950,7 @@ while [ $# -gt 0 ]; do
             ;&
 
         run:--certfiles=*)
-            T3_CERTFILES="${1##*--certfiles=}"
+            T3_CERTFILES="${1#--certfiles=}"
             shift
             ;;
 
@@ -890,7 +960,7 @@ while [ $# -gt 0 ]; do
             ;&
 
         run:--db-port=*)
-            T3_DB_PORT="${1##*--db-port=}"
+            T3_DB_PORT="${1#--db-port=}"
             shift
             ;;
 
@@ -900,10 +970,48 @@ while [ $# -gt 0 ]; do
             ;&
 
         run:--env=*)
-            ENV="${1##*--env=}"
+            ENV="${1#--env=}"
             RE='^('$RE_CONT_ENV')=(.*)$'
             [[ "$ENV" =~ $RE ]] || usage "Not a valid NAME=VALUE pair: '$ENV'"
             export T3_${BASH_REMATCH[1]}=${BASH_REMATCH[2]}
+            shift
+            ;;
+
+        # Stream log output to console at startup
+        run:@(-l|--logs))
+            T3_LOGS=on
+            shift
+            ;;
+
+        # Show timestamps in log output
+        @(run|logs):@(-t|--timestamps))
+            TIMESTAMPS_OPTION='--timestamps'
+            shift
+            ;;
+
+        # Stream log output to console
+        logs:@(-f|--follow))
+            FOLLOW_OPTION='--follow'
+            shift
+            ;;
+
+        # Show only output since some timestamp
+        logs:@(-s|--since))
+            shift
+            ;&
+
+        logs:--since=*)
+            SINCE_OPTION="--since=${1#--since=}"
+            shift
+            ;;
+
+        # Show only a certain number of lines from the end of the log
+        logs:@(-l|--tail))
+            shift
+            ;&
+
+        logs:--tail=*)
+            TAIL_OPTION="--tail=${1#--tail=}"
             shift
             ;;
 
@@ -1097,6 +1205,9 @@ case "$CMD" in
         mount_volume "$T3_DB_DATA" "$DB_DATA_MP" || true
 
         trap - EXIT
+
+        # Eventually show logs
+        [ -n "$T3_LOGS" ] && exec_engine logs --follow $TIMESTAMPS_OPTION "$T3_NAME"
         ;;
 
 
@@ -1126,6 +1237,11 @@ case "$CMD" in
         # Wait until the container was removed eventually
         $SLEEP 1
         $T3_ENGINE container inspect "$T3_NAME" &>/dev/null || echo '*** '"Container '$T3_NAME' removed"' ***'
+        ;;
+
+
+    logs)
+        exec_engine logs $FOLLOW_OPTION $SINCE_OPTION $TAIL_OPTION $TIMESTAMPS_OPTION "$T3_NAME"
         ;;
 
 
