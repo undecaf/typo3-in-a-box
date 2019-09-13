@@ -3,7 +3,7 @@
 	"description" : "Containerized TYPO3 10.0 in Composer mode",
 	"license": "GPL-2.0+",
 	"require": {
-		"typo3/minimal": "^10.0",
+        "typo3/minimal": "^10.0",
         "typo3/cms-about": "^10.0",
         "typo3/cms-adminpanel": "^10.0",
         "typo3/cms-backend": "^10.0",
@@ -38,6 +38,9 @@
         "typo3/cms-t3editor": "^10.0",
         "typo3/cms-tstemplate": "^10.0",
         "typo3/cms-viewpage": "^10.0",
-        "typo3/cms-workspaces": "^10.0"
+        "typo3/cms-workspaces": "^10.0",
+
+        "phpdocumentor/reflection-common": "1.0.1",
+        "phpdocumentor/type-resolver": "0.4.0"
     }
 }
