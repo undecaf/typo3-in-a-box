@@ -104,16 +104,24 @@ EOF
         while true; do
             if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem ]; then
                 # Certificate found, does it match the current $HOSTNAME?
-                test "$(common_name $APACHE_CERT.pem)" = "$HOSTNAME" && echo "Using a self-signed SSL certificate, CN=$HOSTNAME" && break
+                test "$(common_name $APACHE_CERT.pem)" = "$HOSTNAME" && { echo "Using a self-signed SSL certificate, CN=$HOSTNAME"; break; }
             fi
 
             # No certificate found that matches the current $HOSTNAME -- create a new one
-            openssl req -x509 -sha256 -days 3653 \
-                -newkey rsa:2048 -nodes \
-                -keyout $APACHE_CERT.key \
+            openssl genrsa -out \
+                $APACHE_CERT.key 3072 \
+                2>/dev/null
+            openssl req -new -sha256 \
+                -out $APACHE_CERT.csr \
+                -key $APACHE_CERT.key \
                 -subj "/CN=$HOSTNAME" \
-                -out $APACHE_CERT.pem \
-                &>/dev/null
+                2>/dev/null
+            openssl x509 -req -days 3653 \
+                -in $APACHE_CERT.csr \
+                -signkey $APACHE_CERT.key \
+                -out $APACHE_CERT.pem -outform PEM \
+                2>/dev/null
+            rm $APACHE_CERT.csr
 
             chown $APACHE_USER: $APACHE_CERT.{key,pem}
             echo "Created a self-signed SSL certificate, CN=$HOSTNAME"
@@ -140,6 +148,8 @@ EOF
         echo 'TYPO3 extensions have to be added/removed by the TYPO3 Extension Manager'
     fi
 
+    echo
+    
 else
     # Script invoked by a command after 't3 run' such as 't3 env', 't3 composer'
 
