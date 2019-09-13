@@ -27,14 +27,24 @@
 
 # --------------------------------------------------------------------------
 
-# Echoes the Common Name of a PEM certificate to stdout.
+# Echoes the specified information of the server certificate to stdout.
 #
 # Arguments:
-#   $1  certificate file in PEM format
+#   $1  'issuer' or 'subject'
 #
-common_name() {
-    openssl x509 -in "$1" -text -noout | grep 'Subject: CN' | awk -F ' *= *' '{ print $2 }'
+cert_info() {
+    openssl x509 -in $APACHE_CERT.pem -inform PEM -noout -$1 | awk -F ' = ' '{ print $2 }'
 }
+
+
+# --------------------------------------------------------------------------
+
+# Returns success if the server certificate is self-signed.
+#
+self_signed() {
+    test $(cert_info 'subject') = $(cert_info 'issuer')
+}
+
 
 # --------------------------------------------------------------------------
 
@@ -97,14 +107,16 @@ EOF
         chmod 644 $APACHE_CUSTOM_CERT.pem
         ln -sf $APACHE_CUSTOM_CERT.key $APACHE_CERT.key
         ln -sf $APACHE_CUSTOM_CERT.pem $APACHE_CERT.pem
-        echo "Using a custom SSL certificate, CN=$(common_name $APACHE_CUSTOM_CERT.pem)"
+
+        self_signed && SELF_SIGNED='self-signed ' || SELF_SIGNED=
+        echo "Using a ${SELF_SIGNED}custom SSL certificate, CN=$(cert_info 'subject')"
 
     else
         # Create a self-signed certificate for $HOSTNAME unless one already exists
         while true; do
             if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem ]; then
                 # Certificate found, does it match the current $HOSTNAME?
-                test "$(common_name $APACHE_CERT.pem)" = "$HOSTNAME" && { echo "Using a self-signed SSL certificate, CN=$HOSTNAME"; break; }
+                test "$(cert_info 'subject')" = "$HOSTNAME" && { echo "Using existing SSL certificate, CN=$HOSTNAME"; break; }
             fi
 
             # No certificate found that matches the current $HOSTNAME -- create a new one
@@ -128,6 +140,10 @@ EOF
             break
         done
     fi
+
+    # Disable SSL stapling for self-signed certificates
+    self_signed && STAPLING=Off || STAPLING=On
+    echo "SSLUseStapling $STAPLING" >>/etc/apache2/conf.d/typo3.conf
 
     # Deactivate Composer Mode if so requested
     if [ -n "$T3_COMPOSER_MODE" ]; then
