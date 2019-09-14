@@ -1207,7 +1207,7 @@ case "$CMD" in
         trap - EXIT
 
         # Eventually show logs
-        [ -n "$T3_LOGS" ] && exec_engine logs --follow $TIMESTAMPS_OPTION "$T3_NAME"
+        [ -n "$T3_LOGS" ] && exec_engine logs --follow $TIMESTAMPS_OPTION "$T3_NAME" || true
         ;;
 
 
