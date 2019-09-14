@@ -52,11 +52,11 @@ jobs:
     # - <<: *build_test
     #   env: MAJOR_VER=8
 
-    # - <<: *build_test
-    #   env: MAJOR_VER=9
-
     - <<: *build_test
-      env: MAJOR_VER=10 MOST_RECENT=true
+      env: MAJOR_VER=9
+
+    # - <<: *build_test
+    #   env: MAJOR_VER=10 MOST_RECENT=true
 
 
     # TODO Test scripts under macOS using the saved test sequence and a Docker mockup
