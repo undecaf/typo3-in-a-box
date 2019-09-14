@@ -41,7 +41,7 @@ cert_info() {
 
 # Returns success if the server certificate is self-signed.
 #
-self_signed() {
+test_self_signed() {
     test $(cert_info 'subject') = $(cert_info 'issuer')
 }
 
@@ -108,7 +108,7 @@ EOF
         ln -sf $APACHE_CUSTOM_CERT.key $APACHE_CERT.key
         ln -sf $APACHE_CUSTOM_CERT.pem $APACHE_CERT.pem
 
-        self_signed && SELF_SIGNED='self-signed ' || SELF_SIGNED=
+        test_self_signed && SELF_SIGNED='self-signed ' || SELF_SIGNED=
         echo "Using a ${SELF_SIGNED}custom SSL certificate, CN=$(cert_info 'subject')"
 
     else
@@ -140,10 +140,6 @@ EOF
             break
         done
     fi
-
-    # Disable SSL stapling for self-signed certificates
-    self_signed && STAPLING=Off || STAPLING=On
-    echo "SSLUseStapling $STAPLING" >>/etc/apache2/conf.d/typo3.conf
 
     # Deactivate Composer Mode if so requested
     if [ -n "$T3_COMPOSER_MODE" ]; then
@@ -181,6 +177,9 @@ else
     done <<< "$(printenv)"
 fi
 
+
+# Disable SSL stapling for self-signed certificates
+test_self_signed && export STAPLING=Off || export STAPLING=On
 
 # Select developer/XDebug/production mode, accept abbreviations and ignore case
 while true; do
