@@ -131,7 +131,6 @@ source .travis/messages.inc
 
 # Test basic container and volume status
 echo $'\n*************** Basic container and volume status' >&2
-set -x
 t3_ run
 verify_containers_running typo3
 verify_volumes_exist typo3-root typo3-data
