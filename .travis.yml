@@ -49,7 +49,7 @@ jobs:
   include:
     # Build and test images for various TYPO3 versions
     # and deploy each one if the tests passed
-    - <<: *build_test
+    # - <<: *build_test
     #   env: MAJOR_VER=8
 
     # - <<: *build_test
