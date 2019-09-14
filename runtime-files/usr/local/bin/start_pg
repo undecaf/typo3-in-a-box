@@ -35,7 +35,7 @@ if [ ! -f $PG_DATA/PG_VERSION ]; then
         su-exec $PG_USER postgres --single -D $PG_DATA -j >/dev/null
 
     # Allow external IPv4 and IPv6 connections
-    cat << EOF >>$PG_DATA/pg_hba.conf
+    cat <<EOF >>$PG_DATA/pg_hba.conf
 
 host  all  all  0.0.0.0/0  md5
 host  all  all  ::0/0      md5

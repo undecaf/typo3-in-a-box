@@ -27,14 +27,24 @@
 
 # --------------------------------------------------------------------------
 
-# Echoes the Common Name of a PEM certificate to stdout.
+# Echoes the specified information of the server certificate to stdout.
 #
 # Arguments:
-#   $1  certificate file in PEM format
+#   $1  'issuer' or 'subject'
 #
-common_name() {
-    openssl x509 -in "$1" -text -noout | grep 'Subject: CN' | awk -F ' *= *' '{ print $2 }'
+cert_info() {
+    openssl x509 -in $APACHE_CERT.pem -inform PEM -noout -$1 | awk -F ' = ' '{ print $2 }'
 }
+
+
+# --------------------------------------------------------------------------
+
+# Returns success if the server certificate is self-signed.
+#
+test_self_signed() {
+    test $(cert_info 'subject') = $(cert_info 'issuer')
+}
+
 
 # --------------------------------------------------------------------------
 
@@ -97,23 +107,33 @@ EOF
         chmod 644 $APACHE_CUSTOM_CERT.pem
         ln -sf $APACHE_CUSTOM_CERT.key $APACHE_CERT.key
         ln -sf $APACHE_CUSTOM_CERT.pem $APACHE_CERT.pem
-        echo "Using a custom SSL certificate, CN=$(common_name $APACHE_CUSTOM_CERT.pem)"
+
+        test_self_signed && SELF_SIGNED='self-signed ' || SELF_SIGNED=
+        echo "Using a ${SELF_SIGNED}custom SSL certificate, CN=$(cert_info 'subject')"
 
     else
         # Create a self-signed certificate for $HOSTNAME unless one already exists
         while true; do
             if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem ]; then
                 # Certificate found, does it match the current $HOSTNAME?
-                test "$(common_name $APACHE_CERT.pem)" = "$HOSTNAME" && echo "Using a self-signed SSL certificate, CN=$HOSTNAME" && break
+                test "$(cert_info 'subject')" = "$HOSTNAME" && { echo "Using existing SSL certificate, CN=$HOSTNAME"; break; }
             fi
 
             # No certificate found that matches the current $HOSTNAME -- create a new one
-            openssl req -x509 -sha256 -days 3653 \
-                -newkey rsa:2048 -nodes \
-                -keyout $APACHE_CERT.key \
+            openssl genrsa -out \
+                $APACHE_CERT.key 3072 \
+                2>/dev/null
+            openssl req -new -sha256 \
+                -out $APACHE_CERT.csr \
+                -key $APACHE_CERT.key \
                 -subj "/CN=$HOSTNAME" \
-                -out $APACHE_CERT.pem \
-                &>/dev/null
+                2>/dev/null
+            openssl x509 -req -days 3653 \
+                -in $APACHE_CERT.csr \
+                -signkey $APACHE_CERT.key \
+                -out $APACHE_CERT.pem -outform PEM \
+                2>/dev/null
+            rm $APACHE_CERT.csr
 
             chown $APACHE_USER: $APACHE_CERT.{key,pem}
             echo "Created a self-signed SSL certificate, CN=$HOSTNAME"
@@ -140,6 +160,8 @@ EOF
         echo 'TYPO3 extensions have to be added/removed by the TYPO3 Extension Manager'
     fi
 
+    echo
+    
 else
     # Script invoked by a command after 't3 run' such as 't3 env', 't3 composer'
 
@@ -155,6 +177,9 @@ else
     done <<< "$(printenv)"
 fi
 
+
+# Disable SSL stapling for self-signed certificates
+test_self_signed && export STAPLING=Off || export STAPLING=On
 
 # Select developer/XDebug/production mode, accept abbreviations and ignore case
 while true; do
@@ -222,11 +247,9 @@ chown -R $APACHE_USER: $APACHE_HOME
 if [ -n "$COMPOSER_EXCLUDE" ]; then
     echo "Directories excluded from Composer operations:"
 
-    echo $COMPOSER_EXCLUDE | \
-    while IFS=':' read -ra DIRS; do
-        for D in "${DIRS[@]}"; do
-            echo "  $D"
-        done
+    IFS=: read -ra DIRS <<< "$COMPOSER_EXCLUDE"
+    for D in "${DIRS[@]}"; do
+        echo "  $D"
     done
 fi
 

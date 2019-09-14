@@ -51,6 +51,63 @@ UNAME=$(which uname)
 
 # --------------------------------------------------------------------------
 
+# Returns success if this script runs under macOS (Darwin).
+#
+test_macos() {
+    [ "$($UNAME)" = 'Darwin' ]
+}
+
+
+# --------------------------------------------------------------------------
+
+# Returns success if this script runs under the specified shell.
+#
+# Arguments:
+#   $1  basename of shell command
+#
+test_shell() {
+    [ "$(basename $($PS -p $$ -o comm=))" = "$1" ]
+}
+
+
+# --------------------------------------------------------------------------
+
+# Converts this script to Zsh syntax and echoes the result to stdout.
+#
+# DO NOT USE ARRAYS EXCEPT FOR BASH_REMATCH[] as Zsh array indices
+# start at 1.
+#
+# DO NOT 'setopt KSH_ARRAYS', this will break regex group indices.
+#
+convert_to_zsh() {
+    # Rename 'BASH_REMATCH' to 'match'
+    sed -E \
+        -e 's/BASH_REMATCH/match/' \
+        "$0"
+}
+
+
+# --------------------------------------------------------------------------
+
+# Restart this script under Zsh if running in (outdated) Bash in macOS
+test_macos && test_shell 'bash' && exec zsh <(convert_to_zsh) "$@"
+
+# Set Bash and Zsh options for compatibility
+if test_shell 'zsh'; then
+    # Split parameters on whitespace
+    setopt SH_WORD_SPLIT
+
+    # Allow '@()' for parenthesized globbing expressions
+    setopt KSH_GLOB
+
+else
+    # Allow '@()' for parenthesized globbing expressions
+    shopt -s extglob
+fi
+
+
+# ------------ What follows may not be parseable by macOS Bash -------------
+
 # Shows $USAGE and an optional error message at stdout or stderr
 # and exits with exit code 0 or 1, respectively.
 #
@@ -96,74 +153,6 @@ EOT
 err_exit() {
     echo '*** '"$1"' ***' >&2
     exit ${2:-1}
-}
-
-
-# --------------------------------------------------------------------------
-
-# Returns success if this script runs under macOS (Darwin).
-#
-test_macos() {
-    [ "$($UNAME)" = 'Darwin' ]
-}
-
-
-# --------------------------------------------------------------------------
-
-# Returns success if this script runs under the specified shell.
-#
-# Arguments:
-#   $1  basename of shell command
-#
-test_shell() {
-    [ "$(basename $($PS -p $$ -o comm=))" = "$1" ]
-}
-
-
-# --------------------------------------------------------------------------
-
-# Rerun this script under Zsh if running in (outdated) Bash in macOS
-test_macos && test_shell 'bash' && exec zsh $0 "$@"
-
-
-# ------------ What follows may not be parseable by macOS Bash -------------
-
-# Matches a string against a regex and returns success if they match.
-# Works in Bash and Zsh.
-#
-# Inspired by https://stackoverflow.com/questions/22537804/retrieve-a-word-after-a-regular-expression-in-shell-script#22539067).
-#
-# Additionally, the matched string(s) is returned in array variable ${RE_MATCH[@]},
-# which works the same as bash's ${BASH_REMATCH[@]} variable: the overall
-# match is stored in the 1st element of ${RE_MATCH[@]}, with matches for
-# capture groups (parenthesized subexpressions), if any, stored in the remaining
-# array elements.
-#
-# Arguments:
-#   $1  string
-#   $2  regular expression
-#
-# Calls:
-#   test_shell
-#
-
-# Make array indices in Zsh start at 0 as in Bash
-test_shell 'zsh' && setopt KSH_ARRAYS
-
-function re_match {
-  local SUCCESS
-  unset -v RE_MATCH
-
-  [[ $1 =~ $2 ]]
-  SUCCESS=$?
-
-  if [[ $SUCCESS -eq 0 ]]; then
-    test_shell $(basename "$0") && RE_MATCH=( "${BASH_REMATCH[@]}" )
-    test_shell 'bash' && RE_MATCH=( "${BASH_REMATCH[@]}" )
-    test_shell 'zsh'  && RE_MATCH=( "$MATCH" "${match[@]}" )
-  fi
-
-  return $SUCCESS
 }
 
 
@@ -241,7 +230,7 @@ autocomplete() {
     done
 
     # Consider autocompleted only if the abbreviation was unambiguous
-    test $MATCHES -eq 1 && echo "$COMPLETED" || echo "$ARG"
+    [ $MATCHES -eq 1 ] && echo "$COMPLETED" || echo "$ARG"
 }
 
 
@@ -262,7 +251,9 @@ test_container() {
 # --------------------------------------------------------------------------
 
 # Runs/execs the selected container engine with the given arguments.
-# Echoes the run command to the console if T3_DEBUG is non-empty.
+# If T3_DEBUG is non-empty then the run command is echoed to stdout,
+# and engine messages sent to stdout and stderr are visible at the
+# console. Otherwise, only stderr is displayed at the console.
 #
 # Arguments:
 #   $1, $2, ...
@@ -273,18 +264,12 @@ test_container() {
 #   $T3_DEBUG
 #
 run_engine() {
-    [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
-    $T3_ENGINE "$@"
-}
-
-run_engine_stderr() {
-    [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
-    $T3_ENGINE "$@" >/dev/null
-}
-
-run_engine_muted() {
-    [ -n "$T3_DEBUG" ] && echo "$T3_ENGINE $@"
-    $T3_ENGINE "$@" &>/dev/null
+    if [ -n "$T3_DEBUG" ]; then
+        echo "$T3_ENGINE $@"
+        $T3_ENGINE "$@"
+    else
+        $T3_ENGINE "$@" >/dev/null
+    fi
 }
 
 exec_engine() {
@@ -380,8 +365,8 @@ unmount_volume() {
 
     # Find the directory bind-mounted to the container volume mountpoint
     RE='^/.+( +[0-9]+){4}% +(/.+)$'
-    if LINE=$($DF -P | $GREP --fixed-string "$VOL_MP ") && re_match "$LINE" $RE; then
-        unmount_workdir "$1" "${RE_MATCH[2]}"
+    if LINE=$($DF -P | $GREP --fixed-string "$VOL_MP ") && [[ "$LINE" =~ $RE ]]; then
+        unmount_workdir "$1" "${BASH_REMATCH[2]}"
     fi
 }
 
@@ -404,11 +389,8 @@ unmount_workdir() {
 
 # --------------------------------------------------------------------------
 
-# Split parameters on whitespace in Zsh
-test_shell 'zsh' && setopt SH_WORD_SPLIT
-
 # Autocomplete command
-CMD=$(autocomplete "$1" run stop env composer shell mount unmount)
+CMD=$(autocomplete "$1" run stop logs env composer shell mount unmount)
 
 shift
 OPT_COUNT=$#
@@ -423,7 +405,7 @@ case "$CMD" in
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) run [option]... [--] [Docker/Podman option]...
+  $($BASENAME $0) run [option]... [--] [Docker/Podman 'create' option]...
   $($BASENAME $0) run [-h|--help]
 
 Runs TYPO3 image 'undecaf/typo3-in-a-box' in a container in Docker or Podman.
@@ -444,12 +426,17 @@ Options (default values can be overridden by environment variables):
       ServerAdmin.
       Default: \$T3_HOSTNAME, or 'typo3.$($HOSTNAME)'.
 
-  --tag=TAG, -t TAG
+  --tag=TAG, -T TAG
       Tag of image to run, consisting of TYPO3 version and build version,
       e.g. '8.7-1.3' or '9.5-latest'.
       Default: \$T3_TAG, or 'latest', i.e. the latest build for the most recent
       TYPO3 version.
 
+  --pull, -u
+      Pulls an up-to-date version of the image from the repository before
+      running it.
+      Default: \$T3_PULL, or not set.
+      
   --composer-mode, -c
       If this option is present then Composer is responsible for installing/
       removing TYPO3 extensions. Otherwise, this is handled by the TYPO3
@@ -498,22 +485,29 @@ Options (default values can be overridden by environment variables):
       Defaults: \$T3_TIMEZONE, \$T3_LANG, \$T3_MODE, \$T3_COMPOSER_EXCLUDE,
                 \$T3_PHP_..., \$T3_php_...
  
+  --log, -l
+      Streams the log output of the new TYPO3 instance to the console until 
+      CTRL-C is typed.
+      Default: \$T3_LOGS, or not set.
+ 
+  --timestamps, -t
+      Shows timestamps in the log output. Ignored if '--log' is not set.
+      Default: \$T3_TIMESTAMPS, or not set.
+
   --debug, -d
-      If this option is present then generated Docker/Podman commands will be
-      shown on the console.
-      Warning: your database credentials will be visible on the console.
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
+      Warning: your database credentials will be visible at the console.
       Default: \$T3_DEBUG, or not set.
  
   --help, -h
       Displays this text and exits.
 
-Additional options for the Docker/Podman 'run' command can be added after the options
+Additional options for the Docker/Podman 'create' command can be added after the options
 described above. If necessary, '--' can be used to separate them from the $($BASENAME $0) options.
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-H|--hostname(=.+)?|-n|--name(=.+)?|-t|--tag(=.+)?|-c|--composer-mode|-v|--typo3-root(=.+)?|-p|--typo3-ports(=.+)?|-k|--certfiles(=.+)?|-D|--db-type(=.*)?|-V|--db-data(=.+)?|-P|--db-port(=.+)?|--env|-d|--debug'
-
         # No additional options required
         OPT_COUNT=1
         ;;
@@ -542,11 +536,11 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_NAME, or 'typo3'.
  
   --debug, -d
-      If this option is present then generated Docker/Podman commands will be
-      shown on the console.
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
       Default: \$T3_DEBUG, or not set.
  
-  --rm
+  --rm, -R
       Causes the TYPO3 container to be removed after is was stopped.
       This can also be used to remove a container that is not running.
 
@@ -555,8 +549,61 @@ Options (default values can be overridden by environment variables):
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-d|--debug|--rm'
+        # No additional options required
+        OPT_COUNT=1
+        ;;
 
+
+    # Display the log output of a running TYPO3 container
+    logs)
+        USAGE=$($CAT <<EOT
+
+Usage:
+  $($BASENAME $0) logs [option]...
+  $($BASENAME $0) logs [-h|--help]
+
+Displays the log output of a running TYPO3 container.
+
+Options (default values can be overridden by environment variables):
+
+  --engine=ENGINE, -e ENGINE
+      Container engine being used: 'docker', 'podman' or an absolute path
+      to the engine executable.
+      Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
+
+  --name=NAME, -n NAME
+      Same container name as specified for 't3 run'.
+      Default: \$T3_NAME, or 'typo3'.
+ 
+  --follow, -f
+      Streams the log output to the console until CTRL-C is typed.
+      Default: \$T3_FOLLOW, or not set.
+ 
+  --since=TIMESTAMP, -s TIMESTAMP
+      Shows only log lines since a timestamp. This can be a Unix timestamp,
+      a date formatted timestamp, or a Go duration string (e.g. 10m, 1h30m)
+      computed relative to the client machine's time.
+      Default: \$T3_SINCE, or not set.
+ 
+  --tail=LINES, -l LINES
+      Shows only that many lines from the end of the log, or all lines
+      if 0.
+      Default: \$T3_TAIL, or not set.
+
+  --timestamps, -t
+      Shows timestamps in the log output.
+      Default: \$T3_TIMESTAMPS, or not set.
+
+  --debug, -d
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
+      Default: \$T3_DEBUG, or not set.
+
+  --help, -h
+      Displays this text and exits.
+ 
+EOT
+        )
         # No additional options required
         OPT_COUNT=1
         ;;
@@ -585,8 +632,8 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_NAME, or 'typo3'.
  
   --debug, -d
-      If this option is present then generated Docker/Podman commands will be
-      shown on the console.
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
       Default: \$T3_DEBUG, or not set.
 
   --help, -h
@@ -594,8 +641,6 @@ Options (default values can be overridden by environment variables):
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-d|--debug'
- 
         # No additional options required
         OPT_COUNT=1
         ;;
@@ -623,8 +668,8 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_NAME, or 'typo3'.
  
   --debug, -d
-      If this option is present then generated Docker/Podman commands will be
-      shown on the console.
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
       Default: \$T3_DEBUG, or not set.
 
   --help, -h
@@ -632,7 +677,6 @@ Options (default values can be overridden by environment variables):
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-d|--debug'
         ;;
 
 
@@ -658,8 +702,8 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_NAME, or 'typo3'.
  
   --debug, -d
-      If this option is present then generated Docker/Podman commands will be
-      shown on the console.
+      If this option is present then Docker/Podman commands and output appear
+      at the console. Otherwise only 'stderr' is displayed.
       Default: \$T3_DEBUG, or not set.
 
   --help, -h
@@ -667,8 +711,6 @@ Options (default values can be overridden by environment variables):
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?|-n|--name(=.+)?|-d|--debug'
-
         # No additional options required
         OPT_COUNT=1
         ;;
@@ -703,7 +745,6 @@ Options (default values can be overridden by environment variables):
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?'
         ;;
 
 
@@ -729,7 +770,6 @@ Options (default values can be overridden by environment variables):
  
 EOT
         )
-        ALLOWED_OPTS='-e|--engine(=.+)?'
         ;;
 
 
@@ -751,8 +791,10 @@ Available commands:
   run           Runs TYPO3 image 'undecaf/typo3-in-a-box' in a container in Docker or
                 Podman.
  
-  stop          Stops a running TYPO3 (and the associated database) container.
+  stop          Stops a running TYPO3 container.
 
+  logs          Displays the log output of a running TYPO3 container.
+ 
   env           Modifies the environment of a running TYPO3 container.
 
   composer      When in Composer Mode, executes a Composer command inside a 
@@ -791,154 +833,201 @@ T3_ROOT=${T3_ROOT:-typo3-root}
 T3_PORTS=${T3_PORTS:-127.0.0.1:8080,127.0.0.1:8443}
 
 REMOVE_OPTION=
+FOLLOW_OPTION=${T3_FOLLOW:+--follow}
+SINCE_OPTION=${T3_SINCE:+--since=$T3_SINCE}
+TIMESTAMPS_OPTION=${T3_TIMESTAMPS:+--timestamps}
+TAIL_OPTION=${T3_TAIL:+--tail=$T3_TAIL}
 
-ALLOWED_OPTS='^('"$ALLOWED_OPTS"'|-h|--help|--)$'
-
-while [[ $# -gt 0 ]]; do
-    # Check for allowed options by regular expression
-    [[ "$1" =~ $ALLOWED_OPTS ]] || break
-
-    case "$1" in
-        # Database type
-        -D|--db-type)
-            shift
-            ;&
-
-        --db-type=*)
-            T3_DB_TYPE="${1#--db-type=}"   # validated later
-            shift
-            ;;
-
+while [ $# -gt 0 ]; do
+    case $CMD:$1 in
         # Container engine
-        -e|--engine)
+        *:@(-e|--engine))
             shift
             ;&
 
-        --engine=*)
+        *:--engine=*)
             T3_ENGINE="${1#--engine=}"  # basename or absolute path of an executable
             shift
             ;;
 
+        # Pull (update) image before starting
+        run:@(-u|--pull))
+            T3_PULL=on
+            shift
+            ;;
+
         # Hostname
-        -H|--hostname)
+        run:@(-H|--hostname))
             shift
             ;&
 
-        --hostname=*)
+        run:--hostname=*)
             T3_HOSTNAME="${1#--hostname=}"
             shift
             ;;
 
         # Container name
-        -n|--name)
+        @(run|stop|composer|shell|env):@(-n|--name))
             shift
             ;&
 
-        --name=*)
+        @(run|stop|composer|shell|env):--name=*)
             T3_NAME="${1#--name=}"
             shift
             ;;
 
         # Composer Mode
-        -c|--composer-mode)
+        run:@(-c|--composer-mode))
             T3_COMPOSER_MODE=on
             shift
             ;;
 
         # Debug container engine commands
-        -d|--debug)
+        @(run|stop|logs|composer|shell|env):@(-d|--debug))
             T3_DEBUG=on
             shift
             ;;
 
         # Image tag
-        -t|--tag)
+        run:@(-T|--tag))
             shift
             ;&
 
-        --tag=*)
+        run:--tag=*)
             T3_TAG="${1#--tag=}"
             shift
             ;;
 
-        # TYPO3 volume (volume name or absolute path)
-        # If an absolute path is given then its basename is used as the name
-        # of a volume which is mounted at the absolute path
-        -v|--typo3-root)
+        # TYPO3 volume (volume name or path)
+        # If a path is given then its basename is used as 
+        # the name of a volume which is mounted at that path
+        run:@(-v|--typo3-root))
             shift
             ;&
 
-        --typo3-root=*)
+        run:--typo3-root=*)
             T3_ROOT="${1#--typo3-root=}"
             test_dir "$T3_ROOT"
             shift
             ;;
 
-        # Database volume (volume name or absolute path)
-        # If an absolute path is given then its basename is used as the name
-        # of a volume which is mounted at the absolute path
-        -V|--db-data)
+        # Database type
+        run:@(-D|--db-type))
             shift
             ;&
 
-        --db-data=*)
+        run:--db-type=*)
+            T3_DB_TYPE="${1#--db-type=}"   # validated later
+            shift
+            ;;
+
+        # Database volume (volume name or path)
+        # If a path is given then its basename is used as 
+        # the name of a volume which is mounted at that path
+        run:@(-V|--db-data))
+            shift
+            ;&
+
+        run:--db-data=*)
             T3_DB_DATA="${1#--db-data=}"
             test_dir "$T3_DB_DATA"
             shift
             ;;
 
         # TYPO3 HTTP and HTTPS interfaces and ports
-        -p|--typo3-ports)
+        run:@(-p|--typo3-ports))
             shift
             ;&
 
-        --typo3-ports=*)
+        run:--typo3-ports=*)
             T3_PORTS="${1#--typo3-ports=}"
             shift
             ;;
 
         # Private key file and certificate file
-        -k|--certfiles)
+        run:@(-k|--certfiles))
             shift
             ;&
 
-        --certfiles=*)
+        run:--certfiles=*)
             T3_CERTFILES="${1#--certfiles=}"
             shift
             ;;
 
         # Database port
-        -P|--db-port)
+        run:@(-P|--db-port))
             shift
             ;&
 
-        --db-port=*)
+        run:--db-port=*)
             T3_DB_PORT="${1#--db-port=}"
             shift
             ;;
 
         # Container environment setting
-        --env)
+        run:--env)
             shift
+            ;&
+
+        run:--env=*)
+            ENV="${1#--env=}"
             RE='^('$RE_CONT_ENV')=(.*)$'
-            re_match "$1" $RE || usage "Not a valid NAME=VALUE pair: '$1'"
-            export T3_${RE_MATCH[1]}=${RE_MATCH[2]}
+            [[ "$ENV" =~ $RE ]] || usage "Not a valid NAME=VALUE pair: '$ENV'"
+            export T3_${BASH_REMATCH[1]}=${BASH_REMATCH[2]}
+            shift
+            ;;
+
+        # Stream log output to console at startup
+        run:@(-l|--log))
+            T3_LOGS=on
+            shift
+            ;;
+
+        # Show timestamps in log output
+        @(run|logs):@(-t|--timestamps))
+            TIMESTAMPS_OPTION='--timestamps'
+            shift
+            ;;
+
+        # Stream log output to console
+        logs:@(-f|--follow))
+            FOLLOW_OPTION='--follow'
+            shift
+            ;;
+
+        # Show only output since some timestamp
+        logs:@(-s|--since))
+            shift
+            ;&
+
+        logs:--since=*)
+            SINCE_OPTION="--since=${1#--since=}"
+            shift
+            ;;
+
+        # Show only a certain number of lines from the end of the log
+        logs:@(-l|--tail))
+            shift
+            ;&
+
+        logs:--tail=*)
+            TAIL_OPTION="--tail=${1#--tail=}"
             shift
             ;;
 
         # Remove container(s) after being stopped
-        --rm)
+        stop:@(-R|--rm))
             REMOVE_OPTION='--rm'
             shift
             ;;
 
         # Help for selected command
-        -h|--help)
+        *:@(-h|--help))
             usage
             ;;
 
         # Separator from container engine options or mount/unmount directory
-        --)
+        *:--)
             shift
             break
             ;;
@@ -986,9 +1075,9 @@ esac
 
 # Split into HTTP and HTTPS port and interface
 RE='^((.+)?,(.+)?)?$'
-re_match "$T3_PORTS" $RE || usage "Invalid option: '$T3_PORTS'"
-HTTP_PORT=${RE_MATCH[2]}
-HTTPS_PORT=${RE_MATCH[3]}
+[[ "$T3_PORTS" =~ $RE ]] || usage "Invalid option: '$T3_PORTS'"
+HTTP_PORT=${BASH_REMATCH[2]}
+HTTPS_PORT=${BASH_REMATCH[3]}
 
 HTTP_OPTIONS=
 [ -n "$HTTP_PORT" ] && HTTP_OPTIONS="$HTTP_OPTIONS --publish $HTTP_PORT:80"
@@ -996,9 +1085,9 @@ HTTP_OPTIONS=
 
 # Split into private key file and certificate file
 RE='^((.+),(.+))?$'
-re_match "$T3_CERTFILES" $RE || usage "Invalid option: '$T3_CERTFILES'"
-KEY_FILE=${RE_MATCH[2]}
-CERT_FILE=${RE_MATCH[3]}
+[[ "$T3_CERTFILES" =~ $RE ]] || usage "Invalid option: '$T3_CERTFILES'"
+KEY_FILE=${BASH_REMATCH[2]}
+CERT_FILE=${BASH_REMATCH[3]}
 
 # Volume names and working directories
 ROOT_MP=
@@ -1017,9 +1106,9 @@ fi
 RE='^(T3_('$RE_CONT_ENV'))=(.*)$'
 
 while read -r ENV_VAR; do
-    if re_match "$ENV_VAR" $RE; then
+    if [[ "$ENV_VAR" =~ $RE ]]; then
         ENV_OPTIONS="$ENV_OPTIONS \
-            --env ${RE_MATCH[1]}=${RE_MATCH[3]}"
+            --env ${BASH_REMATCH[1]}=${BASH_REMATCH[3]}"
     fi
 done <<< "$($PRINTENV)"
 
@@ -1076,11 +1165,18 @@ case "$CMD" in
 
         # Roll back if command terminates prematurely
         trap "echo $'\n*** Command failed or interrupted, rolling back ***'; $0 stop -e '$T3_ENGINE' -n '$T3_NAME' --rm; exit 1" EXIT
+        set -e
+
+        # Update image if requested
+        REPO=$T3_IMAGE${T3_TAG:+:$T3_TAG}
+        if [ -n "$T3_PULL" ]; then
+            echo '*** '"Pulling image '$REPO'"' ***'
+            run_engine pull $REPO
+        fi
 
         # Create the TYPO3 container
-        set -e
         echo '*** '"Creating container '$T3_NAME'"' ***'
-        run_engine_stderr create \
+        run_engine create \
             --name "$T3_NAME" \
             --hostname "$T3_HOSTNAME" \
             --ulimit $FILE_LIMIT \
@@ -1091,17 +1187,17 @@ case "$CMD" in
             $DB_PORT_OPTION \
             $ENV_OPTIONS \
             "$@" \
-            $T3_IMAGE${T3_TAG:+:$T3_TAG}
+            $REPO
 
         # Copy certificate files, if any
         if [ -n "$T3_CERTFILES" ]; then
-            run_engine_muted cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
-            run_engine_muted cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
+            run_engine cp "$KEY_FILE" "$T3_NAME":${CERT_BASENAME}.key
+            run_engine cp "$CERT_FILE" "$T3_NAME":${CERT_BASENAME}.pem
         fi
         echo '*** '"Container '$T3_NAME' created"' ***'
 
         # Start the container
-        run_engine_muted start "$T3_NAME"
+        run_engine start "$T3_NAME"
         echo '*** '"Container '$T3_NAME' started"' ***'
 
         # Eventually bind-mount container volumes in userspace
@@ -1109,6 +1205,9 @@ case "$CMD" in
         mount_volume "$T3_DB_DATA" "$DB_DATA_MP" || true
 
         trap - EXIT
+
+        # Eventually show logs
+        [ -n "$T3_LOGS" ] && exec_engine logs --follow $TIMESTAMPS_OPTION "$T3_NAME"
         ;;
 
 
@@ -1128,12 +1227,12 @@ case "$CMD" in
 
         # Stop and eventually remove the container
         #stop_container "$T3_NAME"
-        if run_engine_muted kill --signal SIGINT "$T3_NAME" && run_engine_muted stop --time 5 "$T3_NAME"; then
+        if run_engine kill --signal SIGINT "$T3_NAME" && run_engine stop --time 5 "$T3_NAME"; then
             echo '*** '"Container '$T3_NAME' stopped"' ***'
         fi
 
         # Remove the container(s) if so requested
-        [ -n "$REMOVE_OPTION" ] && run_engine_muted container rm "$T3_NAME"
+        [ -n "$REMOVE_OPTION" ] && run_engine container rm "$T3_NAME"
 
         # Wait until the container was removed eventually
         $SLEEP 1
@@ -1141,13 +1240,18 @@ case "$CMD" in
         ;;
 
 
+    logs)
+        exec_engine logs $FOLLOW_OPTION $SINCE_OPTION $TAIL_OPTION $TIMESTAMPS_OPTION "$T3_NAME"
+        ;;
+
+
     env)
-        run_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
+        exec_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
         ;;
 
 
     composer)
-        run_engine exec "$T3_NAME" composer "$@"
+        exec_engine exec "$T3_NAME" composer "$@"
         ;;
 
 

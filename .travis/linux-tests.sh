@@ -13,7 +13,7 @@ t3_() {
     shift
 
     local TAG
-    test "$CMD" = 'run' && TAG="-t $PRIMARY_TAG"
+    test "$CMD" = 'run' && TAG="-T $PRIMARY_TAG"
 
     if [ -f "$LOGFILE" ]; then
         local DEBUG
@@ -296,7 +296,6 @@ cleanup
 
 
 # Test container environment settings
-
 echo $'\n*************** Container environment settings' >&2
 
 echo "Verifying timezone and language" >&2
@@ -346,6 +345,25 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 
 cleanup
 
+t3_ run -c
+
+echo "Verifying that COMPOSER_EXCLUDE was set"
+EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
+
+t3_ env COMPOSER_EXCLUDE=$EXCLUDED >$TEMP_FILE
+for D in ${EXCLUDED//:/ }; do
+    grep -q -F $D $TEMP_FILE
+done
+
+# echo "Verifying that COMPOSER_EXCLUDE is being excluded"
+# t3_ composer update >$TEMP_FILE
+# for D in ${EXCLUDED//:/ }; do
+#     grep -q -F "Excluded $D" $TEMP_FILE || echo "status = $?"
+#     grep -q -F "Restored $D" $TEMP_FILE || echo "status = $?"
+# done
+
+cleanup
+
 
 # Test certificates
 HOST_NAME=dev.under.test
@@ -358,11 +376,9 @@ verify_logs $SUCCESS_TIMEOUT "CN=$HOST_NAME"
 cleanup
 
 echo $'\n*************** Custom certificate' >&2
-openssl req -x509 -sha256 -days 1 \
-    -newkey rsa:2048 -nodes \
-    -keyout "$CERTFILE.key" \
-    -subj "/CN=$CN" \
-    -out "$CERTFILE.pem"
+openssl genrsa -out $CERTFILE.key 3072 2>/dev/null
+openssl req -new -sha256 -out $CERTFILE.csr -key $CERTFILE.key -subj "/CN=$HOSTNAME" 2>/dev/null
+openssl x509 -req -days 1 -in $CERTFILE.csr -signkey $CERTFILE.key -out $CERTFILE.pem -outform PEM 2>/dev/null
 
 t3_ run -k "$CERTFILE.key,$CERTFILE.pem"
 

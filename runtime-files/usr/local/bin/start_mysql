@@ -41,4 +41,4 @@ fi
 
 # Start MariaDB
 echo $'\nStarting MariaDB server ...'
-mysqld --datadir=$MYSQL_DATA --user=mysql --console --skip-networking=0 &
+mysqld --datadir=$MYSQL_DATA --user=mysql --console --log-error=/dev/stderr --skip-networking=0 &
