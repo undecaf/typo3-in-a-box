@@ -485,13 +485,13 @@ Options (default values can be overridden by environment variables):
       Defaults: \$T3_TIMEZONE, \$T3_LANG, \$T3_MODE, \$T3_COMPOSER_EXCLUDE,
                 \$T3_PHP_..., \$T3_php_...
  
-  --logs, -l
-      Streams the log output of the new TYPO3 instance at the console until 
+  --log, -l
+      Streams the log output of the new TYPO3 instance to the console until 
       CTRL-C is typed.
       Default: \$T3_LOGS, or not set.
  
   --timestamps, -t
-      Shows timestamps in the log output. Ignored if '--logs' is not set.
+      Shows timestamps in the log output. Ignored if '--log' is not set.
       Default: \$T3_TIMESTAMPS, or not set.
 
   --debug, -d
@@ -978,7 +978,7 @@ while [ $# -gt 0 ]; do
             ;;
 
         # Stream log output to console at startup
-        run:@(-l|--logs))
+        run:@(-l|--log))
             T3_LOGS=on
             shift
             ;;

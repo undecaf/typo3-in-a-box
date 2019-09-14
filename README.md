@@ -559,7 +559,7 @@ __TYPO3:__
 by default, the latest image built for the most recent TYPO3 version
 ([`docker.io/undecaf/typo3-in-a-box`](https://hub.docker.com/r/undecaf/typo3-in-a-box))
 is started. 
-Option&nbsp;`-t` (or `T3_TAG`) selects a particular TYPO3 version and build by one of the
+Option&nbsp;`-T` (or `T3_TAG`) selects a particular TYPO3 version and build by one of the
 [available tags](https://hub.docker.com/r/undecaf/typo3-in-a-box/tags).
 Use option&nbsp;`-u` (or `T3_PULL`) if you wish to pull an up-to-date version 
 of that image from the repository.
@@ -782,7 +782,7 @@ that environment variable is not set.
 | `--name=NAME`<br>`-n NAME` | `run`<br>`stop`<br>`composer`<br>`shell`<br>`env` | Container name.<br>Default: `$T3_NAME`, or `typo3`. |
 | `--debug`<br>`-d` | `run`<br>`stop`<br>`composer`<br>`shell`<br>`env` | If this option is present then Docker/Podman commands and output appear at the console. Otherwise only `stderr` is displayed.<br>_Warning:_ your database credentials will be visible at the console if this option is set for `t3 run`.<br>Default: `$T3_DEBUG`, or not set. |
 | `--hostname=HOSTNAME`<br>`-H HOSTNAME` | `run` | Hostname assigned to the TYPO3 container and to Apache `ServerName` and `ServerAdmin`.<br>Default: `$T3_HOSTNAME`, or `typo3.$(hostname)`. |
-| `--tag=TAG`<br>`-t TAG` | `run` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`.<br>Default: `$T3_TAG`, or `latest`, i.e. the latest build for the most recent TYPO3 version. |
+| `--tag=TAG`<br>`-T TAG` | `run` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`.<br>Default: `$T3_TAG`, or `latest`, i.e. the latest build for the most recent TYPO3 version. |
 | `--pull`<br>`-u` | `run` | Pulls an up-to-date version of the image from the repository before running it.<br>Default: `$T3_PULL`, or not set. |
 | `--composer-mode`<br>`-c` | `run` | If this option is present then Composer is responsible for installing/removing TYPO3 extensions. Otherwise, this is handled by the TYPO3 Extension Manager.<br>Default: `$T3_COMPOSER_MODE`, or not set. |
 | `--typo3-root=VOLUME`<br>`-v VOLUME` | `run` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path (containing a `/`).<br>In the latter case, the directory basename is used as the volume name, and the directory is bind-mounted at that volume. Thus, volume content appears to be owned by the current user.<br>__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3.<br>Default: `$T3_ROOT`, or `typo3-root`. |
