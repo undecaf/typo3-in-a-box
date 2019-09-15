@@ -118,7 +118,7 @@ FAILURE_TIMEOUT=5
 # /dev/random does not get enough entropy, therefore we have to generate unsafe keys for testing
 set -x
 if mv /dev/random /dev/random_ && ln -s /dev/urandom /dev/random; then
-    echo $'\n*************** Using /dev/urandom >&2
+    echo $'\n*************** Using /dev/urandom' >&2
 fi
 
 
