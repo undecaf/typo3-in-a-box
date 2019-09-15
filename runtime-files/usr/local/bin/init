@@ -122,17 +122,17 @@ EOF
             # No certificate found that matches the current $HOSTNAME -- create a new one
             openssl genrsa -out \
                 $APACHE_CERT.key 3072 \
-                #2>/dev/null
+                2>/dev/null
             openssl req -new -sha256 \
                 -out $APACHE_CERT.csr \
                 -key $APACHE_CERT.key \
                 -subj "/CN=$HOSTNAME" \
-                #2>/dev/null
+                2>/dev/null
             openssl x509 -req -days 3653 \
                 -in $APACHE_CERT.csr \
                 -signkey $APACHE_CERT.key \
                 -out $APACHE_CERT.pem -outform PEM \
-                #2>/dev/null
+                2>/dev/null
             rm $APACHE_CERT.csr
 
             chown $APACHE_USER: $APACHE_CERT.{key,pem}
