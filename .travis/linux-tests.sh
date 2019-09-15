@@ -348,16 +348,19 @@ cleanup
 t3_ run -c
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
+set -x
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
 
 t3_ env COMPOSER_EXCLUDE=$EXCLUDED >$TEMP_FILE
-for D in ${EXCLUDED//:/ }; do
-    grep -q -F $D $TEMP_FILE
+IFS=: read -ra DIRS <<< "$EXCLUDED"
+for D in "${DIRS[@]}"; do
+    grep -q -F "$D" $TEMP_FILE
 done
 
 # echo "Verifying that COMPOSER_EXCLUDE is being excluded"
 # t3_ composer update >$TEMP_FILE
-# for D in ${EXCLUDED//:/ }; do
+# IFS=: read -ra DIRS <<< "$EXCLUDED"
+# for D in "${DIRS[@]}"; do
 #     grep -q -F "Excluded '$D'" $TEMP_FILE || echo "status = $?"
 #     grep -q -F "Restored '$D'" $TEMP_FILE || echo "status = $?"
 # done

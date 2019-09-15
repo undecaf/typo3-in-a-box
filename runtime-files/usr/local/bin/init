@@ -57,8 +57,10 @@ test_self_signed() {
 if [ $$ -eq 1 ]; then
     # Show version info, trying to get the actual TYPO3 version from composer.lock
     RE='^([0-9]+\.){2,}[0-9]+'
-    CURRENT_TYPO3_VER=$(jq --raw-output '[.packages|.[]|{(.name): .version}]|add|."typo3/cms-core"' $TYPO3_ROOT/composer.lock 2>/dev/null) \
-        && [[ "$CURRENT_TYPO3_VER" =~ $RE ]] && TYPO3_VER=$CURRENT_TYPO3_VER
+    if CURRENT_TYPO3_VER=$(jq --raw-output '[.packages|.[]|{(.name): .version}]|add|."typo3/cms-core"' $TYPO3_ROOT/composer.lock 2>/dev/null) \
+            && [[ "$CURRENT_TYPO3_VER" =~ $RE ]]; then
+        TYPO3_VER=$CURRENT_TYPO3_VER
+    fi
 
     cat <<EOF
 
@@ -81,7 +83,9 @@ EOF
     done <<< "$(printenv)"
 
     # Try to determine the local timezone if none was specified
-    test -z "$T3_TIMEZONE" && T3_TIMEZONE="$(curl -s https://ipapi.co/timezone)"
+    if [ -z "$T3_TIMEZONE" ]; then
+        T3_TIMEZONE="$(curl -s https://ipapi.co/timezone)"
+    fi
 
     # Use timezone if specified and supported
     if [ -n "$T3_TIMEZONE" -a -f "/usr/share/zoneinfo/${T3_TIMEZONE}" ]; then
@@ -113,38 +117,35 @@ EOF
 
     else
         # Create a self-signed certificate for $HOSTNAME unless one already exists
-        while true; do
-            if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem ]; then
-                # Certificate found, does it match the current $HOSTNAME?
-                test "$(cert_info 'subject')" = "$HOSTNAME" && { echo "Using existing SSL certificate, CN=$HOSTNAME"; break; }
-            fi
+        if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem -a "$(cert_info 'subject')" = "$HOSTNAME" ]; then
+            echo "Using existing SSL certificate, CN=$HOSTNAME"
 
+        else
             # No certificate found that matches the current $HOSTNAME -- create a new one
             openssl genrsa -out \
                 $APACHE_CERT.key 3072 \
-                2>/dev/null
+                #2>/dev/null
             openssl req -new -sha256 \
                 -out $APACHE_CERT.csr \
                 -key $APACHE_CERT.key \
                 -subj "/CN=$HOSTNAME" \
-                2>/dev/null
+                #2>/dev/null
             openssl x509 -req -days 3653 \
                 -in $APACHE_CERT.csr \
                 -signkey $APACHE_CERT.key \
                 -out $APACHE_CERT.pem -outform PEM \
-                2>/dev/null
+                #2>/dev/null
             rm $APACHE_CERT.csr
 
             chown $APACHE_USER: $APACHE_CERT.{key,pem}
             echo "Created a self-signed SSL certificate, CN=$HOSTNAME"
-            break
-        done
+        fi
     fi
 
     # Deactivate Composer Mode if so requested
     if [ -n "$T3_COMPOSER_MODE" ]; then
         if [ -f $TYPO3_ROOT/composer.json ] && \
-            grep -q -E 'define *\( *'"'TYPO3_COMPOSER_MODE'"' *, *TRUE *\)' $TYPO3_ROOT/vendor/typo3/autoload-include.php; then
+                grep -q -E 'define *\( *'"'TYPO3_COMPOSER_MODE'"' *, *TRUE *\)' $TYPO3_ROOT/vendor/typo3/autoload-include.php; then
             echo 'TYPO3 extensions have to be added/removed by Composer (Composer Mode)'
 
         else
@@ -227,8 +228,7 @@ fi
 if [ -n "$XDEBUG" ]; then
     # Connect back only if host IP not specified
     export REMOTE_HOST=$HOST_IP
-    test -n "$HOST_IP"
-    export REMOTE_CONNECT_BACK=$?
+    test -n "$HOST_IP" && export REMOTE_CONNECT_BACK=0 || export REMOTE_CONNECT_BACK=1
 
 	cat /etc/php7/xdebug.ini.template | envsubst > /etc/php7/conf.d/xdebug.ini
 	echo "XDebug enabled:"
