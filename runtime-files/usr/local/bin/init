@@ -174,7 +174,7 @@ else
         if [[ $ENV_VAR =~ $RE ]]; then
             # Restore SAVED_$NAME only if $NAME is not set, not even to an empty value
             NAME=${BASH_REMATCH[2]}
-            eval "test -z \${$NAME+x} && export $NAME=\$SAVED_$NAME"
+            eval "test -z \${$NAME+x} && export $NAME=\$SAVED_$NAME || true"
         fi
     done <<< "$(printenv)"
 fi
