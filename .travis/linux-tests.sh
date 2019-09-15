@@ -116,8 +116,7 @@ SUCCESS_TIMEOUT=30
 FAILURE_TIMEOUT=5
 
 # /dev/random does not get enough entropy, therefore we have to generate unsafe keys for testing
-set -x
-if mv /dev/random /dev/random_ && ln -s /dev/urandom /dev/random; then
+if ln -sf /dev/urandom /dev/random; then
     echo $'\n*************** Using /dev/urandom' >&2
 fi
 
@@ -125,7 +124,7 @@ fi
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
 # Will stop any running t3 configuration
-trap 'set +e; cleanup; set -x; test -e /dev/random_ && rm -f /dev/random && mv /dev/random_ /dev/random;' EXIT
+trap 'set +e; cleanup;' EXIT
 
 # Exit with error status if any verification fails
 set -e
