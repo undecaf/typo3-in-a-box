@@ -86,6 +86,11 @@ verify_logs() {
     return 0
 }
 
+# Adds entropy to /dev/random, otherwise private key generation may fail
+seed() {
+    dd if=/dev/urandom of=/dev/random bs=1024 count=64
+}
+
 # Cleans up container and volumes after a test
 cleanup() {
     t3_ stop --rm
@@ -115,6 +120,9 @@ INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
 SUCCESS_TIMEOUT=30
 FAILURE_TIMEOUT=5
 
+set -x
+seed
+set +x
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
@@ -131,6 +139,8 @@ source .travis/messages.inc
 
 # Test basic container and volume status
 echo $'\n*************** Basic container and volume status' >&2
+seed
+
 t3_ run
 verify_containers_running typo3
 verify_volumes_exist typo3-root typo3-data
@@ -161,6 +171,8 @@ cleanup
 
 # Test HTTP and HTTPS connectivity
 echo $'\n*************** HTTP and HTTPS connectivity' >&2
+seed
+
 t3_ run
 
 echo "Getting $INSTALL_URL and $INSTALL_URL_SECURE" >&2
@@ -192,6 +204,8 @@ cleanup
 
 
 # Test databases
+seed
+
 for DB_TYPE in mariadb postgresql; do
     echo $'\n*************** '"$DB_TYPE: connectivity" >&2
     t3_ run -D $DB_TYPE -P $HOST_IP:$DB_PORT
@@ -242,6 +256,8 @@ ROOT_VOL='./root volume/root'
 DB_VOL='./database volume/dbdata'
 
 echo $'\n*************** Volume names, mapping and (un-)mounting' >&2
+seed
+
 T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
 verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
 
@@ -274,6 +290,8 @@ CONT_NAME=foo
 HOST_NAME=dev.under.test
 
 echo $'\n*************** Custom container name and hostname' >&2
+seed
+
 t3_ run
 test "$(docker exec typo3 hostname)" = typo3.${HOSTNAME}
 cleanup
@@ -286,6 +304,8 @@ docker volume prune --force >/dev/null
 
 # Test Composer Mode
 echo $'\n*************** Composer Mode' >&2
+seed
+
 t3_ run
 ! t3_ composer show
 cleanup
@@ -297,6 +317,7 @@ cleanup
 
 # Test container environment settings
 echo $'\n*************** Container environment settings' >&2
+seed
 
 echo "Verifying timezone and language" >&2
 LOCALE=de_AT.UTF-8
@@ -348,7 +369,6 @@ cleanup
 t3_ run -c
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
-set -x
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
 
 t3_ env COMPOSER_EXCLUDE=$EXCLUDED >$TEMP_FILE
@@ -374,6 +394,8 @@ CERTFILE='cert file'
 CN=foo.bar
 
 echo $'\n*************** Self-signed certificate' >&2
+seed
+
 t3_ run -H $HOST_NAME
 verify_logs $SUCCESS_TIMEOUT "CN=$HOST_NAME"
 cleanup
