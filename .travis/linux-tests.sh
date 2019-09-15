@@ -115,11 +115,6 @@ INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
 SUCCESS_TIMEOUT=30
 FAILURE_TIMEOUT=5
 
-# /dev/random does not get enough entropy, therefore we have to generate unsafe keys for testing
-if ln -sf /dev/urandom /dev/random; then
-    echo $'\n*************** Using /dev/urandom' >&2
-fi
-
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
@@ -362,13 +357,13 @@ for D in "${DIRS[@]}"; do
     grep -q -F "$D" $TEMP_FILE
 done
 
-# echo "Verifying that COMPOSER_EXCLUDE is being excluded"
-# t3_ composer update >$TEMP_FILE
-# IFS=: read -ra DIRS <<< "$EXCLUDED"
-# for D in "${DIRS[@]}"; do
-#     grep -q -F "Excluded '$D'" $TEMP_FILE || echo "status = $?"
-#     grep -q -F "Restored '$D'" $TEMP_FILE || echo "status = $?"
-# done
+echo "Verifying that COMPOSER_EXCLUDE is being excluded"
+t3_ composer update >$TEMP_FILE
+IFS=: read -ra DIRS <<< "$EXCLUDED"
+for D in "${DIRS[@]}"; do
+    grep -q -F "Excluded '$D'" $TEMP_FILE || echo "status = $?"
+    grep -q -F "Restored '$D'" $TEMP_FILE || echo "status = $?"
+done
 
 cleanup
 
@@ -385,7 +380,7 @@ cleanup
 
 echo $'\n*************** Custom certificate' >&2
 openssl genrsa -out "$CERTFILE.key" 3072 #2>/dev/null
-openssl req -new -sha256 -out "$CERTFILE.csr" -key "$CERTFILE.key" -subj "/CN=$HOSTNAME" #2>/dev/null
+openssl req -new -sha256 -out "$CERTFILE.csr" -key "$CERTFILE.key" -subj "/CN=$CN" #2>/dev/null
 openssl x509 -req -days 1 -in "$CERTFILE.csr" -signkey "$CERTFILE.key" -out "$CERTFILE.pem" -outform PEM #2>/dev/null
 
 t3_ run -k "$CERTFILE.key,$CERTFILE.pem"
@@ -394,7 +389,7 @@ echo "Waiting for certificate" >&2
 verify_cmd_success $SUCCESS_TIMEOUT curl -Isk $INSTALL_URL_SECURE | grep -q '200 OK'
 echo | \
     openssl s_client -showcerts -servername -connect $HOST_IP:$HTTPS_PORT 2>/dev/null | \
-    grep -q -F "subject=CN = $CN"
+        grep -q -F "subject=CN = $CN"
 cleanup
 
 
