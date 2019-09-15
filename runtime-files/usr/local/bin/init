@@ -123,9 +123,6 @@ EOF
 
         else
             # No certificate found that matches the current $HOSTNAME
-            # Feed sufficient random data from /dev/urandom to /dev/random
-            rngd -q -r /dev/urandom -W 4096
-
             # Create certificate
             openssl genrsa -out \
                 $APACHE_CERT.key 3072 \

@@ -15,8 +15,8 @@ t3_() {
     local TAG
     test "$CMD" = 'run' && TAG="-T $PRIMARY_TAG"
 
-    # Add entropy to /dev/random, otherwise private key generation may fail
-    dd if=/dev/urandom of=/dev/random bs=1024 count=64 2>/dev/null
+    # Generate entropy, otherwise private key generation may fail
+    ls -R / &>/dev/null || true
 
     if [ -f "$LOGFILE" ]; then
         local DEBUG
