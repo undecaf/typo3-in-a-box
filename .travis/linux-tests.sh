@@ -15,6 +15,9 @@ t3_() {
     local TAG
     test "$CMD" = 'run' && TAG="-T $PRIMARY_TAG"
 
+    # Add entropy to /dev/random, otherwise private key generation may fail
+    dd if=/dev/urandom of=/dev/random bs=1024 count=64 2>/dev/null
+
     if [ -f "$LOGFILE" ]; then
         local DEBUG
         local RE
@@ -114,9 +117,6 @@ INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
 # Timeouts in s
 SUCCESS_TIMEOUT=30
 FAILURE_TIMEOUT=5
-
-# Always feed sufficient random data from /dev/urandom to /dev/random
-rngd -q -r /dev/urandom -W 4096
 
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
