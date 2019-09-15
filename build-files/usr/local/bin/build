@@ -54,6 +54,7 @@ apk add \
 	curl \
 	ca-certificates \
 	openssl \
+    rng-tools \
     rsync \
     jq
 
