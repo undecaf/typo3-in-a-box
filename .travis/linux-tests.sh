@@ -115,11 +115,17 @@ INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
 SUCCESS_TIMEOUT=30
 FAILURE_TIMEOUT=5
 
+# /dev/random does not get enough entropy, therefore we have to generate unsafe keys for testing
+set -x
+if mv /dev/random /dev/random_ && ln -s /dev/urandom /dev/random; then
+    echo $'\n*************** Using /dev/urandom >&2
+fi
+
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
 # Will stop any running t3 configuration
-trap 'set +e; cleanup' EXIT
+trap 'set +e; cleanup; set -x; test -e /dev/random_ && rm -f /dev/random && mv /dev/random_ /dev/random;' EXIT
 
 # Exit with error status if any verification fails
 set -e
@@ -345,7 +351,6 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 
 cleanup
 
-sleep 10
 t3_ run -c
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
