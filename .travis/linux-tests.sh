@@ -358,8 +358,8 @@ done
 # echo "Verifying that COMPOSER_EXCLUDE is being excluded"
 # t3_ composer update >$TEMP_FILE
 # for D in ${EXCLUDED//:/ }; do
-#     grep -q -F "Excluded $D" $TEMP_FILE || echo "status = $?"
-#     grep -q -F "Restored $D" $TEMP_FILE || echo "status = $?"
+#     grep -q -F "Excluded '$D'" $TEMP_FILE || echo "status = $?"
+#     grep -q -F "Restored '$D'" $TEMP_FILE || echo "status = $?"
 # done
 
 cleanup
