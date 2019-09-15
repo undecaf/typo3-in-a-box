@@ -345,6 +345,7 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 
 cleanup
 
+sleep 10
 t3_ run -c
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
