@@ -376,9 +376,9 @@ verify_logs $SUCCESS_TIMEOUT "CN=$HOST_NAME"
 cleanup
 
 echo $'\n*************** Custom certificate' >&2
-openssl genrsa -out $CERTFILE.key 3072 #2>/dev/null
-openssl req -new -sha256 -out $CERTFILE.csr -key $CERTFILE.key -subj "/CN=$HOSTNAME" #2>/dev/null
-openssl x509 -req -days 1 -in $CERTFILE.csr -signkey $CERTFILE.key -out $CERTFILE.pem -outform PEM #2>/dev/null
+openssl genrsa -out "$CERTFILE.key" 3072 #2>/dev/null
+openssl req -new -sha256 -out "$CERTFILE.csr" -key "$CERTFILE.key" -subj "/CN=$HOSTNAME" #2>/dev/null
+openssl x509 -req -days 1 -in "$CERTFILE.csr" -signkey "$CERTFILE.key" -out "$CERTFILE.pem" -outform PEM #2>/dev/null
 
 t3_ run -k "$CERTFILE.key,$CERTFILE.pem"
 
