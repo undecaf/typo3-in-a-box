@@ -123,6 +123,8 @@ EOF
 
         else
             # No certificate found that matches the current $HOSTNAME -- create a new one
+            # Add entropy to /dev/random, otherwise private key generation may fail
+            dd if=/dev/urandom of=/dev/random bs=1024 count=64 2>/dev/null
             openssl genrsa -out \
                 $APACHE_CERT.key 3072 \
                 2>/dev/null
