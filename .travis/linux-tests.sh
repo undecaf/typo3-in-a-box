@@ -95,6 +95,11 @@ cleanup() {
     docker volume prune --force >/dev/null
 }
 
+# Shows where a trap occurred
+report_error() {
+    echo $'\n*************** Error on line '(caller) >&2
+}
+
 
 # Set environment variables for the current job
 source .travis/setenv.inc
@@ -122,7 +127,8 @@ FAILURE_TIMEOUT=5
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
 # Display error line and clean up Docker
-trap 'echo "*************** Error in line $LINENO"; set +e; cleanup;' EXIT
+trap report_error ERR
+trap 'set +e; cleanup;' EXIT
 
 # Exit with error status if any verification fails
 set -e
@@ -362,7 +368,7 @@ echo "Verifying that COMPOSER_EXCLUDE is being excluded"
 t3_ composer update >$TEMP_FILE
 IFS=: read -ra DIRS <<< "$EXCLUDED"
 for D in "${DIRS[@]}"; do
-    grep -q -F "Excluded '$D'" $TEMP_FILE
+    grep -q -F "Saved '$D'" $TEMP_FILE
     grep -q -F "Restored '$D'" $TEMP_FILE
 done
 
