@@ -15,10 +15,13 @@ t3_() {
     local TAG
     test "$CMD" = 'run' && TAG="-T $PRIMARY_TAG"
 
+    # Generate entropy, otherwise private key generation may fail
+    ls -R / &>/dev/null || true
+
     if [ -f "$LOGFILE" ]; then
         local DEBUG
         local RE
-        RE='run|stop|env|composer'
+        RE='run|stop|logs|env|composer'
         [[ "$CMD" =~ $RE ]] && DEBUG=-d
 
         echo "+ ./t3 $CMD $TAG $DEBUG $@" | tee -a $LOGFILE
@@ -100,8 +103,8 @@ source .travis/setenv.inc
 #LOGFILE=$(mktemp)
 
 # TYPO3 v8.7 cannot use SQLite
-RE='8\.7.*'
-[[ "$TYPO3_VER" =~ $RE ]] && export T3_DB_TYPE=mariadb
+RE='^8\.7.*'
+[[ "$TYPO3_VER" =~ $RE ]] && export T3_DB_TYPE=mariadb || export T3_DB_TYPE=
 
 # TYPO3 installation URLs
 HOST_IP=127.0.0.1
@@ -118,8 +121,8 @@ FAILURE_TIMEOUT=5
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
-# Will stop any running t3 configuration
-trap 'set +e; cleanup' EXIT
+# Display error line and clean up Docker
+trap 'set +e; cleanup;' EXIT
 
 # Exit with error status if any verification fails
 set -e
@@ -297,7 +300,6 @@ cleanup
 
 # Test container environment settings
 echo $'\n*************** Container environment settings' >&2
-
 echo "Verifying timezone and language" >&2
 LOCALE=de_AT.UTF-8
 TZ=Australia/Melbourne
@@ -346,24 +348,29 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 cleanup
 
 t3_ run -c
+sleep 10    # for TYPO3 8.7, MariaDB startup will take that long
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
 
 t3_ env COMPOSER_EXCLUDE=$EXCLUDED >$TEMP_FILE
-for D in ${EXCLUDED//:/ }; do
-    grep -q -F $D $TEMP_FILE
+IFS=: read -ra DIRS <<< "$EXCLUDED"
+for D in "${DIRS[@]}"; do
+    grep -q -F "$D" $TEMP_FILE
 done
 
-# echo "Verifying that COMPOSER_EXCLUDE is being excluded"
-# t3_ composer update >$TEMP_FILE
-# for D in ${EXCLUDED//:/ }; do
-#     grep -q -F "Excluded $D" $TEMP_FILE || echo "status = $?"
-#     grep -q -F "Restored $D" $TEMP_FILE || echo "status = $?"
-# done
+echo "Verifying that COMPOSER_EXCLUDE is being excluded"
+t3_ composer update >$TEMP_FILE
+IFS=: read -ra DIRS <<< "$EXCLUDED"
+for D in "${DIRS[@]}"; do
+    grep -q -F "Saved '$D'" $TEMP_FILE
+    grep -q -F "Restored '$D'" $TEMP_FILE
+done
 
 cleanup
 
+echo "Verifying that COMPOSER_EXCLUDE was set"
+EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
 
 # Test certificates
 HOST_NAME=dev.under.test
@@ -376,9 +383,9 @@ verify_logs $SUCCESS_TIMEOUT "CN=$HOST_NAME"
 cleanup
 
 echo $'\n*************** Custom certificate' >&2
-openssl genrsa -out $CERTFILE.key 3072 2>/dev/null
-openssl req -new -sha256 -out $CERTFILE.csr -key $CERTFILE.key -subj "/CN=$HOSTNAME" 2>/dev/null
-openssl x509 -req -days 1 -in $CERTFILE.csr -signkey $CERTFILE.key -out $CERTFILE.pem -outform PEM 2>/dev/null
+openssl genrsa -out "$CERTFILE.key" 3072 2>/dev/null
+openssl req -new -sha256 -out "$CERTFILE.csr" -key "$CERTFILE.key" -subj "/CN=$CN" 2>/dev/null
+openssl x509 -req -days 1 -in "$CERTFILE.csr" -signkey "$CERTFILE.key" -out "$CERTFILE.pem" -outform PEM 2>/dev/null
 
 t3_ run -k "$CERTFILE.key,$CERTFILE.pem"
 
@@ -386,7 +393,7 @@ echo "Waiting for certificate" >&2
 verify_cmd_success $SUCCESS_TIMEOUT curl -Isk $INSTALL_URL_SECURE | grep -q '200 OK'
 echo | \
     openssl s_client -showcerts -servername -connect $HOST_IP:$HTTPS_PORT 2>/dev/null | \
-    grep -q -F "subject=CN = $CN"
+        grep -q -F "subject=CN = $CN"
 cleanup
 
 
