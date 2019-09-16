@@ -184,10 +184,10 @@ test_path() {
 test_dir() {
     if test_path "$1"; then
         # At least the parent directory must exist
-        [ -d "$($DIRNAME "$1")" ] || usage "Working directory '$1' does not have a parent"
+        [ -d "$($DIRNAME "$1")" ] || err_exit "Working directory '$1' does not have a parent"
 
         # Mount point must be an empty directory
-        [ -n "$($LS -A "$1" 2>/dev/null)" ] && usage "Working directory path '$1' is not an empty directory"
+        [ -n "$($LS -A "$1" 2>/dev/null)" ] && err_exit "Working directory path '$1' is not an empty directory"
     fi
 }
 
@@ -301,7 +301,7 @@ mount_volume() {
     if test_path "$2"; then
         if [ -z "$BINDFS" ]; then
             unset USAGE
-            usage "bindfs not installed, see https://bindfs.org/ for information"
+            err_exit "bindfs not installed, see https://bindfs.org/ for information"
         fi
 
         local BIND_MP
@@ -972,7 +972,7 @@ while [ $# -gt 0 ]; do
         run:--env=*)
             ENV="${1#--env=}"
             RE='^('$RE_CONT_ENV')=(.*)$'
-            [[ "$ENV" =~ $RE ]] || usage "Not a valid NAME=VALUE pair: '$ENV'"
+            [[ "$ENV" =~ $RE ]] || err_exit "Not a valid NAME=VALUE pair: '$ENV'"
             export T3_${BASH_REMATCH[1]}=${BASH_REMATCH[2]}
             shift
             ;;
@@ -1040,7 +1040,7 @@ while [ $# -gt 0 ]; do
 done
 
 # At least one (additional) argument must be present
-[ $OPT_COUNT -eq 0 ] && usage 'No argument was found but at least one is required'
+[ $OPT_COUNT -eq 0 ] && err_exit 'No argument was found but at least one is required'
 
 
 # --------------------------------------------------------------------------
@@ -1050,7 +1050,7 @@ ENV_OPTIONS="--env T3_COMPOSER_MODE=$T3_COMPOSER_MODE "
 
 # Determine container engine name
 T3_ENGINE=$(autocomplete "$T3_ENGINE" docker podman)
-[ -x "$(which $T3_ENGINE)" ] || usage "Container engine '$T3_ENGINE' not found"
+[ -x "$(which $T3_ENGINE)" ] || err_exit "Container engine '$T3_ENGINE' not found"
 
 T3_ENGINE=$(which $T3_ENGINE)
 ENGINE_NAME=$($BASENAME $T3_ENGINE)
@@ -1075,7 +1075,7 @@ esac
 
 # Split into HTTP and HTTPS port and interface
 RE='^((.+)?,(.+)?)?$'
-[[ "$T3_PORTS" =~ $RE ]] || usage "Invalid option: '$T3_PORTS'"
+[[ "$T3_PORTS" =~ $RE ]] || err_exit "Invalid option: '$T3_PORTS'"
 HTTP_PORT=${BASH_REMATCH[2]}
 HTTPS_PORT=${BASH_REMATCH[3]}
 
@@ -1085,7 +1085,7 @@ HTTP_OPTIONS=
 
 # Split into private key file and certificate file
 RE='^((.+),(.+))?$'
-[[ "$T3_CERTFILES" =~ $RE ]] || usage "Invalid option: '$T3_CERTFILES'"
+[[ "$T3_CERTFILES" =~ $RE ]] || err_exit "Invalid option: '$T3_CERTFILES'"
 KEY_FILE=${BASH_REMATCH[2]}
 CERT_FILE=${BASH_REMATCH[3]}
 
@@ -1141,13 +1141,13 @@ case "$T3_DB_TYPE" in
         ;;
 
     sqlite|'')
-        ! [[ "$T3_TAG" =~ ^8 ]] || usage "TYPO3 '$T3_TAG' does not support SQLite"
+        ! [[ "$T3_TAG" =~ ^8 ]] || err_exit "TYPO3 '$T3_TAG' does not support SQLite"
         T3_DB_PORT=
         DB_PORT_OPTION=
         ;;
 
     *)
-        usage "Unknown database type: '$T3_DB_TYPE'"
+        err_exit "Unknown database type: '$T3_DB_TYPE'"
         ;;
 esac
 
@@ -1207,7 +1207,7 @@ case "$CMD" in
         trap - EXIT
 
         # Eventually show logs
-        [ -n "$T3_LOGS" ] && exec_engine logs --follow $TIMESTAMPS_OPTION "$T3_NAME"
+        [ -n "$T3_LOGS" ] && exec_engine logs --follow $TIMESTAMPS_OPTION "$T3_NAME" || true
         ;;
 
 
@@ -1261,7 +1261,7 @@ case "$CMD" in
 
 
     mount)
-        [ $# -gt 0 ] || usage 'A working directory is required'
+        [ $# -gt 0 ] || err_exit 'A working directory is required'
         for MP in "$@"; do
             mount_volume "$($BASENAME "$MP")" "$MP" || \
                 err_exit "Not a working directory, or already mounted: '$1'"
@@ -1270,7 +1270,7 @@ case "$CMD" in
 
 
     unmount)
-        [ $# -gt 0 ] || usage 'A working directory is required'
+        [ $# -gt 0 ] || err_exit 'A working directory is required'
         for MP in "$@"; do
             unmount_workdir "$($BASENAME "$MP")" "$MP" || \
                 err_exit "Unable to unmount working directory '$MP'"
@@ -1278,6 +1278,6 @@ case "$CMD" in
         ;;
 
     *)
-        usage "Unknown or ambiguous command: '$CMD'"
+        err_exit "Unknown or ambiguous command: '$CMD'"
         ;;
 esac
