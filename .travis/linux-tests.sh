@@ -347,7 +347,7 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 
 cleanup
 
-t3_ run -c -d
+t3_ run -c
 sleep 10    # for TYPO3 8.7, MariaDB startup will take that long
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
