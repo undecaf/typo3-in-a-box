@@ -97,7 +97,7 @@ cleanup() {
 
 # Shows where a trap occurred
 report_error() {
-    echo $'\n*************** Error on line '(caller) >&2
+    echo $'\n*************** Error on line '$(caller) >&2
 }
 
 
