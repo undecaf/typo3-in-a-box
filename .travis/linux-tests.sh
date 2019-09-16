@@ -121,8 +121,8 @@ FAILURE_TIMEOUT=5
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
-# Will stop any running t3 configuration
-trap 'set +e; cleanup;' EXIT
+# Display error line and clean up Docker
+trap 'echo "*************** Error in line $LINENO"; set +e; cleanup;' EXIT
 
 # Exit with error status if any verification fails
 set -e
