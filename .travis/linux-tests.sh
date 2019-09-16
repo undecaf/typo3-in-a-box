@@ -362,8 +362,8 @@ echo "Verifying that COMPOSER_EXCLUDE is being excluded"
 t3_ composer update >$TEMP_FILE
 IFS=: read -ra DIRS <<< "$EXCLUDED"
 for D in "${DIRS[@]}"; do
-    grep -q -F "Excluded '$D'" $TEMP_FILE || echo "status = $?"
-    grep -q -F "Restored '$D'" $TEMP_FILE || echo "status = $?"
+    grep -q -F "Excluded '$D'" $TEMP_FILE
+    grep -q -F "Restored '$D'" $TEMP_FILE
 done
 
 cleanup
