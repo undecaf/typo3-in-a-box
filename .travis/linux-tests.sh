@@ -95,11 +95,6 @@ cleanup() {
     docker volume prune --force >/dev/null
 }
 
-# Shows where a trap occurred
-report_error() {
-    echo $'\n*************** Error on line '$(caller) >&2
-}
-
 
 # Set environment variables for the current job
 source .travis/setenv.inc
@@ -127,7 +122,6 @@ FAILURE_TIMEOUT=5
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
 # Display error line and clean up Docker
-trap report_error ERR
 trap 'set +e; cleanup;' EXIT
 
 # Exit with error status if any verification fails
@@ -354,6 +348,7 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 cleanup
 
 t3_ run -c -d
+sleep 10    # for TYPO3 8.7, MariaDB startup will take that long
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
@@ -365,7 +360,6 @@ for D in "${DIRS[@]}"; do
 done
 
 echo "Verifying that COMPOSER_EXCLUDE is being excluded"
-set -x
 t3_ composer update >$TEMP_FILE
 IFS=: read -ra DIRS <<< "$EXCLUDED"
 for D in "${DIRS[@]}"; do

@@ -52,6 +52,7 @@ Your personal extension directories can be
     -   [Quick start with `t3`](#quick-start-with-t3)
     -   [MariaDB and PostgreSQL](#mariadb-and-postgresql)
     -   [HTTPS connections](#https-connections)
+    -   [Logging](#logging)
 -   [Developing for TYPO3](#developing-for-typo3)
     -   [Using an IDE](#using-an-ide)
     -   [Setting the container environment](#setting-the-container-environment)
@@ -64,6 +65,7 @@ Your personal extension directories can be
     -   [Common options](#common-options)
     -   [`t3 run`](#t3-run)
     -   [`t3 stop`](#t3-stop)
+    -   [`t3 logs`](#t3-logs)
     -   [`t3 env`](#t3-env)
     -   [`t3 composer`](#t3-composer)
     -   [`t3 shell`](#t3-shell)
@@ -211,6 +213,13 @@ By default, TYPO3 is served both at `http://127.0.0.1:8080` and at
 
 [`t3 run` options ](#t3-run) can be used to change the port mapping and to specify
 a custom SSL certificate.
+
+---
+
+### Logging
+
+Logs produced during startup and by Apache, PHP, MariaDB and PostgreSQL
+are available for viewing at the host. 
 
 ---
 
@@ -653,6 +662,10 @@ This can also be used to remove a container that is not running.
 
 Please note: `t3` never removes _volumes_.
 You have to use `docker/podman volume rm` to do that.
+
+---
+
+### `t3 logs`
 
 ---
 
