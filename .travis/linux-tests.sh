@@ -365,6 +365,7 @@ for D in "${DIRS[@]}"; do
 done
 
 echo "Verifying that COMPOSER_EXCLUDE is being excluded"
+set -x
 t3_ composer update >$TEMP_FILE
 IFS=: read -ra DIRS <<< "$EXCLUDED"
 for D in "${DIRS[@]}"; do
