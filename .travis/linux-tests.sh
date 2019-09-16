@@ -108,8 +108,8 @@ source .travis/setenv.inc
 #LOGFILE=$(mktemp)
 
 # TYPO3 v8.7 cannot use SQLite
-RE='8\.7.*'
-[[ "$TYPO3_VER" =~ $RE ]] && export T3_DB_TYPE=mariadb
+RE='^8\.7.*'
+[[ "$TYPO3_VER" =~ $RE ]] && export T3_DB_TYPE=mariadb || export T3_DB_TYPE=
 
 # TYPO3 installation URLs
 HOST_IP=127.0.0.1
@@ -353,7 +353,7 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 
 cleanup
 
-t3_ run -c
+t3_ run -c -d
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
