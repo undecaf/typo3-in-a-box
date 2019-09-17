@@ -32,6 +32,7 @@ You can use your favorite IDE at the host to
 fiddle with host permissions.
 
 [Secure connections](#https-connections),
+[logging](#logging),
 [Composer Mode](https://getcomposer.org/#Composer_Mode),
 [remote debugging with XDebug](#debugging-with-xdebug) and
 [database access](#accessing-the-typo3-database) are supported.
@@ -218,8 +219,23 @@ a custom SSL certificate.
 
 ### Logging
 
-Logs produced during startup and by Apache, PHP, MariaDB and PostgreSQL
-are available for viewing at the host. 
+Logs produced at startup and during operation by Apache, PHP, MariaDB and PostgreSQL
+are captured by the container engine and can be viewed at the host:
+
+```bash
+$ t3 logs
+  ...
+[Mon Sep 16 21:03:08.208056 2019] [mpm_prefork:notice] [pid 1] AH00163: Apache/2.4.41 (Unix) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Sep 16 21:03:08.208076 2019] [core:notice] [pid 1] AH00094: Command line: 'httpd -D FOREGROUND'
+10.0.2.2 - - [16/Sep/2019:21:03:31 +0200] "GET / HTTP/1.1" 302 -
+10.0.2.2 - - [16/Sep/2019:21:03:31 +0200] "GET /typo3/install.php HTTP/1.1" 200 1155
+10.0.2.2 - - [16/Sep/2019:21:03:31 +0200] "GET /typo3/sysext/backend/Resources/Public/Css/backend.css?0f5cc31c5af3685b26913d3ac05f6ae7c9f2a635 HTTP/1.1" 200 3066
+  ...
+```
+
+For a live view of the logs, add option&nbsp;`-f`; press `Ctrl-C` to leave this view. 
+There are more [`t3 logs` options](#t3-logs) that let you control the amount of
+information that is shown.
 
 ---
 
@@ -639,7 +655,13 @@ appear multiple times.
 
 The container environment can be changed at runtime by command [`t3 env`](#t3-env).
 
-__Options to be passed to the Docker/Podman `create` command:__
+__Logging:__
+option&nbsp;`-l` (or `T3_LOGS` not empty) shows the
+[log output of the TYPO3 container](#t3-logs) live at the console (`Ctrl-C` stops
+the live view). Add option&nbsp;`-t` (or `T3_TIMESTAMPS` not empty) to show 
+container timestamps, too.
+
+__Extra options to be passed to the Docker/Podman `create` command:__
 must be placed at the end of the command line and should be separated from `t3`
 options by `--`.
 
@@ -666,6 +688,32 @@ You have to use `docker/podman volume rm` to do that.
 ---
 
 ### `t3 logs`
+
+Displays the log output of a running TYPO3 container:
+
+```bash
+$ t3 logs [option]...
+```
+
+__Live view:__
+to display log messages at the console in real time, add option&nbsp;`-t` 
+(or `T3_FOLLOW` not empty). `Ctrl-C` terminates this mode.
+
+__Latest log lines:__
+option&nbsp;`-l LINES` (`T3_LINES=LINES`) shows only that many lines fom the end
+of the log, or all lines if 0.
+
+__Timestamps:__
+the container engine adds its own timestamp to each log line. By default, these
+timestamps are not shown. Option&nbsp;`-t` (or `T3_TIMESTAMPS` not empty) makes them
+visible.
+
+To shows only log lines since a timestamp, specify `-s TIMESTAMP`
+(or set `T3_SINCE=TIMESTAMP`). `TIMESTAMP` can be
+a [Unix timestamp](https://stackoverflow.com/questions/20822821/what-is-a-unix-timestamp-and-why-use-it#20823376),
+a [date formatted timestamp](https://www.w3.org/TR/NOTE-datetime),
+or a [Go duration string](https://golang.org/pkg/time/#ParseDuration) (e.g. `10m`, `1h30m`) 
+computed relative to the client machine's time.
 
 ---
 
@@ -805,6 +853,11 @@ that environment variable is not set.
 | `--db-vol=VOLUME`<br>`-V VOLUME` | `run` | Database volume name or working directory path (see `--typo3-root`).<br>Defaults: `$T3_DB_DATA`, or `typo3-data`. |
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option&nbsp;`--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). Most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. |
+| `--logs`<br>`-l` | `run` | Streams the log output of the new TYPO3 instance to the console until `Ctrl-C` is typed.<br>Default: `$T3_LOGS`, or not set. |
+| `--timestamps`<br>`-t` | `run`<br>`logs` | Shows timestamps in the log output.<br>Default: `$T3_TIMESTAMPS`, or not set. |
+| `--since=TIMESTAMP`<br>`-s TIMESTAMP` | `logs` | Shows only log lines since `TIMESTAMP`. This can be a [Unix timestamp](https://stackoverflow.com/questions/20822821/what-is-a-unix-timestamp-and-why-use-it#20823376), a [date formatted timestamp](https://www.w3.org/TR/NOTE-datetime), or a [Go duration string](https://golang.org/pkg/time/#ParseDuration) (e.g. `10m`, `1h30m`) computed relative to the client machine's time.<br>Default: `$T3_SINCE`, or not set. |
+| `--follow`<br>`-f` | `logs` | Streams the log output to the console until `Ctrl-C` is typed.<br>Default: `$T3_FOLLOW`, or not set. |
+| `--tail=LINES`<br>`-l LINES` | `logs` | Shows only that many lines from the end of the log, or all lines if 0.<br>Default: `$T3_TAIL`, or not set. |
 | `--rm`<br>`-R` | `stop` | Causes the TYPO3 container to be removed after being stopped. |
 
 ---
@@ -836,6 +889,10 @@ they can provide a consistent environment for all `t3` commands of a particular 
 | `T3_DB_USER` | Name of the TYPO3 database owner; effective only for MariaDB and PostgreSQL. | `t3` |
 | `T3_DB_PW` | Password of the TYPO3 database; effective only for MariaDB and PostgreSQL. | `t3` |
 | `T3_DB_ROOT_PW` | Password of the MariaDB root user; effective only for MariaDB and PostgreSQL. | `toor` |
+| `T3_LOGS` | If non-empty then the log output of a new TYPO3 instance is being streamed to the console until `Ctrl-C` is typed. | empty |
+| `T3_TIMESTAMPS` | Shows timestamps in the log output if non-empty. | empty |
+| `T3_SINCE` | Shows only log lines since `$T3_SINCE`. This can be a [Unix timestamp](https://stackoverflow.com/questions/20822821/what-is-a-unix-timestamp-and-why-use-it#20823376), a [date formatted timestamp](https://www.w3.org/TR/NOTE-datetime), or a [Go duration string](https://golang.org/pkg/time/#ParseDuration) (e.g. `10m`, `1h30m`) computed relative to the client machine's time. | empty |
+| `T3_FOLLOW` | If non-empty then the log output is being streamed to the console until `Ctrl-C` is typed. | empty |
 | `T3_TIMEZONE`<br>`T3_LANG`<br>`T3_MODE`<br>`T3_COMPOSER_EXCLUDE`<br>`T3_PHP_...` | Initial values for [container environment variables](#container-environment-variables) `TIMEZONE`, `LANG`, `MODE`, `COMPOSER_EXCLUDE` and `PHP_...`. | empty |
 
 ---

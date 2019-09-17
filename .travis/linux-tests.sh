@@ -369,6 +369,8 @@ done
 
 cleanup
 
+echo "Verifying that COMPOSER_EXCLUDE was set"
+EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
 
 # Test certificates
 HOST_NAME=dev.under.test

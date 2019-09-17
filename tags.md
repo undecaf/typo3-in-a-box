@@ -1,7 +1,7 @@
 ## [Available tags](https://hub.docker.com/r/undecaf/typo3-in-a-box/tags)
 
 As their version numbers suggest, images in this repository should be 
-considered still as unstable. Above all, this affects the volume and 
+considered as still unstable. Above all, this affects the volume and 
 mount options of `t3` on macOS.
 
 -   `latest`: most recent image of the most recent TYPO3 version 
