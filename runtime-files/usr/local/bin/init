@@ -91,7 +91,7 @@ if [ $$ -eq 1 ]; then
         TYPO3_VER=$CURRENT_TYPO3_VER
     fi
 
-    log_info "TYPO3 ${TYPO3_VER}, container image tags: $DEPLOY_TAGS (built on $(date --reference ${TYPO3_ROOT} --rfc-2822))"
+    log_info "TYPO3 ${TYPO3_VER}, container image tags: $DEPLOY_TAGS (created on $(date --reference ${TYPO3_ROOT} --rfc-2822))"
     log_info "Alpine Linux $(cat /etc/alpine-release)"
     log_info "$(httpd -v)"
     log_info "$(php --version)"
