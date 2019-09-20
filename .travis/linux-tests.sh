@@ -168,12 +168,6 @@ cleanup
 # Test logging
 echo $'\n*************** Logging' >&2
 
-cat <<EOF >/etc/rsyslog.d/90-test.conf
-module(load="imudp")
-input(type="imudp" port="514")
-EOF
-systemctl restart syslog.service
-
 echo "Verifying that the output follows the log"
 t3_ run
 t3_ logs -f >$TEMP_FILE &
