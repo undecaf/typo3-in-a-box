@@ -3,6 +3,7 @@
 #
 # Sets up SQLite
 #
+
 set -e
 
 # Use the same environment as during build
@@ -11,7 +12,7 @@ SQLITE_DIR=$TYPO3_ROOT/var/sqlite
 
 # Set up SQLite if necessary
 if [ ! -d $SQLITE_DIR ]; then
-    echo 'Setting up SQLite ...'
+    logger -p $LOG_INFO 'Setting up SQLite'
 
     # Point the SQLite directory at the database volume
     mkdir -p $TYPO3_ROOT/var
@@ -20,4 +21,4 @@ if [ ! -d $SQLITE_DIR ]; then
 fi
 
 # Nothing to start
-echo 'SQLite ready'
+logger -p $LOG_INFO 'SQLite ready'

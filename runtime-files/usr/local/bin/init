@@ -48,6 +48,30 @@ test_self_signed() {
 
 # --------------------------------------------------------------------------
 
+# Sends a message to syslog with priority $LOG_INFO and also to stdout if 
+# not at the initial invocation.
+#
+log_info() {
+    test $$ -ne 1 && echo "$1" || true
+    logger -p $LOG_INFO "$1"
+}
+
+
+# --------------------------------------------------------------------------
+
+# Sends a message to syslog with priority $LOG_ERROR and also to stderr if
+# not at the initial invocation. Exits with the specified return status
+# (or with 1).
+#
+err_exit() {
+    test $$ -ne 1 && echo "$1" >&2 || true
+    logger -p $LOG_ERROR "$1"
+    exit ${2:-1}
+}
+
+
+# --------------------------------------------------------------------------
+
 set -e
 
 # Use the same environment as during build
@@ -56,22 +80,21 @@ set -e
 
 # Initial invocation of this script (i.e. by 't3 run')?
 if [ $$ -eq 1 ]; then
-    # Show version info, trying to get the actual TYPO3 version from composer.lock
+    # syslog to /dev/stdout so that the container engine can pick up the logs
+    # and to localhost:514
+    syslogd -O - -R localhost:514 -L -t -n &
+
+    # Log version info, trying to get the actual TYPO3 version from composer.lock
     RE='^([0-9]+\.){2,}[0-9]+'
     if CURRENT_TYPO3_VER=$(jq --raw-output '[.packages|.[]|{(.name): .version}]|add|."typo3/cms-core"' $TYPO3_ROOT/composer.lock 2>/dev/null) \
             && [[ "$CURRENT_TYPO3_VER" =~ $RE ]]; then
         TYPO3_VER=$CURRENT_TYPO3_VER
     fi
 
-    cat <<EOF
-
-*** TYPO3 ${TYPO3_VER}, container image tags: $DEPLOY_TAGS (built on $(date --reference ${TYPO3_ROOT} --rfc-2822)) ***
-
-Alpine Linux $(cat /etc/alpine-release)
-$(httpd -v)
-$(php --version)
-
-EOF
+    log_info "TYPO3 ${TYPO3_VER}, container image tags: $DEPLOY_TAGS (built on $(date --reference ${TYPO3_ROOT} --rfc-2822))"
+    log_info "Alpine Linux $(cat /etc/alpine-release)"
+    log_info "$(httpd -v)"
+    log_info "$(php --version)"
 
     # Get the values of container environment variables
     # as set by '--env T3_NAME=VALUE'
@@ -91,13 +114,13 @@ EOF
     # Use timezone if specified and supported
     if [ -n "$T3_TIMEZONE" -a -f "/usr/share/zoneinfo/${T3_TIMEZONE}" ]; then
         cp /usr/share/zoneinfo/${T3_TIMEZONE} /etc/localtime
-        echo "Timezone: $T3_TIMEZONE"
+        log_info "Timezone: $T3_TIMEZONE"
     else
-        echo "Timezone: UTC"
+        log_info "Timezone: UTC"
     fi
 
     # Show locale
-    echo "Locale: $LANG"
+    log_info "Locale: $LANG"
 
     # Disable the default SSL configuration in favor of the TYPO3 SSL configuration
     mv /etc/apache2/conf.d/ssl.conf /etc/apache2/conf.d/ssl.conf.disabled
@@ -114,12 +137,12 @@ EOF
         ln -sf $APACHE_CUSTOM_CERT.pem $APACHE_CERT.pem
 
         test_self_signed && SELF_SIGNED='self-signed ' || SELF_SIGNED=
-        echo "Using a ${SELF_SIGNED}custom SSL certificate, CN=$(cert_info 'subject')"
+        log_info "Using a ${SELF_SIGNED}custom SSL certificate, CN=$(cert_info 'subject')"
 
     else
         # Create a self-signed certificate for $HOSTNAME unless one already exists
-        if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem -a "$(cert_info 'subject')" = "$HOSTNAME" ]; then
-            echo "Using existing SSL certificate, CN=$HOSTNAME"
+        if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem ] && [ "$(cert_info 'subject')" = "$HOSTNAME" ]; then
+            log_info "Using existing SSL certificate, CN=$HOSTNAME"
 
         else
             # No certificate found that matches the current $HOSTNAME
@@ -140,7 +163,7 @@ EOF
             rm $APACHE_CERT.csr
 
             chown $APACHE_USER: $APACHE_CERT.{key,pem}
-            echo "Created a self-signed SSL certificate, CN=$HOSTNAME"
+            log_info "Created a self-signed SSL certificate, CN=$HOSTNAME"
         fi
     fi
 
@@ -148,11 +171,10 @@ EOF
     if [ -n "$T3_COMPOSER_MODE" ]; then
         if [ -f $TYPO3_ROOT/composer.json ] && \
                 grep -q -E 'define *\( *'"'TYPO3_COMPOSER_MODE'"' *, *TRUE *\)' $TYPO3_ROOT/vendor/typo3/autoload-include.php; then
-            echo 'TYPO3 extensions have to be added/removed by Composer (Composer Mode)'
+            log_info 'TYPO3 extensions have to be added/removed by Composer (Composer Mode)'
 
         else
-            echo 'Cannot enable Composer Mode: it is already disabled in an existing volume'
-            exit 1
+            err_exit 'Cannot enable Composer Mode: it is already disabled in an existing volume'
         fi
 
     else
@@ -160,10 +182,8 @@ EOF
             -e "s/define *\( *'TYPO3_COMPOSER_MODE' *, *TRUE *\) *;/define('TYPO3_COMPOSER_MODE', FALSE);/" \
             -i $TYPO3_ROOT/vendor/typo3/autoload-include.php
         rm -rf $TYPO3_ROOT/composer.* $APACHE_HOME/.composer
-        echo 'TYPO3 extensions have to be added/removed by the TYPO3 Extension Manager'
+        log_info 'TYPO3 extensions have to be added/removed by the TYPO3 Extension Manager'
     fi
-
-    echo
     
 else
     # Script invoked by a command after 't3 run' such as 't3 env', 't3 composer'
@@ -180,35 +200,33 @@ else
     done <<< "$(printenv)"
 fi
 
-
 # Disable SSL stapling for self-signed certificates
 test_self_signed && export STAPLING=Off || export STAPLING=On
 
 # Select developer/XDebug/production mode, accept abbreviations and ignore case
 while true; do
     if [[ -n $MODE && dev == ${MODE,,}* ]]; then
-        echo "Apache/TYPO3 in developer mode"
+        log_info "Apache/TYPO3 in developer mode"
         EXT=dev
         XDEBUG=
         break
     fi
 
     if [[ -n $MODE && xdebug == ${MODE,,}* ]]; then
-        echo "Apache/TYPO3 in developer mode with XDebug support"
+        log_info "Apache/TYPO3 in developer mode with XDebug support"
         EXT=dev
         XDEBUG=y
         break
     fi
 
     if [[ -z $MODE || prod == ${MODE,,}* ]]; then
-        echo "Apache/TYPO3 in production mode"
+        log_info "Apache/TYPO3 in production mode"
         EXT=prod
         XDEBUG=
         break
     fi
 
-    echo "Unknown mode: '$MODE'" >&2
-    exit 1
+    err_exit "Unknown mode: '$MODE'"
 done
 
 ln -sf /etc/apache2/conf.d/mode.conf.${EXT} /etc/apache2/conf.d/mode.conf
@@ -222,8 +240,9 @@ printenv \
     > /etc/php7/conf.d/zz_99_overrides.ini
 
 if [ -s /etc/php7/conf.d/zz_99_overrides.ini ]; then
-	echo "Overriding these php.ini settings:"
-	cat /etc/php7/conf.d/zz_99_overrides.ini | sed 's/\(.*\)/  \1/'
+    while read -r LINE; do
+    	log_info "php.ini override: $LINE"
+    done </etc/php7/conf.d/zz_99_overrides.ini
 fi
 
 # Enable/disable XDebug support
@@ -233,13 +252,14 @@ if [ -n "$XDEBUG" ]; then
     test -n "$HOST_IP" && export REMOTE_CONNECT_BACK=0 || export REMOTE_CONNECT_BACK=1
 
 	cat /etc/php7/xdebug.ini.template | envsubst > /etc/php7/conf.d/xdebug.ini
-	echo "XDebug enabled:"
-    grep -E '^xdebug\.remote_(host|connect_back)=' /etc/php7/conf.d/xdebug.ini \
-        | sed 's/\(.*\)/  \1/'
+	log_info "XDebug enabled"
+    while read -r LINE; do
+        log_info "php.ini XDebug: $LINE"
+    done < <(grep -E '^xdebug\.remote_(host|connect_back)=' /etc/php7/conf.d/xdebug.ini)
 
 else
 	truncate -s 0 /etc/php7/conf.d/xdebug.ini
-	echo "XDebug disabled"
+	log_info "XDebug disabled"
 fi
 
 # root created missing paths for volumes also in $APACHE_HOME, therefore:
@@ -247,11 +267,9 @@ chown -R $APACHE_USER: $APACHE_HOME
 
 # Show the list of directories to be excluded from Composer operations
 if [ -n "$COMPOSER_EXCLUDE" ]; then
-    echo "Directories excluded from Composer operations:"
-
     IFS=: read -ra DIRS <<< "$COMPOSER_EXCLUDE"
     for D in "${DIRS[@]}"; do
-        echo "  $D"
+        log_info "Excluded from Composer: $D"
     done
 fi
 
@@ -270,16 +288,13 @@ done <<< "$(printenv)"
 
 # Start the database on the first run of this script
 if [ $$ -eq 1 ]; then
-    echo
-
     # Accept abbreviated database types, ignore case
     while true; do
         [[ -n $T3_DB_TYPE && mariadb == ${T3_DB_TYPE,,}* ]] && start_mysql && break
         [[ -n $T3_DB_TYPE && postgresql == ${T3_DB_TYPE,,}* ]] && start_pg && break
         [[ -z $T3_DB_TYPE || sqlite == ${T3_DB_TYPE,,}* ]] && start_sqlite && break
 
-        echo "Unknown database type or startup failure: '$T3_DB_TYPE'" >&2
-        exit 1
+        err_exit "Unknown database type or startup failure: '$T3_DB_TYPE'"
     done
 fi
 
