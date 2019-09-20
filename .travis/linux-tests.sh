@@ -118,6 +118,9 @@ INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
 SUCCESS_TIMEOUT=30
 FAILURE_TIMEOUT=5
 
+# Used to capture output
+TEMP_FILE=$(mktemp)
+
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
@@ -158,6 +161,24 @@ docker volume prune --force >/dev/null
 
 t3_ run --label foo=bar
 test "$(docker inspect --format '{{.Config.Labels.foo}}' typo3)" = 'bar'
+
+cleanup
+
+
+# Test logging
+echo $'\n*************** Logging' >&2
+
+cat /etc/rsyslog.conf || true
+netstat -tulpan
+
+echo "Verifying that the output follows the log"
+t3_ run
+t3_ logs -f >$TEMP_FILE &
+PID=$!
+t3_ env
+sleep $FAILURE_TIMEOUT
+kill $PID
+grep -q 'typo3 local0.info root: Apache/TYPO3' $TEMP_FILE
 
 cleanup
 
