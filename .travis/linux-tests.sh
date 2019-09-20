@@ -170,7 +170,7 @@ echo $'\n*************** Logging' >&2
 
 echo "Verifying that the output follows the log"
 t3_ run
-sleep SUCCESS_TIMEOUT    # for TYPO3 8.7, MariaDB startup will take that long
+sleep $SUCCESS_TIMEOUT    # for TYPO3 8.7, MariaDB startup will take that long
 
 t3_ logs -f >$TEMP_FILE &
 PID=$!
@@ -368,7 +368,7 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 cleanup
 
 t3_ run -c
-sleep SUCCESS_TIMEOUT    # for TYPO3 8.7, MariaDB startup will take that long
+sleep $SUCCESS_TIMEOUT    # for TYPO3 8.7, MariaDB startup will take that long
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
