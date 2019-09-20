@@ -82,7 +82,7 @@ set -e
 if [ $$ -eq 1 ]; then
     # syslog to /dev/stdout so that the container engine can pick up the logs
     # and to localhost:514
-    syslogd -O - -R localhost:514 -L -t -n &
+    syslogd -O - -R 0.0.0.0:514 -L -n &
 
     # Log version info, trying to get the actual TYPO3 version from composer.lock
     RE='^([0-9]+\.){2,}[0-9]+'
