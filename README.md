@@ -219,23 +219,27 @@ a custom SSL certificate.
 
 ### Logging
 
-Logs produced at startup and during operation by Apache, PHP, MariaDB and PostgreSQL
-are captured by the container engine and can be viewed at the host:
+Events at startup and during operation of Apache, PHP, MariaDB and 
+PostgreSQL are logged in `syslog` format. These logs are captured
+by the container engine and can be viewed at the host:
 
 ```bash
 $ t3 logs
+Sep 20 07:02:45 typo3 syslog.info syslogd started: BusyBox v1.30.1
+Sep 20 07:02:45 typo3 local0.info root: TYPO3 10.0, container image tags: 10.0-latest (built on Fri, 20 Sep 2019 07:02:43 +0000)
+Sep 20 07:02:45 typo3 local0.info root: Alpine Linux 3.10.2
+Sep 20 07:02:45 typo3 local0.info root: Server version: Apache/2.4.41 (Unix) Server built:   Aug 20 2019 08:54:21
+Sep 20 07:02:45 typo3 local0.info root: PHP 7.3.9 (cli) (built: Aug 30 2019 00:12:57) ( NTS ) Copyright (c) 1997-2018 The PHP Group Zend Engine v3.3.9, Copyright (c) 1998-2018 Zend Technologies
   ...
-[Mon Sep 16 21:03:08.208056 2019] [mpm_prefork:notice] [pid 1] AH00163: Apache/2.4.41 (Unix) OpenSSL/1.1.1d configured -- resuming normal operations
-[Mon Sep 16 21:03:08.208076 2019] [core:notice] [pid 1] AH00094: Command line: 'httpd -D FOREGROUND'
-10.0.2.2 - - [16/Sep/2019:21:03:31 +0200] "GET / HTTP/1.1" 302 -
-10.0.2.2 - - [16/Sep/2019:21:03:31 +0200] "GET /typo3/install.php HTTP/1.1" 200 1155
-10.0.2.2 - - [16/Sep/2019:21:03:31 +0200] "GET /typo3/sysext/backend/Resources/Public/Css/backend.css?0f5cc31c5af3685b26913d3ac05f6ae7c9f2a635 HTTP/1.1" 200 3066
+Sep 20 08:56:56 typo3 local1.notice httpd: 10.0.2.2 "GET /typo3/install.php HTTP/1.1" 200 1155
+Sep 20 08:56:56 typo3 local1.notice httpd: 10.0.2.2 "GET /typo3/sysext/backend/Resources/Public/Css/backend.css?b0cad3b70147b08404c246aecb97120be7a854d2 HTTP/1.1" 200 305919
+Sep 20 08:56:56 typo3 local1.notice httpd: 10.0.2.2 "GET /typo3/sysext/install/Resources/Public/JavaScript/RequireJSConfig.js?b0cad3b70147b08404c246aecb97120be7a854d2 HTTP/1.1" 200 901
   ...
 ```
 
-For a live view of the logs, add option&nbsp;`-f`; press `Ctrl-C` to leave this view. 
-There are more [`t3 logs` options](#t3-logs) that let you control the amount of
-information that is shown.
+For a live view, add option&nbsp;`-f` (press `Ctrl-C` to close 
+that view). There are more [`t3 logs` options](#t3-logs) that 
+let you control the amount of information that is shown.
 
 ---
 

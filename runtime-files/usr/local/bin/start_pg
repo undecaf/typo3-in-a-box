@@ -3,6 +3,7 @@
 #
 # Sets up and starts PostgreSQL with the requested configuration
 #
+
 set -e
 
 # Use the same environment as during build
@@ -14,7 +15,7 @@ chown -R ${PG_USER}: $PG_DATA $PG_RUN
 
 # Initialize PostgreSQL if necessary
 if [ ! -f $PG_DATA/PG_VERSION ]; then
-    echo 'Initializing PostgreSQL ...'
+    logger -p $LOG_INFO 'Initializing PostgreSQL'
 
     # Initialize PostgreSQL
     PWFILE=$(mktemp -u)
@@ -25,14 +26,14 @@ if [ ! -f $PG_DATA/PG_VERSION ]; then
     # Create the TYPO3 database unless it is named 'postgres'
     test "$T3_DB_NAME" = postgres || \
         echo "CREATE DATABASE $T3_DB_NAME;" | \
-        su-exec $PG_USER postgres --single -D $PG_DATA -j >/dev/null
+        su-exec $PG_USER postgres --single -D $PG_DATA --log_destination=syslog --syslog_facility=LOCAL2 -j >/dev/null
 
     # Set the password for the TYPO3 user and grant superuser privileges
     ACTION=CREATE
     test "$T3_DB_USER" = postgres && ACTION=ALTER
 
     echo "$ACTION USER $T3_DB_USER WITH SUPERUSER PASSWORD '$T3_DB_PW';" | \
-        su-exec $PG_USER postgres --single -D $PG_DATA -j >/dev/null
+        su-exec $PG_USER postgres --single -D $PG_DATA --log_destination=syslog --syslog_facility=LOCAL2 -j >/dev/null
 
     # Allow external IPv4 and IPv6 connections
     cat <<EOF >>$PG_DATA/pg_hba.conf
@@ -44,5 +45,5 @@ EOF
 fi
 
 # Start PostgreSQL
-echo $'\nStarting PostgreSQL server ...'
-su-exec $PG_USER postgres -D $PG_DATA -c 'listen_addresses=*' &
+logger -p $LOG_INFO 'Starting PostgreSQL server'
+su-exec $PG_USER postgres -D $PG_DATA --log_destination=syslog --syslog_facility=LOCAL2 --listen_addresses='*' &

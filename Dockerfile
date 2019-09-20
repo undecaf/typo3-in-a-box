@@ -37,7 +37,7 @@ RUN chmod -R 755 /usr/local/bin
 
 VOLUME ${TYPO3_ROOT} ${TYPO3_DATADIR}
 
-EXPOSE 80 443 3306 5432
+EXPOSE 80 443 3306 5432 514/udp
 
 ENTRYPOINT ["/usr/local/bin/init"]
 CMD ["httpd", "-D", "FOREGROUND"]

@@ -26,4 +26,8 @@ export PG_USER=postgres
 export PG_DATA=$TYPO3_DATADIR
 export PG_RUN=/run/postgresql
 
+# syslog priorities
+export LOG_INFO=local0.info
+export LOG_ERROR=${LOG_INFO/.info/.error}
+
 # Saved container environment variables
