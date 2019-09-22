@@ -396,7 +396,11 @@ with the (older) version of that extension from the repository.
 In order to prevent this, set the 
 [container environment variable](#container-environment-variables) 
 `COMPOSER_EXCLUDE` to a colon-separated list of _subdirectories_ of 
-`/var/www/localhost` which are to be excluded from changes made by Composer.
+`/var/www/localhost` which are to be excluded from changes made by Composer, e.g.
+
+```bash
+$ t3 env COMPOSER_EXCLUDE=public/typo3conf/ext/myt3ext
+```
 
 ---
 
