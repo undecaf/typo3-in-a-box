@@ -203,9 +203,6 @@ fi
 # Disable SSL stapling for self-signed certificates
 test_self_signed && export STAPLING=Off || export STAPLING=On
 
-# Disable SSL stapling for self-signed certificates
-test_self_signed && export STAPLING=Off || export STAPLING=On
-
 # Select developer/XDebug/production mode, accept abbreviations and ignore case
 while true; do
     if [[ -n $MODE && dev == ${MODE,,}* ]]; then
