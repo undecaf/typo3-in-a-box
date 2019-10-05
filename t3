@@ -454,7 +454,7 @@ Options (default values can be overridden by environment variables):
   --typo3-ports=HTTP,HTTPS, -p HTTP,HTTPS
       Host interfaces (optional) and ports where to publish the TYPO3 HTTP port
       and the TYPO3 HTTPS port. If one of the parts is omitted then the respective
-      port will not be published.
+      port will not be published. The comma is mandatory.
       Default: \$T3_PORTS, or '127.0.0.1:8080,127.0.0.1:8443'.
 
   --certfiles=PRIVATE-KEY,CERT, -k PRIVATE-KEY,CERT
