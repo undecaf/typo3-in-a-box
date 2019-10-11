@@ -90,7 +90,7 @@ convert_to_zsh() {
 # --------------------------------------------------------------------------
 
 # Restart this script under Zsh if running in (outdated) Bash in macOS
-test_macos && test_shell 'bash' && exec zsh <(convert_to_zsh) "$@"
+test_macos && test_shell 'bash' && exec zsh <(convert_to_zsh) "$0" "$@"
 
 # Set Bash and Zsh options for compatibility
 if test_shell 'zsh'; then
@@ -100,9 +100,16 @@ if test_shell 'zsh'; then
     # Allow '@()' for parenthesized globbing expressions
     setopt KSH_GLOB
 
+    # Basename of this script as started under Bash
+    SCRIPT=$($BASENAME $1)
+    shift
+
 else
     # Allow '@()' for parenthesized globbing expressions
     shopt -s extglob
+
+    # Basename of this script
+    SCRIPT=$($BASENAME $0)
 fi
 
 
@@ -116,14 +123,14 @@ fi
 #       output is sent to stderr; otherwise $USAGE goes to stdout.
 #
 # Environment:
-#   $USAGE usage information; how to preserve linefeeds in $USAGE:
+#   $SCRIPT  basename of this script as started under Bash
+#   $USAGE   usage information; how to preserve linefeeds in $USAGE:
 #       USAGE=$(cat <<EOT
 #           ... multiline text ...
 #       EOT
 #       )
 #
 usage() {
-    local SCRIPT=$($BASENAME $0)
     local REDIR=
     local EXIT_CODE=0
 
@@ -392,7 +399,7 @@ unmount_workdir() {
 # Autocomplete command
 CMD=$(autocomplete "$1" run stop logs env composer shell mount unmount)
 
-shift
+[ $# -ge 1 ] && shift || true
 OPT_COUNT=$#
 
 # Determine command
@@ -405,8 +412,8 @@ case "$CMD" in
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) run [option]... [--] [Docker/Podman 'create' option]...
-  $($BASENAME $0) run [-h|--help]
+  $SCRIPT run [option]... [--] [Docker/Podman 'create' option]...
+  $SCRIPT run [-h|--help]
 
 Runs TYPO3 image 'undecaf/typo3-in-a-box' in a container in Docker or Podman.
 
@@ -480,7 +487,7 @@ Options (default values can be overridden by environment variables):
 
   --env NAME=VALUE
       Sets the (initial) value of a container environment variable. Most variables
-      can be changed afterwards by '$($BASENAME $0) env'. This option may appear
+      can be changed afterwards by '$SCRIPT env'. This option may appear
       multiple times.
       Defaults: \$T3_TIMEZONE, \$T3_LANG, \$T3_MODE, \$T3_COMPOSER_EXCLUDE,
                 \$T3_PHP_..., \$T3_php_...
@@ -504,7 +511,7 @@ Options (default values can be overridden by environment variables):
       Displays this text and exits.
 
 Additional options for the Docker/Podman 'create' command can be added after the options
-described above. If necessary, '--' can be used to separate them from the $($BASENAME $0) options.
+described above. If necessary, '--' can be used to separate them from the $SCRIPT options.
  
 EOT
         )
@@ -518,8 +525,8 @@ EOT
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) stop [option]...
-  $($BASENAME $0) stop [-h|--help]
+  $SCRIPT stop [option]...
+  $SCRIPT stop [-h|--help]
 
 Stops a TYPO3 container, optionally removes it and unmounts the working
 directories of this container.
@@ -559,8 +566,8 @@ EOT
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) logs [option]...
-  $($BASENAME $0) logs [-h|--help]
+  $SCRIPT logs [option]...
+  $SCRIPT logs [-h|--help]
 
 Displays the log output of a running TYPO3 container.
 
@@ -614,8 +621,8 @@ EOT
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) env [option]... [NAME=VALUE]...
-  $($BASENAME $0) env [-h|--help]
+  $SCRIPT env [option]... [NAME=VALUE]...
+  $SCRIPT env [-h|--help]
 
 Modifies the environment of a running TYPO3 container. Shows the
 current environment if no NAME=VALUE pairs are given.
@@ -651,8 +658,8 @@ EOT
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) composer [option]... COMPOSER_CMD [Composer option]...
-  $($BASENAME $0) composer [-h|--help]
+  $SCRIPT composer [option]... COMPOSER_CMD [Composer option]...
+  $SCRIPT composer [-h|--help]
 
 Executes a Composer command inside of a running TYPO3 container.
 
@@ -685,8 +692,8 @@ EOT
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) shell [option]... [shell option]...
-  $($BASENAME $0) shell [-h|--help]
+  $SCRIPT shell [option]... [shell option]...
+  $SCRIPT shell [-h|--help]
 
 Opens an interactive Bash shell in a running TYPO3 container.
 
@@ -721,15 +728,15 @@ EOT
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) mount [option] WORK_DIR...
-  $($BASENAME $0) mount [-h|--help]
+  $SCRIPT mount [option] WORK_DIR...
+  $SCRIPT mount [-h|--help]
 
 Mounts one or more working directories to container volumes so that
 the volumes appear to be owned by and can be managed by the current user.
 The directories must be given as paths (containing '/'). The basenames
 are used as volume names.
 
-Equivalent to '$($BASENAME $0) run' options '-v' or '-V' with a working directory
+Equivalent to '$SCRIPT run' options '-v' or '-V' with a working directory
 path except that the container does not need to be running (it does not
 even have to exist).
 
@@ -753,8 +760,8 @@ EOT
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) unmount [option] WORK_DIR...
-  $($BASENAME $0) unmount [-h|--help]
+  $SCRIPT unmount [option] WORK_DIR...
+  $SCRIPT unmount [-h|--help]
 
 Unmounts one or more working directories from their container volumes.
 
@@ -784,7 +791,7 @@ EOT
         USAGE=$($CAT <<EOT
 
 Usage:
-  $($BASENAME $0) COMMAND [option]... [argument]...
+  $SCRIPT COMMAND [option]... [argument]...
  
 Available commands:
  
@@ -810,7 +817,7 @@ Available commands:
   --help, -h    Displays this text and exits. Displays command-specific help if 
                 combined with a command.
 
-Each command can be abbreviated to an unambiguous verb, e.g. '$($BASENAME $0) stop' -> '$($BASENAME $0) st'
+Each command can be abbreviated to an unambiguous verb, e.g. '$SCRIPT stop' -> '$SCRIPT st'
  
 EOT
         )
