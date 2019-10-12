@@ -1061,6 +1061,7 @@ T3_ENGINE=$(autocomplete "$T3_ENGINE" docker podman)
 
 T3_ENGINE=$(which $T3_ENGINE)
 ENGINE_NAME=$($BASENAME $T3_ENGINE)
+ENGINE_VERSION=$($T3_ENGINE --version)
 
 # Options that differ between container engines
 case $ENGINE_NAME in
@@ -1075,7 +1076,19 @@ case $ENGINE_NAME in
         HOST_IP_ENV="HOST_IP=$(ifconfig | $GREP 'inet ' | $GREP -v '127.0.0.1' | $AWK '{ print $2; }' | head -n 1)"
         ENV_OPTIONS="$ENV_OPTIONS \
             --env $HOST_IP_ENV"
-        MP_FORMAT='{{.MountPoint}}'
+        # Note: prior to Podman 1.6.0, the property was called 'MountPoint'
+        case "$ENGINE_VERSION" in
+            '* 0.*')
+                ;&
+
+            '* 1.[012345].*')
+                MP_FORMAT='{{.MountPoint}}'
+                ;;
+
+            *)
+                MP_FORMAT='{{.Mountpoint}}'
+                ;;
+        esac
         SUDO_PREFIX=
         ;;
 esac
