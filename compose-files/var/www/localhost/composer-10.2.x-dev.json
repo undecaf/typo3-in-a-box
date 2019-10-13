@@ -1,6 +1,6 @@
 {
 	"name": "undecaf/typo3-in-a-box",
-	"description" : "Containerized TYPO3 10.1.x-dev in Composer mode",
+	"description" : "Containerized TYPO3 10.2.x-dev in Composer mode",
 	"license": "GPL-2.0+",
 	"require": {
         "typo3/cms-about": "dev-master",
