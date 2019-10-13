@@ -1,12 +1,6 @@
 #!/bin/bash
 
-# If $LOGFILE is a file then this function runs t3 with the specified 
-# arguments, echoes the command line to stdout and appends it to $LOGFILE.
-# The output generated at stdout and the t3 exit status are also appended 
-# to $LOGFILE.
-#
-# Otherwise, runs t3 with the specified arguments and just echoes the 
-# command line to stdout.
+# Runs t3 with the specified arguments and echoes the command line to stdout.
 t3_() {
     local CMD
     CMD=$1
@@ -18,22 +12,8 @@ t3_() {
     # Generate entropy, otherwise private key generation may fail
     ls -R / &>/dev/null || true
 
-    if [ -f "$LOGFILE" ]; then
-        local DEBUG
-        local RE
-        RE='run|stop|logs|env|composer'
-        [[ "$CMD" =~ $RE ]] && DEBUG=-d
-
-        echo "+ ./t3 $CMD $TAG $DEBUG $@" | tee -a $LOGFILE
-        ./t3 $CMD $TAG $DEBUG "$@" | \
-            tee -p | \
-            sed -e 's/typo3\.'$HOSTNAME'/typo3.travis-job/' >>$LOGFILE
-        echo "= ${PIPESTATUS[0]}" >>$LOGFILE
-
-    else
-        echo "+ ./t3 $CMD $TAG $@"
-        ./t3 $CMD $TAG "$@"
-    fi
+    echo "+ ./t3 $CMD $TAG $@"
+    ./t3 $CMD $TAG "$@"
 }
 
 # Returns success if all specified containers exist.
@@ -98,9 +78,6 @@ cleanup() {
 
 # Set environment variables for the current job
 source .travis/setenv.inc
-
-# t3 command lines (prepended by '+') and generated Docker commands are saved here
-#LOGFILE=$(mktemp)
 
 # TYPO3 v8.7 cannot use SQLite
 RE='^8\.7.*'
@@ -419,15 +396,6 @@ cleanup
 
 # Remove trap
 trap - EXIT
-
-
-# Show the log file so that it can be copied
-if [ -s "$LOGFILE" ]; then
-    echo $'\n--------------- Begin log ---------------'
-    cat $LOGFILE
-    echo $'---------------  End log  ---------------\n'
-    rm $LOGFILE
-fi
 
 # If we have arrived here then exit successfully
 exit 0
