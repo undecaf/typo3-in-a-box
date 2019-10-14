@@ -72,25 +72,8 @@ test_shell() {
 
 # --------------------------------------------------------------------------
 
-# Converts this script to Zsh syntax and echoes the result to stdout.
-#
-# DO NOT USE ARRAYS EXCEPT FOR BASH_REMATCH[] as Zsh array indices
-# start at 1.
-#
-# DO NOT 'setopt KSH_ARRAYS', this will break regex group indices.
-#
-convert_to_zsh() {
-    # Rename 'BASH_REMATCH' to 'match'
-    sed -E \
-        -e 's/BASH_REMATCH/match/' \
-        "$0"
-}
-
-
-# --------------------------------------------------------------------------
-
 # Restart this script under Zsh if running in (outdated) Bash in macOS
-test_macos && test_shell 'bash' && exec zsh <(convert_to_zsh) "$0" "$@"
+test_macos && test_shell 'bash' && exec zsh "$0" "$@"
 
 # Set Bash and Zsh options for compatibility
 if test_shell 'zsh'; then
@@ -100,16 +83,16 @@ if test_shell 'zsh'; then
     # Allow '@()' for parenthesized globbing expressions
     setopt KSH_GLOB
 
-    # Basename of this script as started under Bash
-    SCRIPT=$($BASENAME $1)
-    shift
+    # Emulate Bash's regex behaviour
+    setopt BASH_REMATCH
+    setopt KSH_ARRAYS
+
+    # Do not execute EXIT traps on exit from shell functions
+    setopt POSIX_TRAPS
 
 else
     # Allow '@()' for parenthesized globbing expressions
     shopt -s extglob
-
-    # Basename of this script
-    SCRIPT=$($BASENAME $0)
 fi
 
 
@@ -123,7 +106,6 @@ fi
 #       output is sent to stderr; otherwise $USAGE goes to stdout.
 #
 # Environment:
-#   $SCRIPT  basename of this script as started under Bash
 #   $USAGE   usage information; how to preserve linefeeds in $USAGE:
 #       USAGE=$(cat <<EOT
 #           ... multiline text ...
@@ -131,6 +113,7 @@ fi
 #       )
 #
 usage() {
+    local SCRIPT=$($BASENAME $0)
     local REDIR=
     local EXIT_CODE=0
 
