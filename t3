@@ -1059,12 +1059,12 @@ case $ENGINE_NAME in
         HOST_IP_ENV="HOST_IP=$(ifconfig | $GREP 'inet ' | $GREP -v '127.0.0.1' | $AWK '{ print $2; }' | head -n 1)"
         ENV_OPTIONS="$ENV_OPTIONS \
             --env $HOST_IP_ENV"
-        # Note: prior to Podman 1.6.0, the property was called 'MountPoint'
+        # Note: as of Podman 1.6.0, the property name changed from 'MountPoint' to 'Mountpoint' (as in Docker)
         case "$ENGINE_VERSION" in
-            '* 0.*')
+            *' '0.*)
                 ;&
 
-            '* 1.[012345].*')
+            *' '1.[012345].*)
                 MP_FORMAT='{{.MountPoint}}'
                 ;;
 
