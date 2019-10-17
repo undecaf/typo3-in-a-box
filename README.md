@@ -287,8 +287,6 @@ Stopping the TYPO3 container will unmount the working directory automatically.
 Working directories can be mounted and unmounted independenty of whether a container
 is running or even exists, see [`t3 mount`](#t3-mount) and [`t3 unmount`](#t3-unmount).
 
-__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3.
-
 
 #### Editing a stopped TYPO3 instance
 
