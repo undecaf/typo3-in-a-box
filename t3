@@ -473,7 +473,8 @@ Options (default values can be overridden by environment variables):
   --typo3-ports=HTTP,HTTPS, -p HTTP,HTTPS
       Host interfaces (optional) and ports where to publish the TYPO3 HTTP port
       and the TYPO3 HTTPS port. If one of the parts is omitted then the respective
-      port will not be published. The comma is mandatory.
+      port will not be published. A leading comma is required if the HTTP part is
+      omitted, e.g. ',127.0.0.1:8443'.
       Default: \$T3_PORTS, or '127.0.0.1:8080,127.0.0.1:8443'.
 
   --certfiles=PRIVATE-KEY,CERT, -k PRIVATE-KEY,CERT
@@ -1095,10 +1096,10 @@ case $ENGINE_NAME in
 esac
 
 # Split into HTTP and HTTPS port and interface
-RE='^((.+)?,(.+)?)?$'
+RE='^(([^,]+)?(,(.+)?)?)?$'
 [[ "$T3_PORTS" =~ $RE ]] || err_exit "Invalid option: '$T3_PORTS'"
 HTTP_PORT=${BASH_REMATCH[2]}
-HTTPS_PORT=${BASH_REMATCH[3]}
+HTTPS_PORT=${BASH_REMATCH[4]}
 
 HTTP_OPTIONS=
 [ -n "$HTTP_PORT" ] && HTTP_OPTIONS="$HTTP_OPTIONS --publish $HTTP_PORT:80"
