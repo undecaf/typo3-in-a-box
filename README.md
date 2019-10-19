@@ -1,11 +1,11 @@
-# TYPO3 in a box ‒ a versatile TYPO3 8.7/9.5/10.0 image
+# TYPO3 in a box ‒ a versatile TYPO3 8.7/9.5/10.1 image
 
 [![Build Status](https://travis-ci.com/undecaf/typo3-in-a-box.svg?branch=master)](https://travis-ci.com/undecaf/typo3-in-a-box)
 [![Latest release](https://img.shields.io/github/release/undecaf/typo3-in-a-box.svg)](https://github.com/undecaf/typo3-in-a-box)
 ![Image Size](https://img.shields.io/microbadger/image-size/undecaf/typo3-in-a-box/latest.svg)
 
 This project provides a ready-to-run and extensive
-[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.0 installation as a single container image.
+[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.1 installation as a single container image.
 It is widely configurable, and thus it addresses TYPO3 editors and administrators
 as well as integrators and extension developers. Builds of the TYPO3 development
 branches are available, too.
@@ -286,8 +286,6 @@ Stopping the TYPO3 container will unmount the working directory automatically.
 
 Working directories can be mounted and unmounted independenty of whether a container
 is running or even exists, see [`t3 mount`](#t3-mount) and [`t3 unmount`](#t3-unmount).
-
-__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3.
 
 
 #### Editing a stopped TYPO3 instance

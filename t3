@@ -72,25 +72,8 @@ test_shell() {
 
 # --------------------------------------------------------------------------
 
-# Converts this script to Zsh syntax and echoes the result to stdout.
-#
-# DO NOT USE ARRAYS EXCEPT FOR BASH_REMATCH[] as Zsh array indices
-# start at 1.
-#
-# DO NOT 'setopt KSH_ARRAYS', this will break regex group indices.
-#
-convert_to_zsh() {
-    # Rename 'BASH_REMATCH' to 'match'
-    sed -E \
-        -e 's/BASH_REMATCH/match/' \
-        "$0"
-}
-
-
-# --------------------------------------------------------------------------
-
 # Restart this script under Zsh if running in (outdated) Bash in macOS
-test_macos && test_shell 'bash' && exec zsh <(convert_to_zsh) "$0" "$@"
+test_macos && test_shell 'bash' && exec zsh "$0" "$@"
 
 # Set Bash and Zsh options for compatibility
 if test_shell 'zsh'; then
@@ -100,16 +83,16 @@ if test_shell 'zsh'; then
     # Allow '@()' for parenthesized globbing expressions
     setopt KSH_GLOB
 
-    # Basename of this script as started under Bash
-    SCRIPT=$($BASENAME $1)
-    shift
+    # Emulate Bash's regex behaviour
+    setopt BASH_REMATCH
+    setopt KSH_ARRAYS
+
+    # Do not execute EXIT traps on exit from shell functions
+    setopt POSIX_TRAPS
 
 else
     # Allow '@()' for parenthesized globbing expressions
     shopt -s extglob
-
-    # Basename of this script
-    SCRIPT=$($BASENAME $0)
 fi
 
 
@@ -123,7 +106,6 @@ fi
 #       output is sent to stderr; otherwise $USAGE goes to stdout.
 #
 # Environment:
-#   $SCRIPT  basename of this script as started under Bash
 #   $USAGE   usage information; how to preserve linefeeds in $USAGE:
 #       USAGE=$(cat <<EOT
 #           ... multiline text ...
@@ -160,6 +142,36 @@ EOT
 err_exit() {
     echo '*** '"$1"' ***' >&2
     exit ${2:-1}
+}
+
+
+# --------------------------------------------------------------------------
+
+# Compares two version numbers formatted as x[.y[.z]] and echoes a number
+# <0, ==0 or >0 to stdout if the first one is less than, equal to or greater
+# than the second one, respectively.
+#
+# Returns a non-zero status and does not echo anything if either number is
+# ill-formatted.
+#
+# Arguments:
+#   $1  first version number
+#   $2  second version number
+compare_versions() {
+    local V1="$1".0.0
+    local V2="$2".0.0
+    local RE='([0-9]+)\.([0-9]+)\.([0-9]+)'
+
+    [[ "$V1" =~ $RE ]] || return 1
+    local MAJOR1=${BASH_REMATCH[1]}
+    local MINOR1=${BASH_REMATCH[2]}
+    local REV1=${BASH_REMATCH[3]}
+
+    [[ "$V2" =~ $RE ]] || return 1
+    local DIFF=$(( $MAJOR1 - ${BASH_REMATCH[1]} ))
+    [ $DIFF -ne 0 ] || DIFF=$(( $MINOR1 - ${BASH_REMATCH[2]} ))
+    [ $DIFF -ne 0 ] || DIFF=$(( $REV1 - ${BASH_REMATCH[3]} ))
+    echo $DIFF
 }
 
 
@@ -1076,19 +1088,8 @@ case $ENGINE_NAME in
         HOST_IP_ENV="HOST_IP=$(ifconfig | $GREP 'inet ' | $GREP -v '127.0.0.1' | $AWK '{ print $2; }' | head -n 1)"
         ENV_OPTIONS="$ENV_OPTIONS \
             --env $HOST_IP_ENV"
-        # Note: prior to Podman 1.6.0, the property was called 'MountPoint'
-        case "$ENGINE_VERSION" in
-            '* 0.*')
-                ;&
-
-            '* 1.[012345].*')
-                MP_FORMAT='{{.MountPoint}}'
-                ;;
-
-            *)
-                MP_FORMAT='{{.Mountpoint}}'
-                ;;
-        esac
+        # Note: as of Podman 1.6.0, the property name changed from 'MountPoint' to 'Mountpoint' (as in Docker)
+        [ $(compare_versions "$ENGINE_VERSION" '1.6.0') -ge 0 ] && MP_FORMAT='{{.Mountpoint}}' || MP_FORMAT='{{.MountPoint}}'
         SUDO_PREFIX=
         ;;
 esac
@@ -1236,8 +1237,9 @@ case "$CMD" in
 
         # Collect volume names from container
         # Note: prior to Podman v1.4.3, the volume name was contained in property .Source, not .Name
+        [ $(compare_versions "$ENGINE_VERSION" '1.4.3') -ge 0 ] && NAME_PROP='.Name' || NAME_PROP='.Source'
         VOLNAMES=$($T3_ENGINE container inspect \
-            --format='{{range .Mounts}}{{if eq .Destination "'$T3_ROOTDIR'" "'$T3_DATADIR'"}}{{printf "%s " .Name}}{{end}}{{end}}' \
+            --format='{{range .Mounts}}{{if eq .Destination "'$T3_ROOTDIR'" "'$T3_DATADIR'"}}{{printf "%s " '$NAME_PROP'}}{{end}}{{end}}' \
             "$T3_NAME" 2>/dev/null)
 
         # Try to unmount whatever may be mounted at the mountpoint of each volume

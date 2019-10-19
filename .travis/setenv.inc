@@ -15,8 +15,7 @@
 major_minor() {
     local RE    
     RE='^([0-9]+\.[0-9]+)(\..+)?'
-    [[ "$1" =~ $RE ]]
-    echo ${BASH_REMATCH[1]}
+    [[ "$1" =~ $RE ]] && echo ${BASH_REMATCH[1]} || echo ''
 }
 
 # Derive the TYPO3 version to compose from the best matching Composer file name
