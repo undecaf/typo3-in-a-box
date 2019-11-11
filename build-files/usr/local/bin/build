@@ -32,16 +32,37 @@ apk upgrade
 
 # Build locale support, see https://github.com/Auswaschbar/alpine-localized-docker
 export MUSL_LOCPATH="/usr/share/i18n/locales/musl"
+MUSL_LOCALES=musl-locales
+
 apk --no-cache add libintl
-apk --no-cache --virtual .locale_build add cmake make musl-dev gcc gettext-dev git
-git clone https://gitlab.com/rilian-la-te/musl-locales
-cd musl-locales
+apk --no-cache --virtual .$MUSL_LOCALES add cmake make musl-dev gcc gettext-dev git
+git clone https://gitlab.com/rilian-la-te/$MUSL_LOCALES
+
+cd $MUSL_LOCALES
 cmake -DLOCALE_PROFILE=OFF -DCMAKE_INSTALL_PREFIX:PATH=/usr .
 make
 make install
+
 cd ..
-rm -r musl-locales
-apk del .locale_build
+rm -rf $MUSL_LOCALES
+apk del .$MUSL_LOCALES
+
+# Build bindfs, see https://github.com/mpartel/bindfs, 
+# https://github.com/gliderlabs/docker-alpine/issues/268#issuecomment-297043078
+BINDFS=bindfs-1.14.1
+
+apk --no-cache add fuse
+apk --no-cache --virtual .$BINDFS add curl git pkgconfig build-base fuse-dev linux-headers
+curl https://bindfs.org/downloads/$BINDFS.tar.gz | tar -xz
+
+cd $BINDFS
+./configure
+make
+make install
+
+cd ..
+rm -rf $BINDFS
+apk del .$BINDFS
 
 # Install the basics
 apk add \
