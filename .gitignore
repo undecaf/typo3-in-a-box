@@ -1,6 +1,7 @@
 .vscode
 .images
 /local
+/t3-composer
 /typo3-root
 /typo3-data
 /snakeoil*
