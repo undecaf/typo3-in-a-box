@@ -14,7 +14,7 @@ The image is based on [Alpine Linux](https://alpinelinux.org/), comes
 with up-to-date versions of [Apache](https://httpd.apache.org/),
 [PHP](https://php.net/) and [ImageMagick](https://www.imagemagick.org/) 
 and has [SQLite](https://www.sqlite.org/), [MariaDB](https://mariadb.org/) and
-[PostgreSQL](https://www.postgresql.org/) built in.
+[PostgreSQL](https://www.postgresql.org/) built in to choose from.
 It is available at [Docker Hub](https://hub.docker.com/r/undecaf/typo3-in-a-box),
 uses well below 500&nbsp;MB disk space and can run in
 [Docker](https://www.docker.com/) and [Podman](https://podman.io/).
