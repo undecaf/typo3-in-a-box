@@ -11,12 +11,12 @@ mount options of `t3` on macOS.
     revision (currently [`8.7.31`](https://packagist.org/packages/typo3/cms#v8.7.31),
     [`9.5.14`](https://packagist.org/packages/typo3/cms#v9.5.14) and
     [`10.3.0`](https://packagist.org/packages/typo3/cms#v10.3.0))
--   `8.7-dev`, `9.5-dev`, `10.3-dev`:  
+-   `8.7-dev`, `9.5-dev`, `10.4-dev`:  
     weekly builds of the most recent _development image_ of the most
     recent TYPO3&nbsp;8.7/9.5/10.3 _development version_ (currently
     [`8.7.x-dev`](https://packagist.org/packages/typo3/cms#dev-TYPO3_8-7),
     [`9.5.x-dev`](https://packagist.org/packages/typo3/cms#9.5.x-dev) and
-    [`10.3.x-dev`](https://packagist.org/packages/typo3/cms#dev-master))
+    [`10.4.x-dev`](https://packagist.org/packages/typo3/cms#dev-master))
 -   `8.7-x.y`, `9.5-x.y`, `10.3-x.y`:  
     image version `x.y` of those TYPO3&nbsp;8.7/9.5/10.3 revisions that were most
     recent at build time
