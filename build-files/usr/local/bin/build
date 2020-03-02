@@ -22,9 +22,12 @@ mv -f $E /etc/environment
 chmod 644 /etc/environment
 
 # Add extra repositories
+# Add the latest repository where MariaDB does not exhibit this bug:
+# https://jira.mariadb.org/browse/MDEV-16015
 mkdir -p /etc/apk
 cat >>/etc/apk/repositories <<EOF
 http://dl-cdn.alpinelinux.org/alpine/edge/community
+http://dl-cdn.alpinelinux.org/alpine/v3.7/main
 EOF
 
 apk update
@@ -139,8 +142,11 @@ apk add \
 	php7-zip
 
 # Install databases
+# Pin MariaDB to the latest version which does not exhibit this bug:
+# https://jira.mariadb.org/browse/MDEV-16015
 apk add \
-    mariadb \
+    'mariadb-common<10.2' \
+    'mariadb<10.2' \
     postgresql
 
 # Set up the runtime environment
