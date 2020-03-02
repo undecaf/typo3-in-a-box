@@ -49,7 +49,7 @@ apk del .$MUSL_LOCALES
 
 # Build bindfs, see https://github.com/mpartel/bindfs, 
 # https://github.com/gliderlabs/docker-alpine/issues/268#issuecomment-297043078
-BINDFS=bindfs-1.14.1
+BINDFS=bindfs-1.14.3
 
 apk --no-cache add fuse
 apk --no-cache --virtual .$BINDFS add curl git pkgconfig build-base fuse-dev linux-headers
