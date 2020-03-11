@@ -35,7 +35,7 @@ verify_volumes_exist() {
 }
 
 # Returns success if the specified command ($2, $3, ...) succeeds 
-# after some timeout ($1 in s).
+# within some period of time ($1 in s).
 verify_cmd_success() {
     local STEP=2
     local T=$1
@@ -52,8 +52,9 @@ verify_cmd_success() {
     return 0
 }
 
-# Returns success if a message ($2) is found after some timeout ($1 in s)
-# in the Docker logs for container $3 (defaults to 'typo3').
+# Returns success if a message ($2) is found within some period 
+# of time ($1 in s) in the Docker logs for container $3 (defaults
+# to 'typo3').
 verify_logs() {
     echo "verify_logs: '$2'" >&2
 
@@ -237,38 +238,6 @@ for DB_TYPE in mariadb postgresql; do
 done
 
 
-# Test volume names, mapping and (un-)mounting
-ROOT_VOL='./root volume/root'
-DB_VOL='./database volume/dbdata'
-
-echo $'\n*************** Volume names, mapping and (un-)mounting' >&2
-T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
-verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
-
-cleanup
-
-rm -rf "$ROOT_VOL" "$DB_VOL"
-mkdir -p "$(dirname "$ROOT_VOL")" "$DB_VOL"
-
-T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL"
-
-verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
-test -O "$ROOT_VOL/public/FIRST_INSTALL"
-test -G "$ROOT_VOL/public/FIRST_INSTALL"
-test -d "$DB_VOL"
-
-t3_ unmount "$ROOT_VOL" "$DB_VOL"
-! test -f "$ROOT_VOL/public/FIRST_INSTALL"
-
-t3_ mount "$ROOT_VOL"
-test -f "$ROOT_VOL/public/FIRST_INSTALL"
-
-verify_error 'Not a working directory, or already mounted' ./t3 mount "$ROOT_VOL"
-verify_error 'Unable to unmount' ./t3 unmount "$DB_VOL"
-
-cleanup
-
-
 # Test custom container name and hostname
 CONT_NAME=foo
 HOST_NAME=dev.under.test
@@ -284,14 +253,56 @@ t3_ stop -n $CONT_NAME --rm
 docker volume prune --force >/dev/null
 
 
+# Test volume names, working directories and ownership
+ROOT_VOL='./root-volume/root'
+DB_VOL="$(readlink -f .)/database volume/dbdata"
+echo $'\n*************** Volume names, working directories and ownership' >&2
+
+echo 'Testing volume names' >&2
+T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
+verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
+
+cleanup
+
+echo 'Testing working directories' >&2
+T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL" -D postgresql
+
+verify_cmd_success $SUCCESS_TIMEOUT sudo test -f "$ROOT_VOL/public/FIRST_INSTALL"
+! sudo test -O "$ROOT_VOL/public/FIRST_INSTALL"
+! sudo test -G "$ROOT_VOL/public/FIRST_INSTALL"
+
+verify_cmd_success $SUCCESS_TIMEOUT sudo test -f "$DB_VOL/PG_VERSION"
+! sudo test -O "$DB_VOL/PG_VERSION"
+! sudo test -G "$DB_VOL/PG_VERSION"
+
+cleanup
+sudo rm -rf "$ROOT_VOL" "$DB_VOL"
+
+echo 'Testing working directory ownership' >&2
+t3_ run -v "$ROOT_VOL" -o -V "$DB_VOL" -O -D postgresql
+
+verify_cmd_success $SUCCESS_TIMEOUT test -f "$ROOT_VOL/public/FIRST_INSTALL"
+test -O "$ROOT_VOL/public/FIRST_INSTALL"
+test -G "$ROOT_VOL/public/FIRST_INSTALL"
+
+verify_cmd_success $SUCCESS_TIMEOUT test -f "$DB_VOL/PG_VERSION"
+test -O "$DB_VOL/PG_VERSION"
+test -G "$DB_VOL/PG_VERSION"
+
+cleanup
+rm -rf "$ROOT_VOL" "$DB_VOL"
+
+
 # Test Composer Mode
 echo $'\n*************** Composer Mode' >&2
 t3_ run
-! t3_ composer show
+verify_logs $SUCCESS_TIMEOUT 'Extension Manager'
+! verify_cmd_success $FAILURE_TIMEOUT t3_ composer show
 cleanup
 
 t3_ run -c
-t3_ composer show | grep -q -F 'typo3/cms-'
+verify_logs $SUCCESS_TIMEOUT 'Composer Mode'
+verify_cmd_success $SUCCESS_TIMEOUT t3_ composer show | grep -q -F 'typo3/cms-'
 cleanup
 
 

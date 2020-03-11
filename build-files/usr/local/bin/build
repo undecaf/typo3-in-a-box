@@ -15,6 +15,7 @@ export BUILD_DATE='${BUILD_DATE:-$(date --utc +'%Y-%m-%dT%H:%M:%SZ')}'
 export APACHE_HOME=$APACHE_HOME
 export TYPO3_ROOT=$TYPO3_ROOT
 export TYPO3_DATADIR=$TYPO3_DATADIR
+export UNBOUND_MARKER=$(mktemp -u unbound_XXXXXX)
 
 EOF
 
@@ -34,40 +35,41 @@ apk upgrade
 export MUSL_LOCPATH="/usr/share/i18n/locales/musl"
 MUSL_LOCALES=musl-locales
 
-apk --no-cache add libintl
-apk --no-cache --virtual .$MUSL_LOCALES add cmake make musl-dev gcc gettext-dev git
+apk add libintl
+apk -q --no-cache --virtual .$MUSL_LOCALES add cmake make musl-dev gcc gettext-dev git
 git clone https://gitlab.com/rilian-la-te/$MUSL_LOCALES
 
 cd $MUSL_LOCALES
-cmake -DLOCALE_PROFILE=OFF -DCMAKE_INSTALL_PREFIX:PATH=/usr .
+cmake -DLOCALE_PROFILE=OFF -DCMAKE_INSTALL_PREFIX:PATH=/usr . >/dev/null
 make
 make install
 
 cd ..
 rm -rf $MUSL_LOCALES
-apk del .$MUSL_LOCALES
+apk -q del .$MUSL_LOCALES
 
 # Build bindfs, see https://github.com/mpartel/bindfs, 
 # https://github.com/gliderlabs/docker-alpine/issues/268#issuecomment-297043078
 BINDFS=bindfs-1.14.3
 
-apk --no-cache add fuse
-apk --no-cache --virtual .$BINDFS add curl git pkgconfig build-base fuse-dev linux-headers
+apk add fuse
+apk -q --no-cache --virtual .$BINDFS add curl git pkgconfig build-base fuse-dev linux-headers
 curl https://bindfs.org/downloads/$BINDFS.tar.gz | tar -xz
 
 cd $BINDFS
-./configure
+./configure >/dev/null
 make
 make install
 
 cd ..
 rm -rf $BINDFS
-apk del .$BINDFS
+apk -q del .$BINDFS
 
 # Install the basics
 apk add \
 	bash \
     su-exec \
+    shadow \
 	nano \
     git \
     gettext \
@@ -146,7 +148,10 @@ apk add \
 # Set up the runtime environment
 . /etc/environment
 
+# Leave a marker in $TYPO3_DATADIR so that bind mounts can be detected
 mkdir -p $TYPO3_DATADIR
+touch $TYPO3_DATADIR/$UNBOUND_MARKER
+
 chmod 755 /usr/local/bin/*
 chmod 755 /etc/php7
 
@@ -168,5 +173,5 @@ EOF
     ln -s $APACHE_HOME/readme.html $TYPO3_DOCROOT/
 fi
 
-# Clean up
+# Clean up (must be the last command in this file)
 rm -rf /var/cache/apk/* $0

@@ -11,7 +11,6 @@ build_test: &build_test
   addons:
     apt:
       packages:
-        - bindfs
         - rng-tools
   script:
     - .travis/build.sh
