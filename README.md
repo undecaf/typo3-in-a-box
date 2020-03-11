@@ -70,8 +70,6 @@ Your personal extension directories can be
     -   [`t3 env`](#t3-env)
     -   [`t3 composer`](#t3-composer)
     -   [`t3 shell`](#t3-shell)
-    -   [`t3 mount`](#t3-mount)
-    -   [`t3 unmount`](#t3-unmount)
     -   [Options](#options)
     -   [Host environment variables](#host-environment-variables)
     -   [Container environment variables](#container-environment-variables)
@@ -102,7 +100,7 @@ Next, browse to [`http://localhost:8080`](). This starts the TYPO3 installation 
 When asked to select a database, choose `Manually configured SQLite connection` and
 continue through the remaining dialogs to the TYPO3 login dialog.
 
-Volumes `typo3-root` and `typo3-data` now persist the state of the TYPO3 instance
+Volumes `typo3-root` and `typo3-data` persist the state of the TYPO3 instance
 across container lifecycles.
 
 
@@ -123,7 +121,7 @@ has been provided for Linux and macOS.
 It enables you to:
 -   configure and run a TYPO3 container;
 -   stop this container and optionally remove it;
--   mount the TYPO3 root volume at a working directory at the host;
+-   bind-mount the TYPO3 root volume at a working directory at the host;
 -   access the databases from the host; 
 -   modify the TYPO3 environment even while the container is running;
 -   run Composer within the TYPO3 container;
@@ -147,7 +145,7 @@ $ sudo chmod 755 /usr/local/bin/t3
 
 ### Quick start with `t3`
 
-To run a TYPO3 container [as in the example above](#quick-start) with `t3`,
+To run a TYPO3 container [as in the quick start example above](#quick-start) with `t3`,
 simply type:
 
 ```bash
@@ -173,14 +171,14 @@ State is preserved in volumes `typo3-root` and `typo3-data` so that a subsequent
 
 ### MariaDB and PostgreSQL
 
-MariaDB or PostgreSQL is optional for TYPO3&nbsp;9.5+ but is required for TYPO3&nbsp;8.7.
+MariaDB and PostgreSQL are optional for TYPO3&nbsp;9.5+ but one of them is required for TYPO3&nbsp;8.7.
 
-The following example starts TYPO3 and a MariaDB server in the same container,
+The following example starts TYPO3 and a MariaDB server in a common container,
 preserving state in volumes `typo3-root` and `typo3-data` and exposing TYPO3 and 
 MariaDB on ports `127.0.0.1:8080` and `127.0.0.1:3306`, respectively:
 
 ```bash
-$ t3 run -D maria
+$ t3 run -D maria   # abbreviated: t3 r -D m
 ```
 
 To use PostgreSQL as the TYPO3 database and have it exposed on `127.0.0.1:5432`,
@@ -202,7 +200,7 @@ type `t3 stop -R` instead.
 #### Database credentials
 
 Database credentials can be defined by [host environment variables](#host-environment-variables)
-`T3_DB_NAME`, `T3_DB_USER`, `T3_DB_PW` and `T3_DB_ROOT_PW`. If not set then the database name, user and password all default to `t3` and `T3_DB_ROOT_PW` defaults
+`T3_DB_NAME`, `T3_DB_USER`, `T3_DB_PW` and `T3_DB_ROOT_PW`. If not set then the database name, user and password all default to `t3`, and `T3_DB_ROOT_PW` defaults
 to `toor`.
 
 ---
@@ -238,7 +236,7 @@ Sep 20 08:56:56 typo3 local1.notice httpd: 10.0.2.2 "GET /typo3/sysext/install/R
 ```
 
 For a live view, add option&nbsp;`-f` (press `Ctrl-C` to close 
-that view). There are more [`t3 logs` options](#t3-logs) that 
+such a view). There are more [`t3 logs` options](#t3-logs) that 
 let you control the amount of information that is shown.
 
 ---
@@ -254,87 +252,22 @@ installation.
 ### Using an IDE
 
 In order to work on your TYPO3 installation in an IDE, the TYPO3 root directory 
-needs to be exposed to a working directory at the host where the current user has 
-sufficient (read and write) permissions. This is usually not the case at the container volume mount point.
-
-`t3` uses the [bindfs](https://bindfs.org/) utility  (available for Debian-like and
-macOS hosts) to solve this problem. See below for what is happening [behind the scenes](#behind-the-scenes).
-
-First, [bindfs](https://bindfs.org/) needs to be installed from the repositories
-of your system. For macOS, [osxfuse](https://osxfuse.github.io/) is required beforehand.
+must be bind-mounted at a working directory at the host where
+the current user needs to be granted read and write permission.
 
 When starting TYPO3, specify the path of the desired working directory
-(e.g. `~/ide-workspace/typo3-root`) as the `-v` option to `t3 run`,
-i.e. in the simplest case
+(e.g. `~/ide-workspace/typo3-root`) as the `-v` option
+and take ownership of it with the `-o` option, e.g.
 
 ```bash
-$ t3 run -v ~/ide-workspace/typo3-root
+$ t3 run -v ~/ide-workspace/typo3-root -o
 ```
 
-This will
--   start the container,
--   create a TYPO3 volume having the working directory basename
-    (`typo3-root`) as its name,
--   make the TYPO3 volume content appear in the working directory
-    (`~/ide-workspace/typo3-root`) as if it were owned by the current user.
+This will start the container and make the TYPO3 volume content
+appear in the working directory
+(`~/ide-workspace/typo3-root`) as if it were owned by the current user. Thus, the TYPO3 instance can now be edited 
+in your IDE.
 
-Thus, the TYPO3 instance can now be edited in the IDE. File changes,
-creates and deletes will be passed in both directions between working directory
-and container with the current user's UID/GID mapped to container UIDs/GIDs.
-
-Stopping the TYPO3 container will unmount the working directory automatically.
-
-Working directories can be mounted and unmounted independenty of whether a container
-is running or even exists, see [`t3 mount`](#t3-mount) and [`t3 unmount`](#t3-unmount).
-
-
-#### Editing a stopped TYPO3 instance
-
-Whenever there is a persistent TYPO3 volume, you can edit that TYPO3 instance
-even if the container is not running or does not even exist. Just mount your 
-working directory on top of the volume:
-
-```bash
-$ t3 mount ~/ide-workspace/typo3-root   # abbreviated: t3 m ...
-```
-
-As with [`t3 run -v`](#using-an-ide), the name of the volume is equal to the working
-directory basename.
-
-When you are finished, unmount your working directory again:
-
-```bash
-$ t3 unmount ~/ide-workspace/typo3-root   # abbreviated: t3 u ...
-```
-
-
-#### Behind the scenes
-
-The TYPO3 root directory is accessible outside of the container at the volume mount
-point of e.g. `typo3-root` which can be obtained by `inspect`ing
-the container. The directory content, however, is owned by a system account and
-cannot be edited by the current user, e.g.:
-
-```bash
-$ sudo ls -nA $(sudo docker volume inspect --format '{{.Mountpoint}}' typo3-root)
-
--rw-r--r--  1 100 101   1117 Mai  3 23:00 composer.json
--rw-r--r--  1 100 101 155056 Mai  3 23:01 composer.lock
-drwxr-xr-x  6 100 101   4096 Mai  3 22:58 public
-drwxrwsr-x  7 100 101   4096 Mai  3 23:02 var
-drwxr-xr-x 15 100 101   4096 Mai  3 23:01 vendor
-```
-
-With Podman, the content is owned by one of the current user's sub-UIDs which 
-leads to the same situation.
-
-[bindfs](https://bindfs.org/) is a [FUSE](https://github.com/libfuse/libfuse#about)
-filesystem that resolves this situation. It can provide a bind-mounted _view_ of
-the files and directories in a volume with their UIDs and GIDs
-mapped to your own UID and GID. This does not affect UIDs and GIDs seen by the
-container.
-
----
 
 ### Setting the container environment
 
@@ -349,7 +282,7 @@ $ t3 run --env MODE=dev --env PHP_post_max_size=500K
 ```
 
 Command `t3 env` can modify most settings also while the container is running,
-e.g. in order to change the TYPO3 mode or to experiment with different `php.ini` settings:
+e.g. in order to change the TYPO3 mode or to experiment with various `php.ini` settings:
 
 ```bash
 $ t3 env MODE=xdebug PHP_post_max_size=1M
@@ -365,20 +298,20 @@ By default, the
 [TYPO3 Extension Manager](https://docs.typo3.org/m/typo3/tutorial-getting-started/master/en-us/ExtensionManager/Index.html)
 is responsible for adding/removing extensions.
 
-In [Composer Mode](https://getcomposer.org/#Composer_Mode), however,
-command `t3 composer` lets you add/remove TYPO3 extensions. To have TYPO3 operate
-in this mode, the `t3 run` option&nbsp;`-c on` must be specified.
+In [Composer Mode](https://docs.typo3.org/m/typo3/guide-installation/master/en-us/ExtensionInstallation/Index.html#install-extension-with-composer),
+however, command `t3 composer` lets you add/remove TYPO3 extensions. To have TYPO3 operate
+in this mode, the `t3 run` option&nbsp;`-c` must be specified.
 
 `t3 composer` accepts Composer command line options and is equivalent to running
 [Composer](https://getcomposer.org/) _inside the container_,
 e.g.
 
 ```bash
-$ t3 composer require bk2k/bootstrap-package   # abbreviated: t3 c ...
+$ t3 composer require bk2k/bootstrap-package   # abbreviated: t3 c req ...
 ```
 
 `t3 composer` and the `composer` script found in the container always act
-on the TYPO3 root directory.
+on the TYPO3 root directory `/var/www/localhost`.
 Neither Composer nor PHP have to be installed on the host.
 
 [XDebug should be deactivated](#activate-xdebug-in-the-container) before 
@@ -387,13 +320,13 @@ running Composer because it might slow down Composer significantly.
 
 #### Preventing Composer from overwriting your changes
 
-If you are continuing development of an extension which is already available
+If you are working on a TYPO3 extension which is already available
 from a repository, then running `t3 composer update` may overwrite your changes
 with the (older) version of that extension from the repository.
 
 In order to prevent this, set the 
 [container environment variable](#container-environment-variables) 
-`COMPOSER_EXCLUDE` to a colon-separated list of _subdirectories_ of 
+`COMPOSER_EXCLUDE` to a colon-separated list of _subdirectories_ of the TYPO3 root directory 
 `/var/www/localhost` which are to be excluded from changes made by Composer, e.g.
 
 ```bash
@@ -410,9 +343,8 @@ $ t3 env COMPOSER_EXCLUDE=public/typo3conf/ext/myt3ext
 -   VSCode: install 
     [PHP Debug](https://github.com/felixfbecker/vscode-php-debug),
     add the following configuration to your `launch.json` file
-    and start debugging with this configuration. If necessary, replace
-    `typo3-root` with the actual [bindfs mount point](#using-an-ide) of
-    the TYPO3 volume:
+    and start debugging with this configuration. Replace
+    `${workspaceRoot}/typo3-root` with the [actual path of your TYPO3 working directory](#using-an-ide):
 
     ```json
     {
@@ -439,13 +371,13 @@ lists recommended plugins for various browsers.
 
 Unless the container was started already with `--env MODE=xdebug` or
 [host environment variable](#host-environment-variables) `T3_MODE=xdebug`,
-this mode needs to be activated now:
+XDebug mode needs to be activated now:
 
 ```bash
 $ t3 env MODE=xdebug
 ```
 
-Now everything is ready to start a XDebug session.
+Now everything is ready to start an XDebug session.
 
 ---
 
@@ -453,9 +385,10 @@ Now everything is ready to start a XDebug session.
 
 #### SQLite
 
-A host directory needs to be mounted at the _database volume_ as
-[described above](#using-an-ide).
-Point your database client at the file `cms-*.sqlite` in that directory.
+Bind-mount the _database volume_ at an host directory (`t3 run` option&nbsp;`-V`) and
+take ownership of it (option&nbsp;`-O`) as [described above](#using-an-ide).
+
+Then point your database client at the file `cms-*.sqlite` in that directory.
 This is the TYPO3 SQLite database. The actual filename contains a random part.
 
 
@@ -472,7 +405,7 @@ environment variables.
 
 ## Managing multiple TYPO3 instances
 
-To have multiple TYPO3 instances coexist, each instance must have
+To enable multiple TYPO3 instances to coexist, each instance must have
 -   a unique container name (`t3 run` option&nbsp;`-n`), and
 -   unique volume names or [work directories](#using-an-ide) (`t3 run` options `-v` 
     and `-V`).
@@ -482,7 +415,7 @@ be mapped also to unique host ports (`t3 run` options `-p` and `-P`).
 [Debugging](#debugging-with-xdebug) is possible in one instance at a time only.
 
 Each `t3 stop`, `t3 composer` and `t3 env` command must be given an 
-`-n` option to specify which TYPO3 instance should be targeted.
+`-n` option to specify which TYPO3 instance it refers to.
 
 
 #### Suggested implementation
@@ -612,17 +545,12 @@ not_ contain a `/`.
 
 The TYPO3 volume can be made available for editing in a working directory at the host:
 just specify the _working directory path_ (it _must_ contain a `/`) for option&nbsp;`-v` (or `T3_ROOT`).
-This will have the following effects:
+That directory will be used for the TYPO3 volume. Option&nbsp;`-o`
+(or `T3_OWNER`) makes the working directory content appear as if it were owned
+by the current user.
 
-1.  The working directory basename becomes the TYPO3 volume name.
-1.  The TYPO3 volume content appears in the working directory as if it were owned
-    by the current user.
-1.  File changes, creates and deletes will be passed in both directions between 
-    working directory and container, with the current user's UID/GID mapped to container UIDs/GIDs.
-
-Please note: using working directories requires the [bindfs](https://bindfs.org/)
-(available for Debian-like and macOS hosts) utility to be installed from the repositories of your system.
-For macOS, [osxfuse](https://osxfuse.github.io/) is needed beforehand.
+Please note: TYPO3 performance may be impaired by working directories,
+particularly under Windows and macOS.
 
 __Database:__ by default, the SQLite instance of the TYPO3 image is used (works only
 with TYPO3&nbsp;V9.5+). Option&nbsp;`-D` (or `T3_DB_TYPE`) lets
@@ -680,9 +608,6 @@ Stops a TYPO3 container if it is running and optionally removes it:
 ```bash
 $ t3 stop [option]...
 ```
-
-`t3 stop` will unmount the container's working directories mounted by
-[`t3 run`](#t3-run) or by [`t3 mount`](#t3-mount).
 
 __Remove stopped container:__
 add option&nbsp;`-R` if the TYPO3 container should be removed after being stopped.
@@ -786,55 +711,6 @@ arbitrary commands or scripts in the container.
 
 ---
 
-### `t3 mount`
-
-Mounts one or more working directories to container volumes so that
-the volumes appear to be owned by and can be managed by the current user:
-
-```bash
-$ t3 mount [option] WORK_DIR...
-```
-
-The directories must be given as paths (containing `/`). The basenames
-are used as volume names.
-
-This command is equivalent to [`t3 run`](#t3-run) options `-v` or `-V`
-plus a working directory path except that the container does not need to be running
-(it does not even have to exist).
-
-This command will ask for `sudo` authorization unless there are cached credentials.
-
-__Container engine:__
-the same engine as for the corresponding `t3 run` command.
-Use option&nbsp;`-e` (or `T3_ENGINE`) if necessary.
-
-__TYPO3 working directory, database directory:__
-a _directory path_ is required (it _must_ contain a `/`).
-The directory basename is taken as the volume name, and the directory
-is bind-mounted at that volume.
-
----
-
-### `t3 unmount`
-
-Unmounts one or more working directories from their container volumes:
-
-```bash
-$ t3 unmount [option] WORK_DIR
-```
-
-This command will ask for `sudo` authorization unless there are cached credentials.
-
-__Container engine:__
-the same engine as for the corresponding `t3 run` command.
-Use option&nbsp;`-e` (or `T3_ENGINE`) if necessary.
-
-__TYPO3 working directory, database directory:__
-specify the _working directory path_ to unmount. This is what is done automatically 
-by [`t3 stop`](#t3-stop).
-
----
-
 ### Options
 
 The following table shows which options are applicable to each command. It also
@@ -852,11 +728,13 @@ that environment variable is not set.
 | `--tag=TAG`<br>`-T TAG` | `run` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`.<br>Default: `$T3_TAG`, or `latest`, i.e. the latest build for the most recent TYPO3 version. |
 | `--pull`<br>`-u` | `run` | Pulls an up-to-date version of the image from the repository before running it.<br>Default: `$T3_PULL`, or not set. |
 | `--composer-mode`<br>`-c` | `run` | If this option is present then Composer is responsible for installing/removing TYPO3 extensions. Otherwise, this is handled by the TYPO3 Extension Manager.<br>Default: `$T3_COMPOSER_MODE`, or not set. |
-| `--typo3-root=VOLUME`<br>`-v VOLUME` | `run` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path (containing a `/`).<br>In the latter case, the directory basename is used as the volume name, and the directory is bind-mounted at that volume. Thus, volume content appears to be owned by the current user.<br>__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3.<br>Default: `$T3_ROOT`, or `typo3-root`. |
+| `--typo3-root=VOLUME`<br>`-v VOLUME` | `run` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path at the host (must contain a `/`).<br>Default: `$T3_ROOT`, or `typo3-root`. |
+| `--typo3-owner`<br>`-o` | `run` | Indicates that the current user should appear as the owner of the TYPO3 working directory (and its content) at the host. | Default: `$T3_OWNER`, or not set. |
 | `--typo3-ports=HTTP,HTTPS`<br>`-p HTTP,HTTPS` | `run` | Host interfaces (optional) and ports where to publish the TYPO3 HTTP port and the TYPO3 HTTPS port. If one of the mappings is omitted then the respective port will not be published. A leading comma is required if the HTTP part is omitted, e.g. `,127.0.0.1:8443`.<br>Default: `$T3_PORTS`, or `127.0.0.1:8080,127.0.0.1:8443`. |
 | `--certfiles=PRIVATE-KEY,CERT`<br>`-k PRIVATE-KEY,CERT` | `run` | Private key file and certificate file for HTTPS, in PEM format and located at the host. If not specified then a self-signed certificate will be used for HTTPS connections.<br>Default: `$T3_CERTFILES`, or not set. |
 | `--db-type=TYPE`<br>`-D TYPE` | `run`| Type of database to use: `sqlite` or empty for SQLite, `mariadb` for MariaDB or `postgresql` for PostgreSQL (can be abbreviated).<br>Default: `$T3_DB_TYPE`, or `sqlite`. |
-| `--db-vol=VOLUME`<br>`-V VOLUME` | `run` | Database volume name or working directory path (see `--typo3-root`).<br>Defaults: `$T3_DB_DATA`, or `typo3-data`. |
+| `--db-vol=VOLUME`<br>`-V VOLUME` | `run` | Either a database volume name or a database working directory path at the host (must contain a `/`).<br>Defaults: `$T3_DB_DATA`, or `typo3-data`. |
+| `--db-owner`<br>`-O` | `run` | Indicates that the current user should appear as the owner of the database working directory (and its content) at the host.<br>Default: `$T3_DB_OWNER`, or not set. |
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option&nbsp;`--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). Most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. |
 | `--logs`<br>`-l` | `run` | Streams the log output of the new TYPO3 instance to the console until `Ctrl-C` is typed.<br>Default: `$T3_LOGS`, or not set. |
@@ -885,11 +763,13 @@ they can provide a consistent environment for all `t3` commands of a particular 
 | `T3_TAG` | Tag of image to run, consisting of TYPO3 version and build version, e.g. `8.7-1.3` or `9.5-latest`. | `latest` |
 | `T3_PULL` | If non-empty then an up-to-date version of the image is pulled from the repository before running it. | empty |
 | `T3_COMPOSER_MODE` | If non-empty then Composer is responsible for installing/removing TYPO3 extensions. Otherwise, this is handled by the TYPO3 Extension Manager. | empty |
-| `T3_ROOT` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path (containing a `/`).<br>In the latter case, the directory basename is used as the volume name, and the directory is bind-mounted at that volume. Thus, volume content appears to be owned by the current user.<br>__Podman users please note:__ working directories require at least Podman&nbsp;v1.4.3. | `typo3-root` |
+| `T3_ROOT` | Either a volume name to be mapped to the TYPO3 root directory inside the container, or a working directory path at the host (must contain a `/`). | `typo3-root` |
+| `T3_OWNER` | If non-empty then the current user appears to be the owner of the TYPO3 working directory (and its content) at the host. | empty |
 | `T3_PORTS` | Host interfaces (optional) and ports where to publish the TYPO3 HTTP port and the TYPO3 HTTPS port. If one of the parts is omitted then the respective port will not be published. A leading comma is required if the HTTP part is omitted, e.g. `,127.0.0.1:8443`. | `127.0.0.1:8080,`<br>`127.0.0.1:8443` |
 | `T3_CERTFILES` | Private key file and certificate file for HTTPS, in PEM format and located at the host. If not specified then a self-signed certificate will be used for HTTPS connections. | empty |
 | `T3_DB_TYPE` | Type of database to use: `sqlite` or empty for SQLite, `mariadb` for MariaDB or `postgresql` for PostgreSQL (can be abbreviated). | `sqlite` |
-| `T3_DB_DATA`| Database volume name or working directory path (see `T3_ROOT`). | `typo3-data` |
+| `T3_DB_DATA`| Either a database volume name or a database working directory path at the host (must contain a `/`). | `typo3-data` |
+| `T3_DB_OWNER` | If non-empty then the current user appears to be the owner of the database working directory (and its content) at the host. | empty |
 | `T3_DB_PORT` | Host interface (optional) and port where to publish the database port; effective only for MariaDB and PostgreSQL. | `127.0.0.1:3306`, or<br>`127.0.0.1:5432` |
 | `T3_DB_NAME` | Name of the TYPO3 database that is created automatically by `t3 run`; effective only for MariaDB and PostgreSQL. | `t3` |
 | `T3_DB_USER` | Name of the TYPO3 database owner; effective only for MariaDB and PostgreSQL. | `t3` |

@@ -44,5 +44,5 @@ verify_error 'Container engine' ./t3 run -e nosuchengine
 verify_error 'Invalid option' ./t3 run -k missingcertfile
 verify_error 'Unknown database' ./t3 run -D nosuchdatabase
 verify_error 'does not support SQLite' ./t3 run -D sqlite -T 8.7-latest
-verify_error 'is required' ./t3 mount --
-verify_error 'is required' ./t3 unmount --
+verify_error 'Cannot own volume' ./t3 run -o
+verify_error 'Cannot own volume' ./t3 run -O

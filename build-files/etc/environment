@@ -16,7 +16,11 @@ export APACHE_USER=apache
 export APACHE_CERT=$TYPO3_ROOT/.ssl/server
 export APACHE_CUSTOM_CERT=/etc/ssl/apache2/custom
 
+export TYPO3_ROOT_GZ=$APACHE_HOME/typo3-root.tar.gz
 export TYPO3_DOCROOT=$TYPO3_ROOT/public
+
+export SQLITE_DATA=$TYPO3_DATADIR
+export SQLITE_USER=$APACHE_USER
 
 export MYSQL_USER=mysql
 export MYSQL_DATA=$TYPO3_DATADIR

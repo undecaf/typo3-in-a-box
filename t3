@@ -6,7 +6,7 @@
 #
 # For help, run this script without any arguments.
 #
-# Copyright F. Kasper <fkasper@modus-operandi.at> 2019
+# Copyright F. Kasper <fkasper@modus-operandi.at> 2019-2020
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@ RE_CONT_ENV='TIMEZONE|LANG|MODE|COMPOSER_EXCLUDE|PHP_.+'
 # Bypass aliases
 AWK=$(which awk)
 BASENAME=$(which basename)
-BINDFS=$(which bindfs 2>/dev/null)
 CAT=$(which cat)
 DF=$(which df)
 DIRNAME=$(which dirname)
@@ -80,7 +79,7 @@ if test_shell 'zsh'; then
     # Split parameters on whitespace
     setopt SH_WORD_SPLIT
 
-    # Allow '@()' for parenthesized globbing expressions
+    # Allow '@()', '*()' etc. for parenthesized globbing expressions
     setopt KSH_GLOB
 
     # Emulate Bash's regex behaviour
@@ -91,7 +90,7 @@ if test_shell 'zsh'; then
     setopt POSIX_TRAPS
 
 else
-    # Allow '@()' for parenthesized globbing expressions
+    # Allow '@()', '*()' etc. for parenthesized globbing expressions
     shopt -s extglob
 fi
 
@@ -177,37 +176,37 @@ compare_versions() {
 
 # --------------------------------------------------------------------------
 
-# Returns success if the argument contains a '/'.
+# If the argument is a path (i.e. if it is not only a basename) then this
+# creates it as a directory if necessary and echoes the absolute path to 
+# stdout. Otherwise, the original argument is echoed.
 #
 # Arguments:
-#   $1  string to test
+#   $1  path of a working directory, or a volume name
 #
-test_path() {
-    local RE
-    RE='.+/.+'
-    [[ "$1" =~ $RE ]]
+# Calls:
+#   is_path
+#   canonicalize
+#
+make_dir() {
+    if is_path "$1"; then
+        mkdir -p "$1"
+        canonicalize "$1"
+    else
+        echo "$1"
+    fi
 }
 
 
 # --------------------------------------------------------------------------
 
-# If the argument is a path, returns success only if at least the parent
-# exists and if it is an empty directory.
+# Returns success iff the argument looks like a path (i.e. if it is not only 
+# a basename).
 #
 # Arguments:
-#   $1  path of a working directory to bind-mount, or a volume name
+#   $1  path or basename
 #
-# Calls:
-#   test_path
-#
-test_dir() {
-    if test_path "$1"; then
-        # At least the parent directory must exist
-        [ -d "$($DIRNAME "$1")" ] || err_exit "Working directory '$1' does not have a parent"
-
-        # Mount point must be an empty directory
-        [ -n "$($LS -A "$1" 2>/dev/null)" ] && err_exit "Working directory path '$1' is not an empty directory"
-    fi
+is_path() {
+    [ "$1" != "$(basename "$1")" ]
 }
 
 
@@ -299,117 +298,8 @@ exec_engine() {
 
 # --------------------------------------------------------------------------
 
-# Bind-mounts a working directory to a container volume so that files and
-# directories of that volume appear to be owned by the current user.
-# Returns failure if no suitable path was given.
-#
-# Arguments:
-#   $1  name of container volume
-#   $2  working directory path
-#
-# Calls:
-#   test_path
-#   err_exit
-#
-# Environment:
-#   $T3_ENGINE
-#   $MP_FORMAT
-#   $SUDO_PREFIX
-#
-mount_volume() {
-    if test_path "$2"; then
-        if [ -z "$BINDFS" ]; then
-            unset USAGE
-            err_exit "bindfs not installed, see https://bindfs.org/ for information"
-        fi
-
-        local BIND_MP
-        local VOL_MP
-        local VOL_UID
-        local VOL_GID
-        local FORMAT_OPT
-
-        # Locate the volume mount point of the container engine
-        VOL_MP=$($T3_ENGINE volume inspect --format "$MP_FORMAT" "$1") \
-            || err_exit '*** '"Volume '$1' not found"' ***'
-
-        # Acquire sudo authorization for what follows
-        $SUDO --prompt '*** sudo authorization is required for bind-mounting working directories: ' --validate
-
-        # Determine UID and GID of the volume owner (options differ between Linux and macOS)
-        test_macos && FORMAT_OPT=-f || FORMAT_OPT=--format
-        VOL_UID=$($SUDO_PREFIX $STAT $FORMAT_OPT '%u' $VOL_MP 2>/dev/null)
-        VOL_GID=$($SUDO_PREFIX $STAT $FORMAT_OPT '%g' $VOL_MP 2>/dev/null)
-
-        # Create the directory if necessary
-        $MKDIR -p "$2"
-        BIND_MP=$(canonicalize "$2")
-
-        $SUDO $BINDFS \
-            --map=$VOL_UID/$(id -u):@$VOL_GID/@$(id -g) \
-            $VOL_MP \
-            "$BIND_MP" \
-        && echo "Working directory '$BIND_MP' bind-mounted to volume '$1'"
-
-    else
-        return 1
-    fi
-}
-
-
-# --------------------------------------------------------------------------
-
-# Unmounts whatever may be bind-mounted to a container volume mount point.
-# Does nothing if nothing is mounted there.
-#
-# Arguments:
-#   $1  name of container volume
-#
-# Calls:
-#   unmount_workdir
-#
-# Environment:
-#   $T3_ENGINE
-#   $MP_FORMAT
-#
-unmount_volume() {
-    # Find the container volume mountpoint
-    local VOL_MP
-    local LINE
-    local RE
-
-    VOL_MP=$($T3_ENGINE volume inspect --format=$MP_FORMAT "$1")
-    # {{- ...}} and {{... -}} do no work here, therefore to trim:
-    VOL_MP=$(echo $VOL_MP)
-
-    # Find the directory bind-mounted to the container volume mountpoint
-    RE='^/.+( +[0-9]+){4}% +(/.+)$'
-    if LINE=$($DF -P | $GREP --fixed-string "$VOL_MP ") && [[ "$LINE" =~ $RE ]]; then
-        unmount_workdir "$1" "${BASH_REMATCH[2]}"
-    fi
-}
-
-
-# --------------------------------------------------------------------------
-
-# Unmounts a working directory from wherever it may be mounted and returns
-# the status of the unmount operation.
-#
-# Arguments:
-#   $1  name of container volume
-#   $2  working directory path
-#
-unmount_workdir() {
-    $SUDO --prompt '*** sudo authorization is required for unmounting working directories: ' \
-        umount "$2" \
-    && echo "Working directory '$2' unmounted from volume '$1'"
-}
-
-
-# --------------------------------------------------------------------------
-
 # Autocomplete command
-CMD=$(autocomplete "$1" run stop logs env composer shell mount unmount)
+CMD=$(autocomplete "$1" run stop logs env composer shell)
 
 [ $# -ge 1 ] && shift || true
 OPT_COUNT=$#
@@ -462,14 +352,16 @@ Options (default values can be overridden by environment variables):
       Extension Manager.
       Default: \$T3_COMPOSER_MODE, or not set.
  
-  --typo3-vol=VOLUME, -v VOLUME
+  --typo3-root=VOLUME, -v VOLUME
       Either a volume name to be mapped to the TYPO3 root directory inside the
-      container, or a working directory path (containing a '/').
-      In the latter case, the directory basename is used as the volume name,
-      and the directory is bind-mounted at that volume. Thus, volume content
-      appears to be owned by the current user.
+      container, or a working directory path at the host (must contain a '/').
       Default: \$T3_ROOT, or 'typo3-root'.
-
+ 
+  --typo3-owner, -o
+      Indicates that the current user should appear as the owner of the TYPO3
+      working directory (and its content) at the host.
+      Default: \$T3_OWNER, or not set.
+ 
   --typo3-ports=HTTP,HTTPS, -p HTTP,HTTPS
       Host interfaces (optional) and ports where to publish the TYPO3 HTTP port
       and the TYPO3 HTTPS port. If one of the parts is omitted then the respective
@@ -489,8 +381,14 @@ Options (default values can be overridden by environment variables):
       Default: \$T3_DB_TYPE, or 'sqlite'.
 
   --db-vol=VOLUME, -V VOLUME
-      Database volume name or working directory path (see '--typo3-root').
-      Defaults: \$T3_DB_DATA, or 'typo3-data'.
+      Either a database volume name or a database working directory path at the 
+      host (must contain a '/').
+      Default: \$T3_DB_DATA, or 'typo3-data'.
+ 
+  --db-owner, -O
+      Indicates that the current user should appear as the owner of the database
+      working directory (and its content) at the host.
+      Default: \$T3_DB_OWNER, or not set.
 
   --db-port=PORT, -P PORT
       Host interface (optional) and port where to publish the database port;
@@ -736,63 +634,6 @@ EOT
         ;;
 
 
-    # Bind-mount a directory to a container volume
-    mount)
-        USAGE=$($CAT <<EOT
-
-Usage:
-  $SCRIPT mount [option] WORK_DIR...
-  $SCRIPT mount [-h|--help]
-
-Mounts one or more working directories to container volumes so that
-the volumes appear to be owned by and can be managed by the current user.
-The directories must be given as paths (containing '/'). The basenames
-are used as volume names.
-
-Equivalent to '$SCRIPT run' options '-v' or '-V' with a working directory
-path except that the container does not need to be running (it does not
-even have to exist).
-
-Options (default values can be overridden by environment variables):
-
-  --engine=ENGINE, -e ENGINE
-      Container engine being used: 'docker', 'podman' or an absolute path
-      to the engine executable.
-      Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
-
-  --help, -h
-      Displays this text and exits.
- 
-EOT
-        )
-        ;;
-
-
-    # Unmount a bind-mouted directory from a container volume
-    unmount)
-        USAGE=$($CAT <<EOT
-
-Usage:
-  $SCRIPT unmount [option] WORK_DIR...
-  $SCRIPT unmount [-h|--help]
-
-Unmounts one or more working directories from their container volumes.
-
-Options (default values can be overridden by environment variables):
-
-  --engine=ENGINE, -e ENGINE
-      Container engine being used: 'docker', 'podman' or an absolute path
-      to the engine executable.
-      Default: \$T3_ENGINE, or 'podman' if installed, else 'docker'.
-
-  --help, -h
-      Displays this text and exits.
- 
-EOT
-        )
-        ;;
-
-
     # General help
     -h|--help)
         MSG=
@@ -821,11 +662,6 @@ Available commands:
                 running TYPO3 container.
 
   shell         Opens an interactive Bash shell in a running TYPO3 container.
-
-  mount         Mounts a working directory to a container volume so that the
-                volume appears to be owned and can be managed by the current user.
-
-  unmount       Unmounts a working directory from the container volume.
 
   --help, -h    Displays this text and exits. Displays command-specific help if 
                 combined with a command.
@@ -918,16 +754,19 @@ while [ $# -gt 0 ]; do
             shift
             ;;
 
-        # TYPO3 volume (volume name or path)
-        # If a path is given then its basename is used as 
-        # the name of a volume which is mounted at that path
+        # TYPO3 volume (volume name or working directory path)
         run:@(-v|--typo3-root))
             shift
             ;&
 
         run:--typo3-root=*)
             T3_ROOT="${1#--typo3-root=}"
-            test_dir "$T3_ROOT"
+            shift
+            ;;
+
+        # TYPO3 working directory owned by current user
+        run:@(-o|--typo3-owner))
+            T3_OWNER=on
             shift
             ;;
 
@@ -941,16 +780,19 @@ while [ $# -gt 0 ]; do
             shift
             ;;
 
-        # Database volume (volume name or path)
-        # If a path is given then its basename is used as 
-        # the name of a volume which is mounted at that path
+        # Database volume (volume name or working directory path)
         run:@(-V|--db-data))
             shift
             ;&
 
         run:--db-data=*)
             T3_DB_DATA="${1#--db-data=}"
-            test_dir "$T3_DB_DATA"
+            shift
+            ;;
+
+        # Database working directory owned by current user
+        run:@(-O|--db-owner))
+            T3_DB_OWNER=on
             shift
             ;;
 
@@ -1046,13 +888,13 @@ while [ $# -gt 0 ]; do
             usage
             ;;
 
-        # Separator from container engine options or mount/unmount directory
+        # Separator from container engine options directory
         *:--)
             shift
             break
             ;;
 
-        # First unknown option or mount/unmount directory, keep remaining options in "$@"
+        # First unknown option, keep remaining options in "$@"
         *)
             break
             ;;
@@ -1080,24 +922,20 @@ ENGINE_VERSION=$($T3_ENGINE --version)
 case $ENGINE_NAME in
     docker)
         HOST_IP_ENV=
-        MP_FORMAT='{{.Mountpoint}}'
         SUDO_PREFIX=$SUDO
         ;;
 
     podman)
         # hostname -I is not supported under macOS, therefore:
         HOST_IP_ENV="HOST_IP=$(ifconfig | $GREP 'inet ' | $GREP -v '127.0.0.1' | $AWK '{ print $2; }' | head -n 1)"
-        ENV_OPTIONS="$ENV_OPTIONS \
-            --env $HOST_IP_ENV"
-        # Note: as of Podman 1.6.0, the property name changed from 'MountPoint' to 'Mountpoint' (as in Docker)
-        [ $(compare_versions "$ENGINE_VERSION" '1.6.0') -ge 0 ] && MP_FORMAT='{{.Mountpoint}}' || MP_FORMAT='{{.MountPoint}}'
+        ENV_OPTIONS="$ENV_OPTIONS --env $HOST_IP_ENV"
         SUDO_PREFIX=
         ;;
 esac
 
 # Split into HTTP and HTTPS port and interface
 RE='^(([^,]+)?(,(.+)?)?)?$'
-[[ "$T3_PORTS" =~ $RE ]] || err_exit "Invalid option: '$T3_PORTS'"
+[[ "$T3_PORTS" =~ $RE ]] || err_exit "Invalid option value: '$T3_PORTS'"
 HTTP_PORT=${BASH_REMATCH[2]}
 HTTPS_PORT=${BASH_REMATCH[4]}
 
@@ -1107,24 +945,11 @@ HTTP_OPTIONS=
 
 # Split into private key file and certificate file
 RE='^((.+),(.+))?$'
-[[ "$T3_CERTFILES" =~ $RE ]] || err_exit "Invalid option: '$T3_CERTFILES'"
+[[ "$T3_CERTFILES" =~ $RE ]] || err_exit "Invalid option value: '$T3_CERTFILES'"
 KEY_FILE=${BASH_REMATCH[2]}
 CERT_FILE=${BASH_REMATCH[3]}
 
-# Volume names and working directories
-ROOT_MP=
-if test_path "$T3_ROOT"; then
-    ROOT_MP="$T3_ROOT"
-    T3_ROOT=$($BASENAME "$T3_ROOT")
-fi
-
-DB_DATA_MP=
-if test_path "$T3_DB_DATA"; then
-    DB_DATA_MP="$T3_DB_DATA"
-    T3_DB_DATA=$($BASENAME "$T3_DB_DATA")
-fi
-
-# Initialize container environment variables, keep 'T3_' prefix
+# Initialize container environment variables, keep the 'T3_' prefix
 RE='^(T3_('$RE_CONT_ENV'))=(.*)$'
 
 while read -r ENV_VAR; do
@@ -1173,6 +998,28 @@ case "$T3_DB_TYPE" in
         ;;
 esac
 
+# Process working directory ownership
+if [ -n "$T3_OWNER" ]; then
+    is_path "$T3_ROOT" || err_exit "Cannot own volume '$T3_ROOT': not bind-mounted"
+    ENV_OPTIONS="$ENV_OPTIONS --env T3_OWNER=$T3_OWNER"
+fi
+
+if [ -n "$T3_DB_OWNER" ]; then
+    is_path "$T3_DB_DATA" || err_exit "Cannot own volume '$T3_DB_DATA': not bind-mounted"
+    ENV_OPTIONS="$ENV_OPTIONS --env T3_DB_OWNER=$T3_DB_OWNER"
+fi
+
+if [ -n "$T3_OWNER" -o -n "$T3_DB_OWNER" ]; then
+    RE='\bpodman\b'
+    if [[ "$T3_ENGINE" =~ $RE ]]; then
+        # Podman containers need FUSE to control ownership
+        ENV_OPTIONS="$ENV_OPTIONS --cap-add=SYS_ADMIN --device /dev/fuse"
+    else
+        # Docker containers need to know the current user's UID and GID to control ownership
+        ENV_OPTIONS="$ENV_OPTIONS --env T3_UID=$(id -u) --env T3_GID=$(id -g)"
+    fi
+fi
+
 
 # --------------------------------------------------------------------------
 
@@ -1196,6 +1043,10 @@ case "$CMD" in
             run_engine pull $REPO
         fi
 
+        # Create working directories if necessary and make the paths absolute
+        T3_ROOT=$(make_dir "$T3_ROOT")
+        T3_DB_DATA=$(make_dir "$T3_DB_DATA")
+
         # Create the TYPO3 container
         echo '*** '"Creating container '$T3_NAME'"' ***'
         run_engine create \
@@ -1205,7 +1056,6 @@ case "$CMD" in
             --volume "$T3_ROOT:$T3_ROOTDIR" \
             --volume "$T3_DB_DATA:$T3_DATADIR" \
             $HTTP_OPTIONS \
-            $DB_VOL_OPTION \
             $DB_PORT_OPTION \
             $ENV_OPTIONS \
             "$@" \
@@ -1221,10 +1071,6 @@ case "$CMD" in
         # Start the container
         run_engine start "$T3_NAME"
         echo '*** '"Container '$T3_NAME' started"' ***'
-
-        # Eventually bind-mount container volumes in userspace
-        mount_volume "$T3_ROOT" "$ROOT_MP" || true
-        mount_volume "$T3_DB_DATA" "$DB_DATA_MP" || true
 
         trap - EXIT
 
@@ -1242,11 +1088,6 @@ case "$CMD" in
         VOLNAMES=$($T3_ENGINE container inspect \
             --format='{{range .Mounts}}{{if eq .Destination "'$T3_ROOTDIR'" "'$T3_DATADIR'"}}{{printf "%s " '$NAME_PROP'}}{{end}}{{end}}' \
             "$T3_NAME" 2>/dev/null)
-
-        # Try to unmount whatever may be mounted at the mountpoint of each volume
-        for VOLNAME in $VOLNAMES; do
-            unmount_volume "$VOLNAME"
-        done
 
         # Stop and eventually remove the container
         #stop_container "$T3_NAME"
@@ -1280,24 +1121,6 @@ case "$CMD" in
 
     shell)
         exec_engine exec -it "$T3_NAME" /bin/bash "$@"
-        ;;
-
-
-    mount)
-        [ $# -gt 0 ] || err_exit 'A working directory is required'
-        for MP in "$@"; do
-            mount_volume "$($BASENAME "$MP")" "$MP" || \
-                err_exit "Not a working directory, or already mounted: '$1'"
-        done
-        ;;
-
-
-    unmount)
-        [ $# -gt 0 ] || err_exit 'A working directory is required'
-        for MP in "$@"; do
-            unmount_workdir "$($BASENAME "$MP")" "$MP" || \
-                err_exit "Unable to unmount working directory '$MP'"
-        done
         ;;
 
     *)

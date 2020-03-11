@@ -9,7 +9,7 @@
 # which could alter the container environment such as 't3 env'
 # and 't3 composer'.
 #
-# Copyright F. Kasper <fkasper@modus-operandi.at> 2019
+# Copyright F. Kasper <fkasper@modus-operandi.at> 2019-2020
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,27 +24,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
-# --------------------------------------------------------------------------
-
-# Echoes the specified information of the server certificate to stdout.
-#
-# Arguments:
-#   $1  'issuer' or 'subject'
-#
-cert_info() {
-    openssl x509 -in $APACHE_CERT.pem -inform PEM -noout -$1 | awk -F ' = ' '{ print $2 }'
-}
-
-
-# --------------------------------------------------------------------------
-
-# Returns success if the server certificate is self-signed.
-#
-test_self_signed() {
-    test $(cert_info 'subject') = $(cert_info 'issuer')
-}
-
 
 # --------------------------------------------------------------------------
 
@@ -72,10 +51,128 @@ err_exit() {
 
 # --------------------------------------------------------------------------
 
+# Sets up a directory as a bind-mounted or an unbound volume. At the host, 
+# makes the current user appear as the volume owner if so required; inside
+# the container, makes the specified user the volume owner.
+#
+# Arguments:
+#   $1  volume path
+#   $2  name of user (and group) that should appear as volume owner inside the
+#       container
+#   $3  if non-empty then the current host user should appear as the owner of
+#       a bind-mounted volume at the host
+#   $4  (optional) .tar.gz file to unpack in the volume
+#
+# Environment:
+#   UNBOUND_MARKER    basename of marker file placed in yet unbound volumes
+#   PODMAN_CONTAINER  non-empty if running as a Podman container
+#   T3_UID, T3_GID    UID and GID of current host user if running in a Docker
+#                     container
+#
+# Calls:
+#   log_info
+#
+setup_volume() {
+    local OWNER=$2
+
+    while true; do
+        # First run of a new TYPO3 instance, and no owner mapping required?
+        if [ -f $1/$UNBOUND_MARKER -o -z "$3" ]; then
+            log_info "Setting up $1"
+
+        # First run of a new TYPO3 instance, volume bind-mounted and owner mapping required?
+        elif [ ! -d $1 -o -z "$(ls -A $1 2>/dev/null)" ]; then
+            # Which type of container engine?
+            if [ -z "$PODMAN_CONTAINER" ]; then
+                # For Docker, set UID and GID of $2 equal to UID and GID of the host user
+                log_info "Setting up $1 for the current Docker user"
+                usermod -u $T3_UID -o $2
+                groupmod -g $T3_GID -o $2
+
+            else
+                # For Podman in rootless mode, make root the volume owner;
+                # such a volume appears at the host as being owned by the current user.
+                # Use bindfs later to make $2 appear as the volume owner inside the container
+                log_info "Setting up $1 for the current Podman user"
+                OWNER=root
+            fi
+
+        # None of the above
+        else
+            break
+        fi
+
+        # Unpack $4 if specified
+        mkdir -p $1
+        if [ -f "$4" ]; then
+            log_info "Unpacking $4 into $1 (this could take some time)"
+            tar -xzf $4 -C $1
+        fi
+
+        # Set the volume owner
+        chown -R $OWNER: $1
+
+        # Remove marker
+        rm -f $1/$UNBOUND_MARKER
+
+        break
+    done
+
+    # First or subsequent run, and owner mapping configured for Podman?
+    if [ $(stat -c '%U' $1) = 'root' ]; then
+        # Make $2 appear as the volume owner _inside the container_
+        # and ignore subsequent chowns and chgrps
+        bindfs \
+            --force-user=$2 --force-group=$2 \
+            --create-for-user=root --create-for-group=root \
+            --chown-ignore --chgrp-ignore \
+            --multithreaded \
+            $1 $1
+    fi
+}
+
+
+# --------------------------------------------------------------------------
+
+# Echoes the specified information of the server certificate to stdout.
+#
+# Arguments:
+#   $1  'issuer' or 'subject'
+#
+cert_info() {
+    openssl x509 -in $APACHE_CERT.pem -inform PEM -noout -$1 | awk -F ' = ' '{ print $2 }'
+}
+
+
+# --------------------------------------------------------------------------
+
+# Returns success if the server certificate is self-signed.
+#
+test_self_signed() {
+    test $(cert_info 'subject') = $(cert_info 'issuer')
+}
+
+
+# --------------------------------------------------------------------------
+
+# Database setup
+#
+. $(dirname $0)/start_sqlite.inc
+. $(dirname $0)/start_mysql.inc
+. $(dirname $0)/start_pg.inc
+
+
+# --------------------------------------------------------------------------
+
 set -e
 
 # Use the same environment as during build
 . /etc/environment
+
+# Determine whether running as a Docker or a Podman container
+# See the description of the Podman run command, https://www.mankier.com/1/podman-run
+export PODMAN_CONTAINER=
+cat /proc/self/mounts | grep -q -F '/run/.containerenv' && export PODMAN_CONTAINER=true
 
 
 # Initial invocation of this script (i.e. by 't3 run')?
@@ -83,6 +180,9 @@ if [ $$ -eq 1 ]; then
     # syslog to /dev/stdout so that the container engine can pick up the logs
     # and to localhost:514
     syslogd -O - -R 0.0.0.0:514 -L -n &
+
+    # Set up $TYPO3_ROOT as a volume (bind-mounted or unbound)
+    setup_volume $TYPO3_ROOT $APACHE_USER "$T3_OWNER" $TYPO3_ROOT_GZ
 
     # Log version info, trying to get the actual TYPO3 version from composer.lock
     RE='^([0-9]+\.){2,}[0-9]+'
@@ -162,7 +262,7 @@ if [ $$ -eq 1 ]; then
                 2>/dev/null
             rm $APACHE_CERT.csr
 
-            chown $APACHE_USER: $APACHE_CERT.{key,pem}
+            chown -R $APACHE_USER: $(dirname $APACHE_CERT)
             log_info "Created a self-signed SSL certificate, CN=$HOSTNAME"
         fi
     fi
@@ -262,7 +362,7 @@ else
 	log_info "XDebug disabled"
 fi
 
-# root created missing paths for volumes also in $APACHE_HOME, therefore:
+# Make everything in $APACHE_HOME owned by $APACHE_USER
 chown -R $APACHE_USER: $APACHE_HOME 
 
 # Show the list of directories to be excluded from Composer operations

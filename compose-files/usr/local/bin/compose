@@ -30,5 +30,15 @@ rm -rf $TYPO3_ROOT/htdocs $TYPO3_ROOT/cgi-bin
 find $APACHE_HOME -type d -exec chmod 755 {} \;
 chown -R $APACHE_USER: $APACHE_HOME
 
+# Put $TYPO3_ROOT into an archive since this directory
+# may become the mount point of a bind mount at runtime
+tar -czf $TYPO3_ROOT_GZ -C $TYPO3_ROOT .
+
 # Clean up
-rm -rf $APACHE_HOME/.composer $0
+rm -rf $APACHE_HOME/.composer $TYPO3_ROOT/* $TYPO3_ROOT/.[!.]*
+
+# Leave a marker in $TYPO3_ROOT so that bind mounts can be detected
+touch $TYPO3_ROOT/$UNBOUND_MARKER
+
+# Remove this script (must be the last command in this file)
+rm -rf $0
