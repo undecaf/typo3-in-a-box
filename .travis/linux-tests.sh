@@ -122,12 +122,12 @@ echo 'Testing volume names and persistence' >&2
 T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
 verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
 verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
-FINGERPRINT=$(docker exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)
+FINGERPRINT="$(docker exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)"
 
 t3_ stop --rm
 T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
 verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
-test "$FINGERPRINT" = $(docker exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)
+test "$FINGERPRINT" = "$(docker exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)"
 
 cleanup
 
@@ -143,12 +143,12 @@ verify_cmd_success $SUCCESS_TIMEOUT sudo test -f "$DB_VOL/PG_VERSION"
 ! sudo test -G "$DB_VOL/PG_VERSION"
 
 verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
-FINGERPRINT=$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)
+FINGERPRINT="$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
 
 t3_ stop --rm
 T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL" -D postgresql
 verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
-test "$FINGERPRINT" = $(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)
+test "$FINGERPRINT" = "$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
 
 cleanup
 sudo rm -rf "$ROOT_VOL" "$DB_VOL"
@@ -165,12 +165,12 @@ test -O "$DB_VOL/PG_VERSION"
 test -G "$DB_VOL/PG_VERSION"
 
 verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
-FINGERPRINT=$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)
+FINGERPRINT="$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
 
 t3_ stop --rm
 t3_ run -v "$ROOT_VOL" -o -V "$DB_VOL" -O -D postgresql
 verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
-test "$FINGERPRINT" = $(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)
+test "$FINGERPRINT" = "$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
 
 cleanup
 rm -rf "$ROOT_VOL" "$DB_VOL"
