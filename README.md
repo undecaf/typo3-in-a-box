@@ -87,7 +87,7 @@ enter this command:
 ```bash
 $ docker run \
     -v typo3-root:/var/www/localhost \
-    -v typo3-data:/var/lib/typo3 \
+    -v typo3-data:/var/lib/typo3-db \
     -p 127.0.0.1:8080:80 \
     undecaf/typo3-in-a-box
 ```
