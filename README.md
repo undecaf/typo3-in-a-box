@@ -33,7 +33,7 @@ fiddle with host permissions.
 
 [Secure connections](#https-connections),
 [logging](#logging),
-[Composer Mode](https://getcomposer.org/#Composer_Mode),
+[Composer Mode](https://docs.typo3.org/m/typo3/guide-installation/master/en-us/ExtensionInstallation/Index.html#install-extension-with-composer),
 [remote debugging with XDebug](#debugging-with-xdebug) and
 [database access](#accessing-the-typo3-database) are supported.
 Your personal extension directories can be
@@ -571,7 +571,7 @@ MariaDB and PostgreSQL database name and credentials are determined by host envi
 all default to `t3` except for `T3_DB_ROOT_PW` which defaults to `toor`.
 
 __Composer Mode:__
-to have TYPO3 operate in [Composer Mode](https://getcomposer.org/#Composer_Mode),
+to have TYPO3 operate in [Composer Mode](https://docs.typo3.org/m/typo3/guide-installation/master/en-us/ExtensionInstallation/Index.html#install-extension-with-composer),
 option&nbsp;`-c` must be present (or `T3_COMPOSER_MODE` must be non-empty).
 In this mode, [`t3 composer`](#t3-composer) lets you add/remove TYPO3 extensions.
 
@@ -673,7 +673,7 @@ Initial values can be assigned by command [`t3 run`](#t3-run).
 ### `t3 composer`
 
 This command is applicable only in
-[Composer Mode](https://getcomposer.org/#Composer_Mode) (see option&nbsp;[`-c`](#options)
+[Composer Mode](https://docs.typo3.org/m/typo3/guide-installation/master/en-us/ExtensionInstallation/Index.html#install-extension-with-composer) (see option&nbsp;[`-c`](#options)
 and host environment variable [`T3_COMPOSER_MODE`](#host-environment-variables)).
 It executes a [Composer](https://getcomposer.org/) command inside a running
 TYPO3 container:
