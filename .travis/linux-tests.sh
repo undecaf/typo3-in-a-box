@@ -103,7 +103,7 @@ TEMP_FILE=$(mktemp)
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
 # Display error line and clean up Docker
-trap 'set +e; cleanup;' EXIT
+trap 'echo "Exited at line "$LINENO; set +e; cleanup;' EXIT
 
 # Exit with error status if any verification fails
 set -e
@@ -143,12 +143,12 @@ verify_cmd_success $SUCCESS_TIMEOUT sudo test -f "$DB_VOL/PG_VERSION"
 ! sudo test -G "$DB_VOL/PG_VERSION"
 
 verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
-FINGERPRINT="$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
+FINGERPRINT="$(sudo openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
 
 t3_ stop --rm
 T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL" -D postgresql
 verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
-test "$FINGERPRINT" = "$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
+test "$FINGERPRINT" = "$(sudo openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
 
 cleanup
 sudo rm -rf "$ROOT_VOL" "$DB_VOL"
