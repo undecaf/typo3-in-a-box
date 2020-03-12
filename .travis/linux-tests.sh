@@ -19,19 +19,22 @@ t3_() {
 # Returns success if all specified containers exist.
 verify_containers_exist() {
     echo "verify_containers_exist: $@" >&2
-    docker container inspect "$@" &>/dev/null
+    docker container inspect "$@" &>/dev/null \
+        || { echo "verify_containers_exist failed: $@" >&2; return 1; }
 }
 
 # Returns success if all specified containers are running.
 verify_containers_running() {
     echo "verify_containers_running: $@" >&2
-    ! docker container inspect --format='{{.State.Status}}' "$@" | grep -v -q 'running'
+    ! docker container inspect --format='{{.State.Status}}' "$@" | grep -v -q 'running' \
+        || { echo "verify_containers_running failed: $@" >&2; return 1; }
 }
 
 # Returns success if all specified volumes exist.
 verify_volumes_exist() {
     echo "verify_volumes_exist: $@" >&2
-    docker volume inspect "$@" &>/dev/null
+    docker volume inspect "$@" &>/dev/null \
+        || { echo "verify_volumes_exist failed: $@" >&2; return 1; }
 }
 
 # Returns success if the specified command ($2, $3, ...) succeeds 
@@ -46,7 +49,8 @@ verify_cmd_success() {
     while ! "$@"; do
         sleep $STEP
         T=$((T-STEP))
-        test $T -gt 0 || return 1
+        test $T -gt 0 \
+            || { echo "verify_cmd_success failed: $@" >&2; return 1; }
     done
 
     return 0
@@ -64,7 +68,7 @@ verify_logs() {
     while ! docker logs "${3:-typo3}" 2>&1 | grep -q -F "$2"; do
         sleep $STEP
         T=$((T-STEP))
-        test $T -gt 0 || return 1
+        test $T -gt 0 || { echo "verify_logs failed: '$2'" >&2; return 1; }
     done
 
     return 0
@@ -102,8 +106,8 @@ TEMP_FILE=$(mktemp)
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
-# Display error line and clean up Docker
-trap 'echo "Exited at line "$LINENO; set +e; cleanup;' EXIT
+# Clean up Docker on exit
+trap 'set +e; cleanup;' EXIT
 
 # Exit with error status if any verification fails
 set -e
