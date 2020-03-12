@@ -51,6 +51,15 @@ err_exit() {
 
 # --------------------------------------------------------------------------
 
+# Returns success if this container is running under Podman.
+#
+is_podman_container() {
+    cat /proc/self/mounts | grep -q -F '/run/.containerenv'
+}
+
+
+# --------------------------------------------------------------------------
+
 # Sets up a directory as a bind-mounted or an unbound volume. At the host, 
 # makes the current user appear as the volume owner if so required; inside
 # the container, makes the specified user the volume owner.
@@ -65,36 +74,36 @@ err_exit() {
 #
 # Environment:
 #   UNBOUND_MARKER    basename of marker file placed in yet unbound volumes
-#   PODMAN_CONTAINER  non-empty if running as a Podman container
 #   T3_UID, T3_GID    UID and GID of current host user if running in a Docker
 #                     container
 #
 # Calls:
 #   log_info
+#   is_podman_container
 #
 setup_volume() {
     local OWNER=$2
 
     while true; do
         # First run of a new TYPO3 instance, and no owner mapping required?
-        if [ -f $1/$UNBOUND_MARKER -o -z "$3" ]; then
+        if [ -f $1/$UNBOUND_MARKER -a -z "$3" ]; then
             log_info "Setting up $1"
 
         # First run of a new TYPO3 instance, volume bind-mounted and owner mapping required?
-        elif [ ! -d $1 -o -z "$(ls -A $1 2>/dev/null)" ]; then
+        elif [ \( ! -d $1 -o -z "$(ls -A $1 2>/dev/null)" \) -a -n "$3" ]; then
             # Which type of container engine?
-            if [ -z "$PODMAN_CONTAINER" ]; then
+            if is_podman_container; then
+                # For Podman in rootless mode, make root the volume owner;
+                # such a volume appears at the host as being owned by the current user.
+                # Use bindfs later to make $2 appear as the volume owner inside this container
+                log_info "Setting up $1 for the current Podman user"
+                OWNER=root
+
+            else
                 # For Docker, set UID and GID of $2 equal to UID and GID of the host user
                 log_info "Setting up $1 for the current Docker user"
                 usermod -u $T3_UID -o $2
                 groupmod -g $T3_GID -o $2
-
-            else
-                # For Podman in rootless mode, make root the volume owner;
-                # such a volume appears at the host as being owned by the current user.
-                # Use bindfs later to make $2 appear as the volume owner inside the container
-                log_info "Setting up $1 for the current Podman user"
-                OWNER=root
             fi
 
         # None of the above
@@ -112,13 +121,14 @@ setup_volume() {
         # Set the volume owner
         chown -R $OWNER: $1
 
-        # Remove marker
-        rm -f $1/$UNBOUND_MARKER
-
         break
     done
 
+    # Remove the marker
+    rm -f $1/$UNBOUND_MARKER
+
     # First or subsequent run, and owner mapping configured for Podman?
+    sync
     if [ $(stat -c '%U' $1) = 'root' ]; then
         # Make $2 appear as the volume owner _inside the container_
         # and ignore subsequent chowns and chgrps

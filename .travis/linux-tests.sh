@@ -113,6 +113,69 @@ set -e
 source .travis/messages.inc
 
 
+# Test volume names, working directories and ownership
+ROOT_VOL='./root-volume/root'
+DB_VOL="$(readlink -f .)/database volume/dbdata"
+echo $'\n*************** Volume names, bind mounts and ownership, and volume persistence' >&2
+
+echo 'Testing volume names and persistence' >&2
+T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
+verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+FINGERPRINT=$(docker exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)
+
+t3_ stop --rm
+T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+test "$FINGERPRINT" = $(docker exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)
+
+cleanup
+
+echo 'Testing bind-mounted volumes and persistence' >&2
+T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL" -D postgresql
+
+verify_cmd_success $SUCCESS_TIMEOUT sudo test -f "$ROOT_VOL/public/FIRST_INSTALL"
+! sudo test -O "$ROOT_VOL/public/FIRST_INSTALL"
+! sudo test -G "$ROOT_VOL/public/FIRST_INSTALL"
+
+verify_cmd_success $SUCCESS_TIMEOUT sudo test -f "$DB_VOL/PG_VERSION"
+! sudo test -O "$DB_VOL/PG_VERSION"
+! sudo test -G "$DB_VOL/PG_VERSION"
+
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+FINGERPRINT=$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)
+
+t3_ stop --rm
+T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL" -D postgresql
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+test "$FINGERPRINT" = $(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)
+
+cleanup
+sudo rm -rf "$ROOT_VOL" "$DB_VOL"
+
+echo 'Testing bind-mounted volume ownership and persistence' >&2
+t3_ run -v "$ROOT_VOL" -o -V "$DB_VOL" -O -D postgresql
+
+verify_cmd_success $SUCCESS_TIMEOUT test -f "$ROOT_VOL/public/FIRST_INSTALL"
+test -O "$ROOT_VOL/public/FIRST_INSTALL"
+test -G "$ROOT_VOL/public/FIRST_INSTALL"
+
+verify_cmd_success $SUCCESS_TIMEOUT test -f "$DB_VOL/PG_VERSION"
+test -O "$DB_VOL/PG_VERSION"
+test -G "$DB_VOL/PG_VERSION"
+
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+FINGERPRINT=$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)
+
+t3_ stop --rm
+t3_ run -v "$ROOT_VOL" -o -V "$DB_VOL" -O -D postgresql
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+test "$FINGERPRINT" = $(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)
+
+cleanup
+rm -rf "$ROOT_VOL" "$DB_VOL"
+
+
 # Test basic container and volume status
 echo $'\n*************** Basic container and volume status' >&2
 t3_ run
@@ -251,46 +314,6 @@ T3_NAME=$CONT_NAME t3_ run -H $HOST_NAME
 test "$(docker exec $CONT_NAME hostname)" = $HOST_NAME
 t3_ stop -n $CONT_NAME --rm
 docker volume prune --force >/dev/null
-
-
-# Test volume names, working directories and ownership
-ROOT_VOL='./root-volume/root'
-DB_VOL="$(readlink -f .)/database volume/dbdata"
-echo $'\n*************** Volume names, working directories and ownership' >&2
-
-echo 'Testing volume names' >&2
-T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
-verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
-
-cleanup
-
-echo 'Testing working directories' >&2
-T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL" -D postgresql
-
-verify_cmd_success $SUCCESS_TIMEOUT sudo test -f "$ROOT_VOL/public/FIRST_INSTALL"
-! sudo test -O "$ROOT_VOL/public/FIRST_INSTALL"
-! sudo test -G "$ROOT_VOL/public/FIRST_INSTALL"
-
-verify_cmd_success $SUCCESS_TIMEOUT sudo test -f "$DB_VOL/PG_VERSION"
-! sudo test -O "$DB_VOL/PG_VERSION"
-! sudo test -G "$DB_VOL/PG_VERSION"
-
-cleanup
-sudo rm -rf "$ROOT_VOL" "$DB_VOL"
-
-echo 'Testing working directory ownership' >&2
-t3_ run -v "$ROOT_VOL" -o -V "$DB_VOL" -O -D postgresql
-
-verify_cmd_success $SUCCESS_TIMEOUT test -f "$ROOT_VOL/public/FIRST_INSTALL"
-test -O "$ROOT_VOL/public/FIRST_INSTALL"
-test -G "$ROOT_VOL/public/FIRST_INSTALL"
-
-verify_cmd_success $SUCCESS_TIMEOUT test -f "$DB_VOL/PG_VERSION"
-test -O "$DB_VOL/PG_VERSION"
-test -G "$DB_VOL/PG_VERSION"
-
-cleanup
-rm -rf "$ROOT_VOL" "$DB_VOL"
 
 
 # Test Composer Mode
