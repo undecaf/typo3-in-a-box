@@ -86,7 +86,13 @@ source .travis/setenv.inc
 
 # TYPO3 v8.7 cannot use SQLite
 RE='^8\.7.*'
-[[ "$TYPO3_VER" =~ $RE ]] && export T3_DB_TYPE=mariadb || export T3_DB_TYPE=
+if [[ "$TYPO3_VER" =~ $RE ]]; then
+    export TYPO3_V8=true
+    export T3_DB_TYPE=mariadb
+else
+    export TYPO3_V8=
+    export T3_DB_TYPE=
+fi
 
 # TYPO3 installation URLs
 HOST_IP=127.0.0.1
@@ -297,16 +303,18 @@ test "$FINGERPRINT" = "$(sudo openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem
 cleanup
 sudo rm -rf "$ROOT_VOL" "$DB_VOL"
 
-echo 'Testing interoperability of Apache and SQLite' >&2
-t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
-verify_logs $SUCCESS_TIMEOUT 'SQLite ready'
+if [ -z "$TYPO3_V8" ]; then
+    echo 'Testing interoperability of Apache and SQLite' >&2
+    t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
+    verify_logs $SUCCESS_TIMEOUT 'SQLite ready'
 
-t3_ stop --rm
-t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
-verify_logs $SUCCESS_TIMEOUT 'SQLite ready'
+    t3_ stop --rm
+    t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
+    verify_logs $SUCCESS_TIMEOUT 'SQLite ready'
 
-cleanup
-sudo rm -rf "$ROOT_VOL" "$DB_VOL"
+    cleanup
+    sudo rm -rf "$ROOT_VOL" "$DB_VOL"
+fi
 
 echo 'Testing bind-mounted volume ownership and persistence' >&2
 t3_ run -v "$ROOT_VOL" -o -V "$DB_VOL" -O -D postgresql
