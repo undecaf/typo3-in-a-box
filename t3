@@ -212,15 +212,17 @@ is_path() {
 
 # --------------------------------------------------------------------------
 
-# Canonicalizes a path and echoes it to stdout.
+# Canonicalizes a path and echoes it to stdout. This works even if the
+# calling process does not have permission to access the rightmost path
+# component.
 #
 # Arguments:
 #   $1  path to canonicalize
 #
 canonicalize() {
     (
-        cd "$1"
-        pwd -P
+        cd "$(dirname "$1")"
+        echo "$(pwd -P)/$(basename "$1")"
     )
 }
 
@@ -1014,9 +1016,6 @@ if [ -n "$T3_OWNER" -o -n "$T3_DB_OWNER" ]; then
     if [[ "$T3_ENGINE" =~ $RE ]]; then
         # Podman containers need FUSE to control ownership
         ENV_OPTIONS="$ENV_OPTIONS --cap-add=SYS_ADMIN --device /dev/fuse"
-    else
-        # Docker containers need to know the current user's UID and GID to control ownership
-        ENV_OPTIONS="$ENV_OPTIONS --env T3_UID=$(id -u) --env T3_GID=$(id -g)"
     fi
 fi
 

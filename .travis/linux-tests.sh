@@ -19,19 +19,22 @@ t3_() {
 # Returns success if all specified containers exist.
 verify_containers_exist() {
     echo "verify_containers_exist: $@" >&2
-    docker container inspect "$@" &>/dev/null
+    docker container inspect "$@" &>/dev/null \
+        || { echo "verify_containers_exist failed: $@" >&2; return 1; }
 }
 
 # Returns success if all specified containers are running.
 verify_containers_running() {
     echo "verify_containers_running: $@" >&2
-    ! docker container inspect --format='{{.State.Status}}' "$@" | grep -v -q 'running'
+    ! docker container inspect --format='{{.State.Status}}' "$@" | grep -v -q 'running' \
+        || { echo "verify_containers_running failed: $@" >&2; return 1; }
 }
 
 # Returns success if all specified volumes exist.
 verify_volumes_exist() {
     echo "verify_volumes_exist: $@" >&2
-    docker volume inspect "$@" &>/dev/null
+    docker volume inspect "$@" &>/dev/null \
+        || { echo "verify_volumes_exist failed: $@" >&2; return 1; }
 }
 
 # Returns success if the specified command ($2, $3, ...) succeeds 
@@ -46,7 +49,8 @@ verify_cmd_success() {
     while ! "$@"; do
         sleep $STEP
         T=$((T-STEP))
-        test $T -gt 0 || return 1
+        test $T -gt 0 \
+            || { echo "verify_cmd_success failed: $@" >&2; return 1; }
     done
 
     return 0
@@ -64,7 +68,7 @@ verify_logs() {
     while ! docker logs "${3:-typo3}" 2>&1 | grep -q -F "$2"; do
         sleep $STEP
         T=$((T-STEP))
-        test $T -gt 0 || return 1
+        test $T -gt 0 || { echo "verify_logs failed: '$2'" >&2; return 1; }
     done
 
     return 0
@@ -82,7 +86,13 @@ source .travis/setenv.inc
 
 # TYPO3 v8.7 cannot use SQLite
 RE='^8\.7.*'
-[[ "$TYPO3_VER" =~ $RE ]] && export T3_DB_TYPE=mariadb || export T3_DB_TYPE=
+if [[ "$TYPO3_VER" =~ $RE ]]; then
+    export TYPO3_V8=true
+    export T3_DB_TYPE=mariadb
+else
+    export TYPO3_V8=
+    export T3_DB_TYPE=
+fi
 
 # TYPO3 installation URLs
 HOST_IP=127.0.0.1
@@ -102,7 +112,7 @@ TEMP_FILE=$(mktemp)
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
-# Display error line and clean up Docker
+# Clean up Docker on exit
 trap 'set +e; cleanup;' EXIT
 
 # Exit with error status if any verification fails
@@ -256,15 +266,22 @@ docker volume prune --force >/dev/null
 # Test volume names, working directories and ownership
 ROOT_VOL='./root-volume/root'
 DB_VOL="$(readlink -f .)/database volume/dbdata"
-echo $'\n*************** Volume names, working directories and ownership' >&2
+echo $'\n*************** Volume names, bind mounts and ownership, and volume persistence' >&2
 
-echo 'Testing volume names' >&2
+echo 'Testing volume names and persistence' >&2
 T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
 verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+FINGERPRINT="$(docker exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)"
+
+t3_ stop --rm
+T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+test "$FINGERPRINT" = "$(docker exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)"
 
 cleanup
 
-echo 'Testing working directories' >&2
+echo 'Testing bind-mounted volumes and persistence' >&2
 T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL" -D postgresql
 
 verify_cmd_success $SUCCESS_TIMEOUT sudo test -f "$ROOT_VOL/public/FIRST_INSTALL"
@@ -275,10 +292,31 @@ verify_cmd_success $SUCCESS_TIMEOUT sudo test -f "$DB_VOL/PG_VERSION"
 ! sudo test -O "$DB_VOL/PG_VERSION"
 ! sudo test -G "$DB_VOL/PG_VERSION"
 
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+FINGERPRINT="$(sudo openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
+
+t3_ stop --rm
+T3_DB_DATA="$DB_VOL" t3_ run -v "$ROOT_VOL" -D postgresql
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+test "$FINGERPRINT" = "$(sudo openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
+
 cleanup
 sudo rm -rf "$ROOT_VOL" "$DB_VOL"
 
-echo 'Testing working directory ownership' >&2
+if [ -z "$TYPO3_V8" ]; then
+    echo 'Testing interoperability of Apache and SQLite' >&2
+    t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
+    verify_logs $SUCCESS_TIMEOUT 'SQLite ready'
+
+    t3_ stop --rm
+    t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
+    verify_logs $SUCCESS_TIMEOUT 'SQLite ready'
+
+    cleanup
+    sudo rm -rf "$ROOT_VOL" "$DB_VOL"
+fi
+
+echo 'Testing bind-mounted volume ownership and persistence' >&2
 t3_ run -v "$ROOT_VOL" -o -V "$DB_VOL" -O -D postgresql
 
 verify_cmd_success $SUCCESS_TIMEOUT test -f "$ROOT_VOL/public/FIRST_INSTALL"
@@ -288,6 +326,14 @@ test -G "$ROOT_VOL/public/FIRST_INSTALL"
 verify_cmd_success $SUCCESS_TIMEOUT test -f "$DB_VOL/PG_VERSION"
 test -O "$DB_VOL/PG_VERSION"
 test -G "$DB_VOL/PG_VERSION"
+
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+FINGERPRINT="$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
+
+t3_ stop --rm
+t3_ run -v "$ROOT_VOL" -o -V "$DB_VOL" -O -D postgresql
+verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
+test "$FINGERPRINT" = "$(openssl x509 -noout -in "$ROOT_VOL/.ssl/server.pem" -fingerprint -sha256)"
 
 cleanup
 rm -rf "$ROOT_VOL" "$DB_VOL"

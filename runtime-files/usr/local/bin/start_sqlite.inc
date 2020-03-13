@@ -10,6 +10,7 @@
 start_sqlite() {
     # Set up $SQLITE_DATA as a volume (bind-mounted or unbound)
     setup_volume $SQLITE_DATA $SQLITE_USER "$T3_DB_OWNER"
+    chmod 700 $SQLITE_DATA
 
     # Initialize SQLite if necessary
     SQLITE_LINK=$TYPO3_ROOT/var/sqlite

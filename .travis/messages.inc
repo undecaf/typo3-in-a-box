@@ -9,7 +9,8 @@ verify_msg() {
     CMD=$2
     shift 2
 
-    $CMD "$@" 2>/dev/null | grep -q -F "$MSG"
+    $CMD "$@" 2>/dev/null | grep -q -F "$MSG" \
+        || { echo "verify_msg failed: '$1'" >&2; return 1; }
 }
 
 # Returns success if a certain message ($1) is generated at stderr
@@ -23,7 +24,8 @@ verify_error() {
     CMD=$2
     shift 2
 
-    $CMD "$@" 2>&1 >/dev/null | grep -q -F "$MSG"
+    $CMD "$@" 2>&1 >/dev/null | grep -q -F "$MSG" \
+        || { echo "verify_error failed: '$1'" >&2; return 1; }
 }
 
 

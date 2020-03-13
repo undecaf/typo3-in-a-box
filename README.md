@@ -748,10 +748,10 @@ that environment variable is not set.
 
 ### Host environment variables
 
-If `export`ed to the host shell, theses variables set custom default values
+If `export`ed to the host shell, these variables set custom default values
 for [options](#options) and
 [container environment variables](#container-environment-variables). In this way,
-they can provide a consistent environment for all `t3` commands of a particular TYPO3 instance.
+they can define the environment of a particular TYPO3 instance for all `t3` commands.
 
 
 | Name | Description | Built-in default |
