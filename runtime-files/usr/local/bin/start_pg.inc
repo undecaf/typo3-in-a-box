@@ -10,6 +10,7 @@
 start_pg() {
     # Set up $PG_DATA as a volume (bind-mounted or unbound)
     setup_volume $PG_DATA $PG_USER "$T3_DB_OWNER"
+    chmod 700 $PG_DATA
 
     mkdir -p $PG_RUN
     chown -R $PG_USER: $PG_RUN

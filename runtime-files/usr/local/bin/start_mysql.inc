@@ -10,6 +10,7 @@
 start_mysql() {
     # Set up $MYSQL_DATA as a volume (bind-mounted or unbound)
     setup_volume $MYSQL_DATA $MYSQL_USER "$T3_DB_OWNER"
+    chmod 700 $MYSQL_DATA
 
     mkdir -p $MYSQL_RUN
     chown -R $MYSQL_USER: $MYSQL_RUN
