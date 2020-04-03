@@ -89,8 +89,8 @@ considered still as unstable.
     (currently [`10.3.0`](https://packagist.org/packages/typo3/cms#v10.3.0))
 -   `8.7-latest`, `9.5-latest`, `10.3-latest`:  
     most recent image of the most recent TYPO3&nbsp;8.7/9.5/10.3
-    revision (currently [`8.7.31`](https://packagist.org/packages/typo3/cms#v8.7.31),
-    [`9.5.14`](https://packagist.org/packages/typo3/cms#v9.5.14) and
+    revision (currently [`8.7.32`](https://packagist.org/packages/typo3/cms#v8.7.32),
+    [`9.5.15`](https://packagist.org/packages/typo3/cms#v9.5.15) and
     [`10.3.0`](https://packagist.org/packages/typo3/cms#v10.3.0))
 -   `8.7-dev`, `9.5-dev`, `10.4-dev`:  
     weekly builds of the most recent _development image_ of the most
