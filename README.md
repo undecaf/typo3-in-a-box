@@ -278,7 +278,7 @@ Composer operation.
 These variables can be set by `t3 run` option&nbsp;`--env`, e.g.
 
 ```bash
-$ t3 run --env MODE=dev --env PHP_post_max_size=500K
+$ t3 run --env T3_MODE=dev --env T3_PHP_post_max_size=500K
 ```
 
 Command `t3 env` can modify most settings also while the container is running,
@@ -288,7 +288,9 @@ e.g. in order to change the TYPO3 mode or to experiment with various `php.ini` s
 $ t3 env MODE=xdebug PHP_post_max_size=1M
 ```
 
-Container environment settings are lost when the container is removed.
+Please note that container environment variables need to be prefixed with `T3_` _except_ when being used in `t3 env` commands.
+
+Container environment settings are lost when a container is removed.
 
 ---
 
@@ -348,13 +350,18 @@ $ t3 env COMPOSER_EXCLUDE=public/typo3conf/ext/myt3ext
 
     ```json
     {
-        "name": "Listen for XDebug from container",
-        "type": "php",
-        "request": "launch",
-        "port": 9000,
-        "pathMappings": {
-            "/var/www/localhost": "${workspaceRoot}/typo3-root"
-        }
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Listen for XDebug from container",
+                "type": "php",
+                "request": "launch",
+                "port": 9000,
+                "pathMappings": {
+                    "/var/www/localhost": "${workspaceRoot}/typo3-root"
+                }
+            }
+        ]
     }
     ```
 
