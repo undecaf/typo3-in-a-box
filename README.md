@@ -138,7 +138,7 @@ It should be saved to a directory which is part of the search path, e.g.
 `/usr/local/bin`, and it must be made executable, e.g.
 
 ```bash
-$ sudo chmod 755 /usr/local/bin/t3
+$ sudo chmod a+x /usr/local/bin/t3
 ```
 
 ---
@@ -342,11 +342,12 @@ $ t3 env COMPOSER_EXCLUDE=public/typo3conf/ext/myt3ext
 #### Set up your IDE for XDebug
 
 -   PhpStorm et al.: [Debugging within a PHP Docker Container using IDEA/PhpStorm and Xdebug: Configure IntelliJ IDEA Ultimate or PhpStorm](https://phauer.com/2017/debug-php-docker-container-idea-phpstorm/#configure-intellij-idea-ultimate-or-phpstorm)
--   VSCode: install 
+-   VS&nbsp;Code: install 
     [PHP Debug](https://github.com/felixfbecker/vscode-php-debug),
     add the following configuration to your `launch.json` file
-    and start debugging with this configuration. Replace
-    `${workspaceRoot}/typo3-root` with the [actual path of your TYPO3 working directory](#using-an-ide):
+    and [start debugging with this configuration](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations).
+    Replace `${workspaceRoot}/typo3-root` with the
+    [actual path of your TYPO3 working directory](#using-an-ide):
 
     ```json
     {
