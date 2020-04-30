@@ -13,7 +13,7 @@ ARG TYPO3_ROOT=${APACHE_HOME}/localhost
 ARG TYPO3_DATADIR=/var/lib/typo3-db
 
 LABEL \
-    org.opencontainers.image.title="A versatile TYPO3 8.7/9.5/10.3 image" \
+    org.opencontainers.image.title="A versatile TYPO3 8.7/9.5/10.4 image" \
 	org.opencontainers.image.description="TYPO3, Apache, PHP, Composer, ImageMagick; SQLite, MariaDB and PostgreSQL databases" \
 	org.opencontainers.image.version="${PRIMARY_TAG}" \
 	org.opencontainers.image.revision="${COMMIT}" \
