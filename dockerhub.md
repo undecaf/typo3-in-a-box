@@ -1,11 +1,11 @@
-# TYPO3 in a box ‒ a versatile TYPO3 8.7/9.5/10.3 image
+# TYPO3 in a box ‒ a versatile TYPO3 8.7/9.5/10.4 image
 
 [![Build Status](https://travis-ci.com/undecaf/typo3-in-a-box.svg?branch=master)](https://travis-ci.com/undecaf/typo3-in-a-box)
 [![Latest release](https://img.shields.io/github/release/undecaf/typo3-in-a-box.svg)](https://github.com/undecaf/typo3-in-a-box)
 ![Image Size](https://img.shields.io/endpoint?url=https%3A%2F%2Fdocker-size.modus-operandi.workers.dev%2Fundecaf%2Ftypo3-in-a-box%2Ftags%2Flatest)
 
 This project provides a ready-to-run and extensive
-[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.3 installation as a single container image.
+[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.4 installation as a single container image.
 It is widely configurable, and thus it addresses TYPO3 editors and administrators
 as well as integrators and extension developers. Builds of the TYPO3 development
 branches are available, too.
@@ -48,7 +48,7 @@ Your personal extension directories can be
 ## [Contents](https://github.com/undecaf/typo3-in-a-box#contents)
 
 The size of the documentation exceeds the Docker Hub length limit of 25&nbsp;KB.
-Please visit the [Git repository](https://github.com/undecaf/typo3-in-a-box#typo3-in-a-box--a-versatile-typo3-8795103-image) for an extensive description of this project.
+Please visit the [Git repository](https://github.com/undecaf/typo3-in-a-box#typo3-in-a-box--a-versatile-typo3-8795104-image) for an extensive description of this project.
 
 -   [Running TYPO3](https://github.com/undecaf/typo3-in-a-box#running-typo3)
     -   [Quick start](https://github.com/undecaf/typo3-in-a-box#quick-start)
@@ -86,18 +86,18 @@ As their version numbers suggest, images in this repository should be
 considered still as unstable.
 
 -   `latest`: most recent image of the most recent TYPO3 version 
-    (currently [`10.3.0`](https://packagist.org/packages/typo3/cms#v10.3.0))
--   `8.7-latest`, `9.5-latest`, `10.3-latest`:  
-    most recent image of the most recent TYPO3&nbsp;8.7/9.5/10.3
+    (currently [`10.4.0`](https://packagist.org/packages/typo3/cms#v10.4.0))
+-   `8.7-latest`, `9.5-latest`, `10.4-latest`:  
+    most recent image of the most recent TYPO3&nbsp;8.7/9.5/10.4
     revision (currently [`8.7.32`](https://packagist.org/packages/typo3/cms#v8.7.32),
-    [`9.5.15`](https://packagist.org/packages/typo3/cms#v9.5.15) and
-    [`10.3.0`](https://packagist.org/packages/typo3/cms#v10.3.0))
+    [`9.5.16`](https://packagist.org/packages/typo3/cms#v9.5.16) and
+    [`10.4.1`](https://packagist.org/packages/typo3/cms#v10.4.1))
 -   `8.7-dev`, `9.5-dev`, `10.4-dev`:  
     weekly builds of the most recent _development image_ of the most
-    recent TYPO3&nbsp;8.7/9.5/10.3 _development version_ (currently
+    recent TYPO3&nbsp;8.7/9.5/10.4 _development version_ (currently
     [`8.7.x-dev`](https://packagist.org/packages/typo3/cms#dev-TYPO3_8-7),
     [`9.5.x-dev`](https://packagist.org/packages/typo3/cms#9.5.x-dev) and
     [`10.4.x-dev`](https://packagist.org/packages/typo3/cms#dev-master))
--   `8.7-x.y`, `9.5-x.y`, `10.3-x.y`:  
-    image version `x.y` of those TYPO3&nbsp;8.7/9.5/10.3 revisions that were most
+-   `8.7-x.y`, `9.5-x.y`, `10.4-x.y`:  
+    image version `x.y` of those TYPO3&nbsp;8.7/9.5/10.4 revisions that were most
     recent at build time

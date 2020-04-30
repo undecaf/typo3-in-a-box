@@ -18,7 +18,7 @@ LABEL \
 	org.opencontainers.image.version="${PRIMARY_TAG}" \
 	org.opencontainers.image.revision="${COMMIT}" \
 	org.opencontainers.image.url="https://hub.docker.com/r/undecaf/typo3-in-a-box" \
-	org.opencontainers.image.documentation="https://github.com/undecaf/typo3-in-a-box/#typo3-in-a-box--a-versatile-typo3-8795103-image" \
+	org.opencontainers.image.documentation="https://github.com/undecaf/typo3-in-a-box/#typo3-in-a-box--a-versatile-typo3-8795104-image" \
 	org.opencontainers.image.source="https://github.com/undecaf/typo3-in-a-box" \
 	org.opencontainers.image.authors="Ferdinand Kasper <fkasper@modus-operandi.at>" \
 	org.opencontainers.image.created="${BUILD_DATE}"
