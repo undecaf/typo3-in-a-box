@@ -156,7 +156,7 @@ cleanup
 # Test logging
 echo $'\n*************** Logging' >&2
 
-echo "Verifying that the output follows the log"
+echo "Verifying TYPO3 version and log output"
 t3_ run
 sleep $SUCCESS_TIMEOUT    # for TYPO3 8.7, MariaDB startup will take that long
 
@@ -166,7 +166,7 @@ t3_ env
 sleep $FAILURE_TIMEOUT
 kill $PID
 grep -q 'typo3 local0.info root: Apache/TYPO3' $TEMP_FILE
-
+grep -q "typo3 local0.info root: TYPO3 $TYPO3_VER" $TEMP_FILE
 cleanup
 
 
