@@ -16,11 +16,35 @@ export APACHE_HOME=$APACHE_HOME
 export TYPO3_ROOT=$TYPO3_ROOT
 export TYPO3_DATADIR=$TYPO3_DATADIR
 export UNBOUND_MARKER=$(mktemp -u unbound_XXXXXX)
+export LOCALCERTSDIR=/usr/local/share/ca-certificates
 
 EOF
 
 mv -f $E /etc/environment
 chmod 644 /etc/environment
+
+# Set up the build environment
+. /etc/environment
+
+# Install certificates for caching proxy, if present
+if [ -n "$https_proxy" ]; then
+    # Install root certificates and OpenSSL
+    apk add ca-certificates openssl
+    update-ca-certificates
+
+    # Get the proxy certificates and install them as root certificates
+    echo 'Q' \
+    | openssl s_client \
+        -connect 0.0.0.0:443 \
+        -proxy ${https_proxy##*://} \
+        -showcerts \
+        -verify 3 \
+        2>/dev/null \
+    | awk \
+        -e '/-BEGIN CERTIFICATE-/ { p = 1; n++ }' \
+        -e 'p > 0 { print >> "'$LOCALCERTSDIR'/ca-cert-proxy-" n ".pem" }' \
+        -e '/-END CERTIFICATE-/ { p = 0 }'
+fi
 
 # Add extra repositories
 mkdir -p /etc/apk
@@ -54,7 +78,7 @@ BINDFS=bindfs-1.14.3
 
 apk add fuse
 apk -q --no-cache --virtual .$BINDFS add curl git pkgconfig build-base fuse-dev linux-headers
-curl https://bindfs.org/downloads/$BINDFS.tar.gz | tar -xz
+curl -L https://bindfs.org/downloads/$BINDFS.tar.gz | tar -xz
 
 cd $BINDFS
 ./configure >/dev/null
@@ -79,6 +103,10 @@ apk add \
 	openssl \
     rsync \
     jq
+
+# Install s6 overlay
+curl -L https://github.com/just-containers/s6-overlay/releases/latest/download/s6-overlay-amd64.tar.gz \
+    | tar -xz -C /
 
 # Install Apache and PHP
 apk add \
@@ -144,9 +172,6 @@ apk add \
 apk add \
     mariadb \
     postgresql
-
-# Set up the runtime environment
-. /etc/environment
 
 # Leave a marker in $TYPO3_DATADIR so that bind mounts can be detected
 mkdir -p $TYPO3_DATADIR

@@ -18,7 +18,9 @@ chown $APACHE_USER: $APACHE_HOME/.composer
 mv $TYPO3_ROOT/composer-${TYPO3_VER}.json $TYPO3_ROOT/composer.json
 rm -f $TYPO3_ROOT/composer-*.json
 chown -R $APACHE_USER: $APACHE_HOME
-composer install --no-progress --no-suggest
+su-exec $APACHE_USER /bin/sh \
+    -c "env http_proxy=$http_proxy https_proxy=$https_proxy /usr/local/bin/composer.phar install --no-progress --no-suggest --working-dir=$TYPO3_ROOT $*"
+
 touch $TYPO3_DOCROOT/FIRST_INSTALL
 chown $APACHE_USER: $TYPO3_DOCROOT/FIRST_INSTALL
 

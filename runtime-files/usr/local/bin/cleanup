@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Show what is being done
+echo $'\n*************** Cleaning up image'
+
+# Set up the runtime environment
+. /etc/environment
+
+# Remove proxy certificates
+rm $LOCALCERTSDIR/*
+update-ca-certificates
+
+# Make executables executable
+chmod -R 755 /usr/local/bin
+
+# Remove this script (must be the last command in this file)
+rm -rf $0

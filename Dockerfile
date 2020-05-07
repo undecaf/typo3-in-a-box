@@ -5,12 +5,16 @@ ARG BUILD_DATE
 ARG COMMIT
 ARG PRIMARY_TAG=exp
 ARG DEPLOY_TAGS=exp
-ARG TYPO3_VER=10.3
+ARG TYPO3_VER=10.4
 
 # Build _constants_
 ARG APACHE_HOME=/var/www
 ARG TYPO3_ROOT=${APACHE_HOME}/localhost
 ARG TYPO3_DATADIR=/var/lib/typo3-db
+
+# Build-time proxy settings (not persisted in the image)
+ARG http_proxy
+ARG https_proxy
 
 LABEL \
     org.opencontainers.image.title="A versatile TYPO3 8.7/9.5/10.4 image" \
@@ -27,18 +31,16 @@ LABEL \
 COPY build-files /
 RUN /usr/local/bin/build
 
-# Depends on the TYPO3 version
+# Depending on the TYPO3 version
 COPY compose-files /
 RUN /usr/local/bin/compose
 
 # Runtime files
 COPY runtime-files /
-RUN chmod -R 755 /usr/local/bin
+RUN /usr/local/bin/cleanup
 
 VOLUME ${TYPO3_ROOT} ${TYPO3_DATADIR}
 
-EXPOSE 80 443 3306 5432 514/udp
+EXPOSE 80 443 3306 5432
 
-ENTRYPOINT ["/usr/local/bin/init"]
-CMD ["httpd", "-D", "FOREGROUND"]
-STOPSIGNAL SIGHUP
+ENTRYPOINT ["/init"]
