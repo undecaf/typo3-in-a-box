@@ -89,9 +89,20 @@ if test_shell 'zsh'; then
     # Do not execute EXIT traps on exit from shell functions
     setopt POSIX_TRAPS
 
+    # Echoes the first active local network IPv4 address (or nothing) to stdout
+    host_ip() {
+        ifconfig -au inet 2>/dev/null | awk '$1 == "inet" { if( $2 !~ "127\." ) { print $2; exit } }' || true
+    }
+
 else
     # Allow '@()', '*()' etc. for parenthesized globbing expressions
     shopt -s extglob
+
+    # Echoes the first active local network IPv4 address (or nothing) to stdout
+    host_ip() {
+        local RE='src +([[:digit:]\.]+)'
+        [[ $(ip -4 route get 1.0.0.0 2>/dev/null) =~ $RE ]] && echo ${BASH_REMATCH[1]} || true
+    }
 fi
 
 
@@ -921,16 +932,16 @@ ENGINE_NAME=$($BASENAME $T3_ENGINE)
 ENGINE_VERSION=$($T3_ENGINE --version)
 
 # Options that differ between container engines
+HOST_IP_ENV=
 case $ENGINE_NAME in
     docker)
-        HOST_IP_ENV=
         SUDO_PREFIX=$SUDO
         ;;
 
     podman)
-        # hostname -I is not supported under macOS, therefore:
-        HOST_IP_ENV="HOST_IP=$(ifconfig | $GREP 'inet ' | $GREP -v '127.0.0.1' | $AWK '{ print $2; }' | head -n 1)"
-        ENV_OPTIONS="$ENV_OPTIONS --env $HOST_IP_ENV"
+        # Obtain the first active local network IPv4 address
+        # XDebug will not work if there is no active local IPv4 address
+        HOST_IP=$(host_ip) && HOST_IP_ENV="--env HOST_IP=$HOST_IP"
         SUDO_PREFIX=
         ;;
 esac
@@ -1057,6 +1068,7 @@ case "$CMD" in
             $HTTP_OPTIONS \
             $DB_PORT_OPTION \
             $ENV_OPTIONS \
+            $HOST_IP_ENV \
             "$@" \
             $REPO
 
