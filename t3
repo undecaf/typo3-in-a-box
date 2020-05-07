@@ -38,6 +38,8 @@ DF=$(which df)
 DIRNAME=$(which dirname)
 GREP=$(which grep)
 HOSTNAME=$(which hostname)
+IFCONFIG=$(which ifconfig)
+IP=$(which ip)
 LS=$(which ls)
 MKDIR=$(which mkdir)
 PRINTENV=$(which printenv)
@@ -65,7 +67,7 @@ test_macos() {
 #   $1  basename of shell command
 #
 test_shell() {
-    [ "$(basename $($PS -p $$ -o comm=))" = "$1" ]
+    [ "$($BASENAME $($PS -p $$ -o comm=))" = "$1" ]
 }
 
 
@@ -91,7 +93,7 @@ if test_shell 'zsh'; then
 
     # Echoes the first active local network IPv4 address (or nothing) to stdout
     host_ip() {
-        ifconfig -au inet 2>/dev/null | awk '$1 == "inet" { if( $2 !~ "127\." ) { print $2; exit } }' || true
+        $IFCONFIG -au inet 2>/dev/null | $AWK '$1 == "inet" { if( $2 !~ "127\." ) { print $2; exit } }' || true
     }
 
 else
@@ -101,7 +103,7 @@ else
     # Echoes the first active local network IPv4 address (or nothing) to stdout
     host_ip() {
         local RE='src +([[:digit:]\.]+)'
-        [[ $(ip -4 route get 1.0.0.0 2>/dev/null) =~ $RE ]] && echo ${BASH_REMATCH[1]} || true
+        [[ $($IP -4 route get 1.0.0.0 2>/dev/null) =~ $RE ]] && echo ${BASH_REMATCH[1]} || true
     }
 fi
 
@@ -217,7 +219,7 @@ make_dir() {
 #   $1  path or basename
 #
 is_path() {
-    [ "$1" != "$(basename "$1")" ]
+    [ "$1" != "$($BASENAME "$1")" ]
 }
 
 
@@ -233,7 +235,7 @@ is_path() {
 canonicalize() {
     (
         cd "$(dirname "$1")"
-        echo "$(pwd -P)/$(basename "$1")"
+        echo "$(pwd -P)/$($BASENAME "$1")"
     )
 }
 
