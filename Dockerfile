@@ -1,13 +1,17 @@
 FROM alpine:3.11
 
-# Build arguments
+# Build command arguments
 ARG BUILD_DATE
 ARG COMMIT
 ARG PRIMARY_TAG=exp
 ARG DEPLOY_TAGS=exp
 ARG TYPO3_VER=10.4
 
-# Build _constants_
+# Extra package versions
+ARG BINDFS_VER=1.14.3
+ARG S6_OVERLAY_VER=1.22.1.0
+
+# Build _constants_ (do not change)
 ARG APACHE_HOME=/var/www
 ARG TYPO3_ROOT=${APACHE_HOME}/localhost
 ARG TYPO3_DATADIR=/var/lib/typo3-db
