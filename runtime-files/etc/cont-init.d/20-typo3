@@ -16,9 +16,6 @@ load_env
 # Set up $TYPO3_ROOT as a volume (bind-mounted or unbound)
 setup_volume $TYPO3_ROOT $APACHE_USER "$T3_OWNER" $TYPO3_ROOT_GZ
 
-# Make everything in $APACHE_HOME owned by $APACHE_USER
-chown -R $APACHE_USER: $APACHE_HOME 
-
 # Log version info, trying to get the actual TYPO3 version from composer.lock
 RE='^([0-9]+\.){2,}[0-9]+'
 if CURRENT_TYPO3_VER=$(jq --raw-output '[.packages|.[]|{(.name): .version}]|add|."typo3/cms-core"' $TYPO3_ROOT/composer.lock 2>/dev/null) \

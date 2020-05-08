@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#
+# Fixes ownerships and attributes
+# ===============================
+#
+
+set -e
+
+. /usr/local/lib/env.inc
+
+# Load the runtime environment
+load_env
+
+# Make everything in $APACHE_HOME owned by $APACHE_USER
+chown -R $APACHE_USER: $APACHE_HOME 
