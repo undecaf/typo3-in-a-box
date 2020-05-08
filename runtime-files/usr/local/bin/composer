@@ -7,7 +7,9 @@
 # temporary directories. Afterwards, these directories are restored.
 #
 
-. /etc/environment
+# Load the runtime environment
+. /usr/local/lib/env.inc
+load_env
 
 if [ ! -r $TYPO3_ROOT/composer.json ]; then
     echo "File $TYPO3_ROOT/composer.json not found; Composer Mode apparently not active" >&2
@@ -39,9 +41,8 @@ fi
 
 # Run Composer in TYPO3 context
 if [ -n "$RUN_COMPOSER" ]; then
-    su $APACHE_USER \
-        -s /bin/sh -l \
-        -c ". /etc/environment; /usr/local/bin/composer.phar --working-dir=\$TYPO3_ROOT $*"
+    su-exec $APACHE_USER /bin/sh \
+        -c "env http_proxy=$http_proxy https_proxy=$https_proxy /usr/local/bin/composer.phar --working-dir=$TYPO3_ROOT $*"
 else
     echo "Cannot fulfill COMPOSER_EXCLUDE requirements, therefore Composer was not run" >&2
     exit 1

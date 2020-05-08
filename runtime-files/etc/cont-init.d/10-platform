@@ -1,0 +1,34 @@
+#!/bin/bash
+
+#
+# Initialises global platform settings
+# ====================================
+#
+
+set -e
+
+. /usr/local/lib/utils.inc
+. /usr/local/lib/env.inc
+
+# Load the runtime environment
+load_env
+
+# Display version numbers
+log "Alpine Linux $(cat /etc/alpine-release)"
+
+# Try to determine the local timezone if none was specified
+if [ -z "$T3_TIMEZONE" ]; then
+    T3_TIMEZONE="$(curl -s https://ipapi.co/timezone)"
+fi
+set_var T3_TIMEZONE $T3_TIMEZONE
+
+# Use timezone if specified and supported
+if [ -n "$T3_TIMEZONE" -a -f "/usr/share/zoneinfo/${T3_TIMEZONE}" ]; then
+    cp /usr/share/zoneinfo/${T3_TIMEZONE} /etc/localtime
+    log "Timezone: $T3_TIMEZONE"
+else
+    log "Timezone: UTC"
+fi
+
+# Show locale
+log "Locale: $LANG"

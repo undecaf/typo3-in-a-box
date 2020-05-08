@@ -125,10 +125,11 @@ source .travis/messages.inc
 
 # Test basic container and volume status
 echo $'\n*************** Basic container and volume status' >&2
+
+echo "Verifying running container and existing volumes"
 t3_ run
 verify_containers_running typo3
 verify_volumes_exist typo3-root typo3-data
-verify_logs $SUCCESS_TIMEOUT "TYPO3 $TYPO3_VER"
 
 verify_error 'Cannot run container' ./t3 run
 
@@ -139,6 +140,7 @@ verify_volumes_exist typo3-root typo3-data
 
 cleanup
 
+echo "Verifying removed container and retained volumes"
 t3_ run
 
 t3_ stop --rm
@@ -147,7 +149,13 @@ verify_volumes_exist typo3-root typo3-data
 
 docker volume prune --force >/dev/null
 
+echo "Verifying t3 argument passthrough"
 t3_ run --label foo=bar
+test "$(docker inspect --format '{{.Config.Labels.foo}}' typo3)" = 'bar'
+
+cleanup
+
+t3_ run -- --label foo=bar
 test "$(docker inspect --format '{{.Config.Labels.foo}}' typo3)" = 'bar'
 
 cleanup
@@ -165,8 +173,8 @@ PID=$!
 t3_ env
 sleep $FAILURE_TIMEOUT
 kill $PID
-grep -q 'typo3 local0.info root: Apache/TYPO3' $TEMP_FILE
-grep -q "typo3 local0.info root: TYPO3 $TYPO3_VER" $TEMP_FILE
+grep -q ' Apache/TYPO3' $TEMP_FILE
+grep -q " TYPO3 $TYPO3_VER" $TEMP_FILE
 cleanup
 
 
@@ -348,7 +356,7 @@ cleanup
 
 t3_ run -c
 verify_logs $SUCCESS_TIMEOUT 'Composer Mode'
-verify_cmd_success $SUCCESS_TIMEOUT t3_ composer show | grep -q -F 'typo3/cms-'
+verify_cmd_success $SUCCESS_TIMEOUT t3_ composer show | grep -q -F 'typo3/cms-core'
 cleanup
 
 

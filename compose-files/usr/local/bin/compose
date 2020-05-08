@@ -7,7 +7,7 @@ echo $'\n*************** '"Composing TYPO3 $TYPO3_VER"
 . /etc/environment
 
 # Install Composer
-curl -sS https://getcomposer.org/installer | php
+curl -s -S https://getcomposer.org/installer | php
 mv composer.phar /usr/local/bin/
 chmod 755 /etc/php7
 

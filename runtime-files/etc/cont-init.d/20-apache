@@ -1,0 +1,89 @@
+#!/bin/bash
+
+#
+# Configures Apache for SSL and creates a self-signed certificate
+# ===============================================================
+#
+
+
+# Echoes the specified information of the server certificate to stdout.
+#
+# Arguments:
+#   $1  'issuer' or 'subject'
+#
+cert_info() {
+    openssl x509 -in $APACHE_CERT.pem -inform PEM -noout -$1 | awk -F ' = ' '{ print $2 }'
+}
+
+
+# --------------------------------------------------------------------------
+
+# Returns success if the server certificate is self-signed.
+#
+test_self_signed() {
+    test $(cert_info 'subject') = $(cert_info 'issuer')
+}
+
+
+# --------------------------------------------------------------------------
+
+set -e
+
+. /usr/local/lib/utils.inc
+. /usr/local/lib/env.inc
+
+# Load the runtime environment
+load_env
+
+log "$(httpd -v)"
+
+# Disable the default logging configuration
+sed -r -i -e 's/^\s*(Error|Custom)Log\s/#\0/' /etc/apache2/httpd.conf
+
+# Disable the default SSL configuration
+mv /etc/apache2/conf.d/ssl.conf /etc/apache2/conf.d/ssl.conf.disabled
+
+# Ensure that a private key file and a certificate file are available
+mkdir -p $(dirname $APACHE_CERT)
+
+if [ -f $APACHE_CUSTOM_CERT.key -a -f $APACHE_CUSTOM_CERT.pem ]; then
+    # Link to existing custom certificate files
+    chown $APACHE_USER: $APACHE_CUSTOM_CERT.{key,pem}
+    chmod 600 $APACHE_CUSTOM_CERT.key
+    chmod 644 $APACHE_CUSTOM_CERT.pem
+    ln -sf $APACHE_CUSTOM_CERT.key $APACHE_CERT.key
+    ln -sf $APACHE_CUSTOM_CERT.pem $APACHE_CERT.pem
+
+    test_self_signed && SELF_SIGNED='self-signed ' || SELF_SIGNED=
+    log "Using a ${SELF_SIGNED}custom SSL certificate, CN=$(cert_info 'subject')"
+
+else
+    # Create a self-signed certificate for $HOSTNAME unless one already exists
+    if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem ] && [ "$(cert_info 'subject')" = "$HOSTNAME" ]; then
+        log "Using existing SSL certificate, CN=$HOSTNAME"
+
+    else
+        # No certificate found that matches the current $HOSTNAME
+        # Create certificate
+        openssl genrsa -out \
+            $APACHE_CERT.key 3072 \
+            2>/dev/null
+        openssl req -new -sha256 \
+            -out $APACHE_CERT.csr \
+            -key $APACHE_CERT.key \
+            -subj "/CN=$HOSTNAME" \
+            2>/dev/null
+        openssl x509 -req -days 3653 \
+            -in $APACHE_CERT.csr \
+            -signkey $APACHE_CERT.key \
+            -out $APACHE_CERT.pem -outform PEM \
+            2>/dev/null
+        rm $APACHE_CERT.csr
+
+        chown -R $APACHE_USER: $(dirname $APACHE_CERT)
+        log "Created a self-signed SSL certificate, CN=$HOSTNAME"
+    fi
+fi
+
+# Disable SSL stapling for self-signed certificates
+test_self_signed && set_var STAPLING Off || set_var STAPLING On

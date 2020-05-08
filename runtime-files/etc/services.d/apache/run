@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#
+# Starts Apache
+# =============
+#
+
+set -e
+
+# Get ENV_DIR
+. /usr/local/lib/env.inc
+
+exec s6-envdir ${ENV_DIR} httpd -D FOREGROUND

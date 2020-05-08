@@ -1,0 +1,23 @@
+#!/bin/bash
+
+#
+# Sets up the selected database service
+# =====================================
+#
+
+set -e
+
+. /usr/local/lib/utils.inc
+. /usr/local/lib/env.inc
+
+# Load the runtime environment
+load_env
+
+# Accept abbreviated database types, ignore case
+while true; do
+    [[ -n $T3_DB_TYPE && mariadb == ${T3_DB_TYPE,,}* ]] && . /usr/local/lib/mysql.inc && exit
+    [[ -n $T3_DB_TYPE && postgresql == ${T3_DB_TYPE,,}* ]] && . /usr/local/lib/pg.inc && exit
+    [[ -z $T3_DB_TYPE || sqlite == ${T3_DB_TYPE,,}* ]] && . /usr/local/lib/sqlite.inc && exit
+
+    err_exit "Unknown database type: '$T3_DB_TYPE'"
+done

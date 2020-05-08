@@ -8,8 +8,9 @@ export T3_DB_ROOT_PW=${T3_DB_ROOT_PW:-toor}
 export HOSTNAME=$(hostname)
 export LANG=${T3_LANG:-C.UTF-8}
 
-# Environment variables that can be changed by 't3 env'
-export RE_CONT_ENV='MODE|COMPOSER_EXCLUDE|PHP_.+'
+# Proxy settings, always lowercase
+export http_proxy=${http_proxy:-$HTTP_PROXY}
+export https_proxy=${https_proxy:-$HTTPS_PROXY}
 
 # Derived environment variables
 export APACHE_USER=apache
@@ -29,9 +30,5 @@ export MYSQL_RUN=/run/mysqld
 export PG_USER=postgres
 export PG_DATA=$TYPO3_DATADIR
 export PG_RUN=/run/postgresql
-
-# syslog priorities
-export LOG_INFO=local0.info
-export LOG_ERROR=${LOG_INFO/.info/.error}
 
 # Saved container environment variables
