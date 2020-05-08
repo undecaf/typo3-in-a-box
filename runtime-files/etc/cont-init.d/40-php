@@ -72,4 +72,12 @@ else
 	log "XDebug disabled"
 fi
 
+# Show the list of directories to be excluded from Composer operations
+if [ -n "$COMPOSER_EXCLUDE" ]; then
+    IFS=: read -ra DIRS <<< "$COMPOSER_EXCLUDE"
+    for D in "${DIRS[@]}"; do
+        log "Excluded from Composer: $D"
+    done
+fi
+
 log "$(php --version)"
