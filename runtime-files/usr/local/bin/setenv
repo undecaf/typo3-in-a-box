@@ -11,7 +11,7 @@ load_env
 set_env $(env) $@
 
 # Update settings and log
-/etc/cont-init.d/30-php
+/etc/cont-init.d/40-php
 
 # Restart Apache with the updated environment
 exec s6-envdir ${ENV_DIR} httpd -k graceful
