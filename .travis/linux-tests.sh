@@ -218,13 +218,13 @@ for DB_TYPE in mariadb postgresql; do
     echo "Pinging $DB_TYPE" >&2
     case $DB_TYPE in
         mariadb)
+            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
             verify_cmd_success $SUCCESS_TIMEOUT mysql -h $HOST_IP -P $DB_PORT -D t3 -u t3 --password=t3 -e 'quit' t3
-            verify_logs $SUCCESS_TIMEOUT 'mysqld: ready for connections'
             ;;
 
         postgresql)
+            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
             verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d t3 -U t3 -q
-            verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
             ;;
     esac
 
@@ -242,13 +242,13 @@ for DB_TYPE in mariadb postgresql; do
     echo "Pinging $DB_TYPE" >&2
     case $DB_TYPE in
         mariadb)
+            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
             verify_cmd_success $SUCCESS_TIMEOUT mysql -h $HOST_IP -P $DB_PORT -D $DB_NAME -u $DB_USER --password=$DB_PW -e 'quit' $DB_NAME
-            verify_logs $SUCCESS_TIMEOUT 'mysqld: ready for connections'
             ;;
 
         postgresql)
+            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
             verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d $DB_NAME -U $DB_USER -q
-            verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
             ;;
     esac
 
