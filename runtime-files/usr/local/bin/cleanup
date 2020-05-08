@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. /usr/local/lib/proxy.inc
+
 # Show what is being done
 echo $'\n*************** Cleaning up image'
 
@@ -7,8 +9,7 @@ echo $'\n*************** Cleaning up image'
 . /etc/environment
 
 # Remove proxy certificates
-rm $LOCALCERTSDIR/*
-update-ca-certificates
+remove_proxy_certs
 
 # Make executables executable
 chmod -R 755 /usr/local/bin
