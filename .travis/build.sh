@@ -14,4 +14,5 @@ docker build \
     --build-arg PRIMARY_TAG=$PRIMARY_TAG \
     --build-arg DEPLOY_TAGS="$DEPLOY_TAGS" \
     --tag $PRIMARY_IMG \
+    "$@" \
     .
