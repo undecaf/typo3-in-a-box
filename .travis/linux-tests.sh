@@ -314,11 +314,11 @@ sudo rm -rf "$ROOT_VOL" "$DB_VOL"
 if [ -z "$TYPO3_V8" ]; then
     echo 'Testing interoperability of Apache and SQLite' >&2
     t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
-    verify_logs $SUCCESS_TIMEOUT 'SQLite ready'
+    verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 
     t3_ stop --rm
     t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
-    verify_logs $SUCCESS_TIMEOUT 'SQLite ready'
+    verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 
     cleanup
     sudo rm -rf "$ROOT_VOL" "$DB_VOL"
@@ -378,6 +378,7 @@ t3_ run --env MODE=dev
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
 
 echo "Verifying MODE check" >&2
+verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 t3_ env MODE=abc 2>&1 | grep -q -F 'Unknown mode'
 
 cleanup
@@ -385,6 +386,7 @@ cleanup
 echo "Verifying mode changes and abbreviations" >&2
 T3_MODE=d t3_ run
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
+verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
 grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$' $TEMP_FILE && grep -q '^X-Powered-By: PHP/.*$' $TEMP_FILE
 
@@ -410,7 +412,7 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 cleanup
 
 t3_ run -c
-sleep $SUCCESS_TIMEOUT    # for TYPO3 8.7, MariaDB startup will take that long
+verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
