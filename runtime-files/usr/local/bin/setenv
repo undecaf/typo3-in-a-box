@@ -8,7 +8,7 @@
 # Update the runtime environment
 . /usr/local/lib/env.inc
 load_env
-set_env $(env) $@
+save_env "$@"
 
 # Update settings and log
 /etc/cont-init.d/40-php

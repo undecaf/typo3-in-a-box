@@ -28,21 +28,31 @@ set_var() {
 
 # --------------------------------------------------------------------------
 
-# Replaces the runtime environment with the specified NAME=VALUE pairs,
-# removing the leading 'T3_' from container environment variable names.
+# Replaces the runtime environment with the current environment plus
+# the specified NAME=VALUE pairs, removing the leading 'T3_' from 
+# container environment variable names.
 #
 # Arguments:
-#   $1, $2, ...  NAME=VALUE pairs
+#   $1, $2, ...  (optional) NAME=VALUE pairs
 #
-set_env() {
+save_env() {
     local RE_CONT_ENV='^(T3_('${RE_CONT_ENV_VARS}'))=(.*)$'
     local RE_OTHER_ENV='^([^=]+)=(.*)$'
+    local PAIRS
     local PAIR
+
+    # Get the current environment and preserve embedded spaces
+    IFS=$'\n'
+    PAIRS=($(env))
+
+    # Add specified name/value pairs
+    IFS=' '
+    PAIRS+=("$@")
 
     /bin/mkdir -p ${ENV_DIR}
     /bin/rm -f ${ENV_DIR}/*
 
-    for PAIR; do
+    for PAIR in "${PAIRS[@]}"; do
         if [[ $PAIR =~ ${RE_CONT_ENV} ]]; then
             echo "${BASH_REMATCH[3]}" >${ENV_DIR}/${BASH_REMATCH[2]}
         elif [[ $PAIR =~ ${RE_OTHER_ENV} ]]; then

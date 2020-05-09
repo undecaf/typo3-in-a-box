@@ -13,4 +13,4 @@ set -e
 
 # Copy the container environment to the runtime environment,
 # removing the leading 'T3_' from variable names
-set_env $(env)
+save_env
