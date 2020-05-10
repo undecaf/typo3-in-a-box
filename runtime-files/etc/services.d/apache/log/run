@@ -12,6 +12,7 @@ set -e
 
 # Send all log lines to stdout and save error log lines in $APACHE_LOGS/error, 
 # everything else in $APACHE_LOGS/access
+mkdir -p $APACHE_LOGS/{access,error}
 /bin/s6-log -b \
     - '+ (AH[[:digit:]]+|PHP [[:alnum:] ]+): ' n20 s5000000 $APACHE_LOGS/error \
     f n20 s5000000 $APACHE_LOGS/access \
