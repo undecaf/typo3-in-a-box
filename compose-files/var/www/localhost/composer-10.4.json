@@ -3,7 +3,6 @@
 	"description" : "Containerized TYPO3 10.4 in Composer mode",
 	"license": "GPL-2.0+",
 	"require": {
-        "typo3/minimal": "^10.4",
         "typo3/cms-about": "^10.4",
         "typo3/cms-adminpanel": "^10.4",
         "typo3/cms-backend": "^10.4",
