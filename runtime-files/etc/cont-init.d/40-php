@@ -39,7 +39,7 @@ while true; do
     err_exit "Unknown mode: '$MODE'"
 done
 
-ln -sf /etc/apache2/conf.d/mode.conf.${EXT} /etc/apache2/conf.d/mode.conf
+ln -sf /etc/apache2/conf.d/mode.conf.${EXT} /etc/apache2/conf.d/zz_mode.conf
 ln -sf /etc/php7/mode.${EXT}.template /etc/php7/conf.d/zz_50_mode.ini
 
 # Insert php.ini setting overrides
