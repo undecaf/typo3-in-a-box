@@ -1,5 +1,12 @@
 #!/bin/sh
 
+#
+# Builds the platform (but does not configure it yet)
+# ===================================================
+#
+
+set -e
+
 . /usr/local/lib/proxy.inc
 
 # Show what is being built
@@ -89,7 +96,7 @@ apk add \
     rsync \
     jq
 
-# Install s6 overlay
+# Install s6-overlay
 curl -s -L https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VER}/s6-overlay-amd64.tar.gz \
     | tar -xz -C /
 

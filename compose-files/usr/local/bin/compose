@@ -1,9 +1,16 @@
 #!/bin/sh
 
+#
+# Installs TYPO3 using Composer and puts the installation into an archive
+# =======================================================================
+#
+
+set -e
+
 # Show what is being composed
 echo $'\n*************** '"Composing TYPO3 $TYPO3_VER"
 
-# Set up the runtime environment
+# Set up the build environment
 . /etc/environment
 
 # Install Composer
@@ -24,7 +31,7 @@ su-exec $APACHE_USER /bin/sh \
 touch $TYPO3_DOCROOT/FIRST_INSTALL
 chown $APACHE_USER: $TYPO3_DOCROOT/FIRST_INSTALL
 
-# Move document root to $TYPO3_DOCROOT
+# Move document root to $TYPO3_DOCROOT, remove unused directories
 sed -i "s#/var/www/localhost/htdocs#$TYPO3_DOCROOT#" /etc/apache2/httpd.conf
 rm -rf $TYPO3_ROOT/htdocs $TYPO3_ROOT/cgi-bin
 
