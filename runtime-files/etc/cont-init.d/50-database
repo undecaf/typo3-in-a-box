@@ -14,10 +14,16 @@ set -e
 load_env
 
 # Accept abbreviated database types, ignore case
-while true; do
-    [[ -n $T3_DB_TYPE && mariadb == ${T3_DB_TYPE,,}* ]] && . /usr/local/lib/mysql.inc && exit
-    [[ -n $T3_DB_TYPE && postgresql == ${T3_DB_TYPE,,}* ]] && . /usr/local/lib/pg.inc && exit
-    [[ -z $T3_DB_TYPE || sqlite == ${T3_DB_TYPE,,}* ]] && . /usr/local/lib/sqlite.inc && exit
+T3_DB_TYPE=${T3_DB_TYPE:-sqlite}
+declare -A DB_TYPES
+DB_TYPES=([mariadb]= [postgresql]= [sqlite]=)
 
-    err_exit "Unknown database type: '$T3_DB_TYPE'"
+for T in ${!DB_TYPES[@]}; do
+    if [[ ${T} == ${T3_DB_TYPE,,}* ]]; then
+        # Set up the selected database
+        . /usr/local/lib/${T}.inc
+        exit
+    fi
 done
+
+err_exit "Unknown database type: '$T3_DB_TYPE'"

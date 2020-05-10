@@ -63,8 +63,7 @@ exec s6-envdir ${ENV_DIR} \
         --user=$MYSQL_USER \
         --syslog \
         --verbose=0 \
-        --skip-networking=0 \
-        >/dev/null
+        --skip-networking=0
 EOT
 
 chmod 755 $RUN_FILE
