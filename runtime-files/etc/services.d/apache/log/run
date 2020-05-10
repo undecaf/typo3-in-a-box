@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#
+# Starts logging for Apache
+# =========================
+#
+
+set -e
+
+# Get APACHE_LOGS
+. /etc/environment
+
+# Send all log lines to stdout and save error log lines in $APACHE_LOGS/error, 
+# everything else in $APACHE_LOGS/access
+/bin/s6-log -b \
+    - '+ (AH[[:digit:]]+|PHP [[:alnum:] ]+): ' n20 s5000000 $APACHE_LOGS/error \
+    f n20 s5000000 $APACHE_LOGS/access \
+    + 1

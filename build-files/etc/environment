@@ -16,6 +16,7 @@ export https_proxy=${https_proxy:-$HTTPS_PROXY}
 export APACHE_USER=apache
 export APACHE_CERT=$TYPO3_ROOT/.ssl/server
 export APACHE_CUSTOM_CERT=/etc/ssl/apache2/custom
+export APACHE_LOGS=/var/log/apache2
 
 export TYPO3_ROOT_GZ=$APACHE_HOME/typo3-root.tar.gz
 export TYPO3_DOCROOT=$TYPO3_ROOT/public
@@ -30,5 +31,3 @@ export MYSQL_RUN=/run/mysqld
 export PG_USER=postgres
 export PG_DATA=$TYPO3_DATADIR
 export PG_RUN=/run/postgresql
-
-# Saved container environment variables
