@@ -22,6 +22,13 @@ for T in ${!DB_TYPES[@]}; do
     if [[ ${T} == ${T3_DB_TYPE,,}* ]]; then
         # Set up the selected database
         . /usr/local/lib/${T}.inc
+
+        # Deactivate logging services for unselected databases
+        unset DB_TYPES[$T]
+        for U in ${!DB_TYPES[@]}; do
+            rm -rf /etc/services.d/${U}/
+        done
+
         exit
     fi
 done

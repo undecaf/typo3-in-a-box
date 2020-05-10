@@ -13,10 +13,12 @@ export http_proxy=${http_proxy:-$HTTP_PROXY}
 export https_proxy=${https_proxy:-$HTTPS_PROXY}
 
 # Derived environment variables
+export LOGS_BASE=/var/log
+
 export APACHE_USER=apache
 export APACHE_CERT=$TYPO3_ROOT/.ssl/server
 export APACHE_CUSTOM_CERT=/etc/ssl/apache2/custom
-export APACHE_LOGS=/var/log/apache2
+export APACHE_LOGS=$LOGS_BASE/apache2
 
 export TYPO3_ROOT_GZ=$APACHE_HOME/typo3-root.tar.gz
 export TYPO3_DOCROOT=$TYPO3_ROOT/public
@@ -27,6 +29,7 @@ export SQLITE_USER=$APACHE_USER
 export MYSQL_USER=mysql
 export MYSQL_DATA=$TYPO3_DATADIR
 export MYSQL_RUN=/run/mysqld
+export MYSQL_LOGS=$LOGS_BASE/mysql
 
 export PG_USER=postgres
 export PG_DATA=$TYPO3_DATADIR

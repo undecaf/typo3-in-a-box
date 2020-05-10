@@ -58,12 +58,13 @@ cat >$RUN_FILE <<EOT
 . /usr/local/lib/env.inc
 
 exec s6-envdir ${ENV_DIR} \
-    mysqld_safe \
+    mysqld \
         --datadir=$MYSQL_DATA \
         --user=$MYSQL_USER \
-        --syslog \
+        --log-warnings=2 \
         --verbose=0 \
-        --skip-networking=0
+        --skip-networking=0 \
+        2>&1
 EOT
 
 chmod 755 $RUN_FILE

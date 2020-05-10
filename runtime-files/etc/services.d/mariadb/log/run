@@ -1,0 +1,17 @@
+#!/bin/sh
+
+#
+# Starts logging for MariaDB
+# ==========================
+#
+
+set -e
+
+# Get MYSQL_LOGS
+. /etc/environment
+
+# Send all log lines to stdout and save log lines in $MYSQL_LOGS
+mkdir -p $MYSQL_LOGS
+/bin/s6-log -b \
+    n20 s5000000 $MYSQL_LOGS \
+    + 1
