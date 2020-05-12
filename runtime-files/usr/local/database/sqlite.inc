@@ -21,4 +21,6 @@ if [ ! -d $SQLITE_LINK ]; then
     mkdir -p $(dirname $SQLITE_LINK)
     ln -s $SQLITE_DATA $SQLITE_LINK
     chown -R $SQLITE_USER: $(dirname $SQLITE_LINK)
+
+    log 'OK'
 fi

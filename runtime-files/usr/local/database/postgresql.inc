@@ -23,7 +23,7 @@ if [ ! -f $PG_DATA/PG_VERSION ]; then
     trap "rm -f $PWFILE" EXIT
     echo "$T3_DB_ROOT_PW" >$PWFILE
     su-exec $PG_USER \
-    initdb --pgdata=$PG_DATA --auth=md5 --username=$PG_USER --pwfile=$PWFILE
+    initdb --pgdata=$PG_DATA --auth=md5 --username=$PG_USER --pwfile=$PWFILE | log
 
     # Create the TYPO3 database unless it is named 'postgres'
     test "$T3_DB_NAME" = postgres || \

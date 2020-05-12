@@ -23,7 +23,7 @@ if [ ! -d $MYSQL_DATA/mysql ]; then
         --user=$MYSQL_USER \
         --datadir=$MYSQL_DATA \
         2>/dev/null \
-        | awk '/^[[:blank:]]*$/ { bl = 1 } !bl { print }'
+        | awk '/^[[:blank:]]*$/ { bl = 1 } !bl { print }' | log
 
     # Create the TYPO3 database and the users
     mysqld \
