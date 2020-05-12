@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #
 # Runtime environment utils
 # =========================
@@ -54,9 +56,14 @@ save_env() {
 
     for PAIR in "${PAIRS[@]}"; do
         if [[ $PAIR =~ ${RE_CONT_ENV} ]]; then
+            # Set a container environment variable
             echo "${BASH_REMATCH[3]}" >${ENV_DIR}/${BASH_REMATCH[2]}
         elif [[ $PAIR =~ ${RE_OTHER_ENV} ]]; then
+            # Set a plain environment variable
             echo "${BASH_REMATCH[2]}" >${ENV_DIR}/${BASH_REMATCH[1]}
+        else
+            # Unset a plain environment variable
+            rm -f "${ENV_DIR}/${PAIR}"
         fi
     done
 }
