@@ -48,16 +48,17 @@ EOT
             )
 fi
 
-# Have MariaDB started as a service by s6
-RUN_FILE=/etc/services.d/mariadb/run
-mkdir -p $(dirname $RUN_FILE)
+SERVICE_DIR=/etc/services.d/mariadb
+mkdir -p $SERVICE_DIR/log
 
-cat >$RUN_FILE <<EOT
+# Have MariaDB started as a service by s6
+cat >$SERVICE_DIR/run <<EOT
 #!/bin/bash
 
+set -e
 . /usr/local/lib/env.inc
 
-exec s6-envdir ${ENV_DIR} \
+exec /bin/s6-envdir ${ENV_DIR} \
     mysqld \
         --datadir=$MYSQL_DATA \
         --user=$MYSQL_USER \
@@ -67,4 +68,17 @@ exec s6-envdir ${ENV_DIR} \
         2>&1
 EOT
 
-chmod 755 $RUN_FILE
+# Send all log lines to stdout and save them in $MYSQL_LOGS
+cat >$SERVICE_DIR/log/run <<EOT
+#!/bin/sh
+
+set -e
+. /etc/environment
+
+mkdir -p $MYSQL_LOGS
+/bin/s6-log -b \
+    n20 s5000000 $MYSQL_LOGS \
+    + 1
+EOT
+
+chmod 755 $SERVICE_DIR/{,log/}run

@@ -34,3 +34,4 @@ export MYSQL_LOGS=$LOGS_BASE/mysql
 export PG_USER=postgres
 export PG_DATA=$TYPO3_DATADIR
 export PG_RUN=/run/postgresql
+export PG_LOGS=$LOGS_BASE/pgsql

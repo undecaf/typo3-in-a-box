@@ -14,23 +14,11 @@ set -e
 load_env
 
 # Accept abbreviated database types, ignore case
-T3_DB_TYPE=${T3_DB_TYPE:-sqlite}
-declare -A DB_TYPES
-DB_TYPES=([mariadb]= [postgresql]= [sqlite]=)
+for DB_FILE in /usr/local/database/*.inc; do
+    DB_TYPE=$(basename ${DB_FILE%.*})
 
-for T in ${!DB_TYPES[@]}; do
-    if [[ ${T} == ${T3_DB_TYPE,,}* ]]; then
-        # Set up the selected database
-        . /usr/local/lib/${T}.inc
-
-        # Deactivate logging services for unselected databases
-        unset DB_TYPES[$T]
-        for U in ${!DB_TYPES[@]}; do
-            rm -rf /etc/services.d/${U}/
-        done
-
-        exit
-    fi
+    # Use the matching include file to initialize the selected database
+    [[ ${DB_TYPE} == ${T3_DB_TYPE,,}* ]] && { . $DB_FILE && exit || err_exit "Initializing '$DB_TYPE' failed"; }
 done
 
 err_exit "Unknown database type: '$T3_DB_TYPE'"
