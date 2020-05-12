@@ -166,15 +166,8 @@ echo $'\n*************** Logging' >&2
 
 echo "Verifying TYPO3 version and log output"
 t3_ run
-sleep $SUCCESS_TIMEOUT    # for TYPO3 8.7, MariaDB startup will take that long
-
-t3_ logs -f >$TEMP_FILE &
-PID=$!
-t3_ env
-sleep $FAILURE_TIMEOUT
-kill $PID
-grep -q ' Apache/TYPO3' $TEMP_FILE
-grep -q " TYPO3 $TYPO3_VER" $TEMP_FILE
+verify_logs $SUCCESS_TIMEOUT ' Apache/TYPO3'
+verify_logs $SUCCESS_TIMEOUT " TYPO3 $TYPO3_VER"
 cleanup
 
 
@@ -431,6 +424,21 @@ for D in "${DIRS[@]}"; do
     grep -q -F "Restored '$D'" $TEMP_FILE
 done
 
+cleanup
+
+echo "Verifying setting, changing and unsetting of arbitrary variables"
+t3_ run
+verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+
+t3_ env A=foo BC=bar DEF=baz
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="foo"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC="bar"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF="baz"'
+
+t3_ env A=42 BC= DEF
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="42"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC=""'
+! verify_cmd_success $FAILURE_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF='
 cleanup
 
 
