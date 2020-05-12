@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #
 # Sets up MariaDB with the requested configuration
 # ================================================

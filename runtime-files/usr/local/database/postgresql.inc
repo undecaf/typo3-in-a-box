@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #
 # Sets up PostgreSQL with the requested configuration
 # ===================================================

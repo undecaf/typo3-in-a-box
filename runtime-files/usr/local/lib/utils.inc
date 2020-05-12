@@ -1,3 +1,5 @@
+#!/bin/sh
+
 #
 # Runtime initialization utils
 # ============================
