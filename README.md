@@ -658,23 +658,21 @@ computed relative to the client machine's time.
 
 ### `t3 env`
 
-Modifies the environment of a running TYPO3 container by setting
-[container environment variables](#container-environment-variables):
+Modifies the environment of a running TYPO3 container:
 
 ```bash
-$ t3 env [option]... [NAME=VALUE]...
+$ t3 env [option]... [NAME=VALUE | NAME= | NAME]...
 ```
 
-If no `NAME=VALUE` pairs were specified then this command shows the current
-enrivonment.
-
-__Container environment variables:__
-control the time zone and language inside the container, TYPO3 mode, PHP settings and Composer operation; see [this table](#container-environment-variables) for details.
-
-Use option&nbsp;`NAME=VALUE` to assign a value to a container environment variable.
-This option may appear multiple times.
+Use option&nbsp;`NAME=VALUE` to assign a value to an environment variable.
+`NAME=` sets the variable to an empty value, and `NAME` (without an `=`)
+unsets (deletes) the variable.
 
 Initial values can be assigned by command [`t3 run`](#t3-run).
+
+__Container environment variables:__
+this command can be used to change the TYPO3 mode and to modify PHP settings
+in a running container; see [this table](#container-environment-variables) for details.
 
 ---
 
@@ -821,6 +819,8 @@ the `t3 env` command.
 -   the [Alpine Linux](https://alpinelinux.org/), [TYPO3](https://typo3.org/),
     [MariaDB](https://mariadb.org/) and [PostgreSQL](https://www.postgresql.org/)
     communities
+-   the authors of the [s6 project](http://skarnet.org/software/s6/) and the
+    [s6-overlay](https://github.com/just-containers/s6-overlay) for container images
 -   Derick Rethans for [Xdebug](https://xdebug.org/)
 -   Martin Pärtel for [bindfs](https://bindfs.org/) and the makers of
     [osxfuse](https://github.com/osxfuse/osxfuse)
