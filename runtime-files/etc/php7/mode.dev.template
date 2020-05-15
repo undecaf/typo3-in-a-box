@@ -2,7 +2,7 @@
 display_errors=On
 display_startup_errors=On
 log_errors=On
-error_log=/dev/stdout
+error_log=syslog
 error_reporting=E_ALL
 max_input_time=60
 output_buffering=4096

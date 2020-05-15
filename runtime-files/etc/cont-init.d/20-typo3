@@ -23,13 +23,13 @@ if CURRENT_TYPO3_VER=$(jq --raw-output '[.packages|.[]|{(.name): .version}]|add|
     TYPO3_VER=$CURRENT_TYPO3_VER
 fi
 
-log "TYPO3 ${TYPO3_VER}, container image tags: $DEPLOY_TAGS (created on $(date --reference ${TYPO3_ROOT} --rfc-2822))"
+log_info "TYPO3 ${TYPO3_VER}, container image tags: $DEPLOY_TAGS (created on $(date --reference ${TYPO3_ROOT} --rfc-2822))"
 
 # Deactivate Composer Mode if so requested
 if [ -n "$T3_COMPOSER_MODE" ]; then
     if [ -f $TYPO3_ROOT/composer.json ] && \
             grep -q -E 'define *\( *'"'TYPO3_COMPOSER_MODE'"' *, *TRUE *\)' $TYPO3_ROOT/vendor/typo3/autoload-include.php; then
-        log 'TYPO3 extensions have to be added/removed by Composer (Composer Mode)'
+        log_info 'TYPO3 extensions have to be added/removed by Composer (Composer Mode)'
 
     else
         err_exit 'Cannot enable Composer Mode: it is already disabled in an existing volume'
@@ -40,5 +40,5 @@ else
         -e "s/define *\( *'TYPO3_COMPOSER_MODE' *, *TRUE *\) *;/define('TYPO3_COMPOSER_MODE', FALSE);/" \
         -i $TYPO3_ROOT/vendor/typo3/autoload-include.php
     rm -rf $TYPO3_ROOT/composer.* $APACHE_HOME/.composer
-    log 'TYPO3 extensions have to be added/removed by the TYPO3 Extension Manager'
+    log_info 'TYPO3 extensions have to be added/removed by the TYPO3 Extension Manager'
 fi

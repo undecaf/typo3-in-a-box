@@ -17,12 +17,12 @@ chmod 700 $SQLITE_DATA
 SQLITE_LINK=$TYPO3_ROOT/var/sqlite
 
 if [ ! -d $SQLITE_LINK ]; then
-    log 'Initializing SQLite'
+    log_info 'Initializing SQLite'
 
     # Point the SQLite link at the database volume
     mkdir -p $(dirname $SQLITE_LINK)
     ln -s $SQLITE_DATA $SQLITE_LINK
     chown -R $SQLITE_USER: $(dirname $SQLITE_LINK)
 
-    log 'OK'
+    log_info 'OK'
 fi

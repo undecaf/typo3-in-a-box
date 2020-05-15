@@ -14,7 +14,7 @@ set -e
 load_env
 
 # Display version numbers
-log "Alpine Linux $(cat /etc/alpine-release)"
+log_info "Alpine Linux $(cat /etc/alpine-release)"
 
 # Try to determine the local timezone if none was specified
 if [ -z "$T3_TIMEZONE" ]; then
@@ -25,10 +25,10 @@ set_var T3_TIMEZONE $T3_TIMEZONE
 # Use timezone if specified and supported
 if [ -n "$T3_TIMEZONE" -a -f "/usr/share/zoneinfo/${T3_TIMEZONE}" ]; then
     cp /usr/share/zoneinfo/${T3_TIMEZONE} /etc/localtime
-    log "Timezone: $T3_TIMEZONE"
+    log_info "Timezone: $T3_TIMEZONE"
 else
-    log "Timezone: UTC"
+    log_info "Timezone: UTC"
 fi
 
 # Show locale
-log "Locale: $LANG"
+log_info "Locale: $LANG"

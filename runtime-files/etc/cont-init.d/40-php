@@ -16,21 +16,21 @@ load_env
 # Select developer/XDebug/production mode, accept abbreviations and ignore case
 while true; do
     if [[ -n $MODE && dev == ${MODE,,}* ]]; then
-        log "Apache/TYPO3 in developer mode"
+        log_info "Apache/TYPO3 in developer mode"
         EXT=dev
         XDEBUG=
         break
     fi
 
     if [[ -n $MODE && xdebug == ${MODE,,}* ]]; then
-        log "Apache/TYPO3 in developer mode with XDebug support"
+        log_info "Apache/TYPO3 in developer mode with XDebug support"
         EXT=dev
         XDEBUG=y
         break
     fi
 
     if [[ -z $MODE || prod == ${MODE,,}* ]]; then
-        log "Apache/TYPO3 in production mode"
+        log_info "Apache/TYPO3 in production mode"
         EXT=prod
         XDEBUG=
         break
@@ -51,7 +51,7 @@ printenv \
 
 if [ -s /etc/php7/conf.d/zz_99_overrides.ini ]; then
     while read -r LINE; do
-    	log "php.ini override: $LINE"
+    	log_info "php.ini override: $LINE"
     done </etc/php7/conf.d/zz_99_overrides.ini
 fi
 
@@ -62,22 +62,22 @@ if [ -n "$XDEBUG" ]; then
     test -n "$HOST_IP" && set_var REMOTE_CONNECT_BACK 0 || set_var REMOTE_CONNECT_BACK 1
 
 	cat /etc/php7/xdebug.ini.template | envsubst > /etc/php7/conf.d/xdebug.ini
-	log "XDebug enabled"
+	log_info "XDebug enabled"
     while read -r LINE; do
-        log "php.ini XDebug: $LINE"
+        log_info "php.ini XDebug: $LINE"
     done < <(grep -E '^xdebug\.remote_(host|connect_back)=' /etc/php7/conf.d/xdebug.ini)
 
 else
 	truncate -s 0 /etc/php7/conf.d/xdebug.ini
-	log "XDebug disabled"
+	log_info "XDebug disabled"
 fi
 
 # Show the list of directories to be excluded from Composer operations
 if [ -n "$COMPOSER_EXCLUDE" ]; then
     IFS=: read -ra DIRS <<< "$COMPOSER_EXCLUDE"
     for D in "${DIRS[@]}"; do
-        log "Excluded from Composer: $D"
+        log_info "Excluded from Composer: $D"
     done
 fi
 
-log "$(php --version)"
+log_info "$(php --version)"

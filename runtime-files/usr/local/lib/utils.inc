@@ -7,32 +7,42 @@
 # Usage: source THIS_FILE
 #
 
-# Logs a message to stdout in the same format as s6 would.
+# syslog priorities
+LOG_INFO=local0.info
+LOG_ERROR=${LOG_INFO/.info/.error}
+
+
+# --------------------------------------------------------------------------
+
+# Sends a message to syslog with priority $LOG_INFO and also to stdout if 
+# not run by the init process. A separate log entry is created from each
+# message line.
 #
 # Arguments:
 #   $1   optional message; if omitted then the message is
 #        obtained from stdin
 #
-log() {
+log_info() {
     if [ -n "$1" ]; then
-        echo "$1" | log
+        echo "$1" | log_info
     else
-        local S6_LOG_HEADER='['"$(basename $(dirname $0))"']'" $(basename $0):"
-        awk '{ print "'"$S6_LOG_HEADER"'", $0 }'
+        while read LINE; do
+            test $$ -ne 1 && echo "    $LINE" || true
+            logger -p $LOG_INFO "$LINE"
+        done
     fi
 }
 
 
 # --------------------------------------------------------------------------
 
-# Logs a message to stderr and exits with the specified return status
+# Sends a message to syslog with priority $LOG_ERROR and also to stderr if
+# not run by the init process. Exits with the specified return status
 # (or with 1).
 #
-# Calls:
-#   log
-#
 err_exit() {
-    log "$1" >&2
+    test $$ -ne 1 && echo "$1" >&2 || true
+    logger -p $LOG_ERROR "$1"
     exit ${2:-1}
 }
 
@@ -64,7 +74,7 @@ is_podman_container() {
 #   UNBOUND_MARKER    basename of marker file placed in yet unbound volumes
 #
 # Calls:
-#   log
+#   log_info
 #   is_podman_container
 #
 setup_volume() {
@@ -73,12 +83,12 @@ setup_volume() {
     # First 't3 run' of a new TYPO3 instance, and no owner mapping requested?
     # TODO Use this branch also if a Docker container Desktop for Windows or macOS
     if [ -f $1/$UNBOUND_MARKER -a -z "$3" ]; then
-        log "Setting up $1"
+        log_info "Setting up $1"
 
         # Unpack $4 if specified
         mkdir -p $1
         if [ -f "$4" ]; then
-            log "Unpacking $4 into $1"
+            log_info "Unpacking $4 into $1"
             tar -xzf $4 -C $1
         fi
 
@@ -94,26 +104,26 @@ setup_volume() {
                 # For Podman in rootless mode, make root the volume owner;
                 # such a volume appears at the host as being owned by the current user.
                 # Use bindfs later to make $2 appear as the volume owner inside this container
-                log "Setting up $1 as bind-mounted volume for the current Podman user"
+                log_info "Setting up $1 as bind-mounted volume for the current Podman user"
                 OWNER=root
 
             else
                 # For Docker, set UID and GID of $2 equal to the UID and GID
                 # of the current owner of $1
-                log "Setting up $1 as bind-mounted volume for the current owner"
+                log_info "Setting up $1 as bind-mounted volume for the current owner"
                 usermod -u $(stat -c '%u' $1) -o $2
                 groupmod -g $(stat -c '%g' $1) -o $2
             fi
 
         else
             # Bind-mounted volume without owner mapping
-            log "Setting up $1 as bind-mounted volume"
+            log_info "Setting up $1 as bind-mounted volume"
         fi
 
         # Unpack $4 if specified
         mkdir -p $1
         if [ -f "$4" ]; then
-            log "Unpacking $4 into $1 (this could take some time)"
+            log_info "Unpacking $4 into $1 (this could take some time)"
             tar -xzf $4 -C $1
         fi
 
@@ -129,7 +139,7 @@ setup_volume() {
             groupmod -g $(stat -c '%g' $1) -o $2
         fi
 
-        log "$1 is already populated, owner: $(stat -c '%U' $1)"
+        log_info "$1 is already populated, owner: $(stat -c '%U' $1)"
     fi
 
     # Remove the marker

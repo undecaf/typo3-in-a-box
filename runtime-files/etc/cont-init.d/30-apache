@@ -35,7 +35,7 @@ set -e
 # Load the runtime environment
 load_env
 
-log "$(httpd -v)"
+log_info "$(httpd -v)"
 
 # Disable the default logging configuration
 sed -r -i -e 's/^\s*(Error|Custom)Log\s/#\0/' /etc/apache2/httpd.conf
@@ -55,12 +55,12 @@ if [ -f $APACHE_CUSTOM_CERT.key -a -f $APACHE_CUSTOM_CERT.pem ]; then
     ln -sf $APACHE_CUSTOM_CERT.pem $APACHE_CERT.pem
 
     test_self_signed && SELF_SIGNED='self-signed ' || SELF_SIGNED=
-    log "Using a ${SELF_SIGNED}custom SSL certificate, CN=$(cert_info 'subject')"
+    log_info "Using a ${SELF_SIGNED}custom SSL certificate, CN=$(cert_info 'subject')"
 
 else
     # Create a self-signed certificate for $HOSTNAME unless one already exists
     if [ -f $APACHE_CERT.key -a -f $APACHE_CERT.pem ] && [ "$(cert_info 'subject')" = "$HOSTNAME" ]; then
-        log "Using existing SSL certificate, CN=$HOSTNAME"
+        log_info "Using existing SSL certificate, CN=$HOSTNAME"
 
     else
         # No certificate found that matches the current $HOSTNAME
@@ -81,7 +81,7 @@ else
         rm $APACHE_CERT.csr
 
         chown -R $APACHE_USER: $(dirname $APACHE_CERT)
-        log "Created a self-signed SSL certificate, CN=$HOSTNAME"
+        log_info "Created a self-signed SSL certificate, CN=$HOSTNAME"
     fi
 fi
 

@@ -18,14 +18,14 @@ chown -R $MYSQL_USER: $MYSQL_RUN
 
 # Initialize MariaDB if necessary
 if [ ! -d $MYSQL_DATA/mysql ]; then
-    log 'Initializing MariaDB'
+    log_info 'Initializing MariaDB'
 
     # Initialize MariaDB and suppress the sermon following the first blank line
     mysql_install_db \
         --user=$MYSQL_USER \
         --datadir=$MYSQL_DATA \
         2>/dev/null \
-        | awk '/^[[:blank:]]*$/ { bl = 1 } !bl { print }' | log
+        | awk '/^[[:blank:]]*$/ { bl = 1 } !bl { print }' | log_info
 
     # Create the TYPO3 database and the users
     mysqld \
@@ -50,10 +50,10 @@ EOT
             )
 fi
 
-SERVICE_DIR=/etc/services.d/mariadb
-mkdir -p $SERVICE_DIR/log
+SERVICE_DIR=/etc/services.d/30-mariadb
+mkdir -p $SERVICE_DIR
 
-# Have MariaDB started as a service by s6
+# Let s6 start MariaDB as a service
 cat >$SERVICE_DIR/run <<EOT
 #!/bin/bash
 
@@ -61,26 +61,14 @@ set -e
 . /usr/local/lib/env.inc
 
 exec /bin/s6-envdir ${ENV_DIR} \
-    mysqld \
+    mysqld_safe \
         --datadir=$MYSQL_DATA \
         --user=$MYSQL_USER \
+        --syslog \
         --log-warnings=2 \
         --verbose=0 \
         --skip-networking=0 \
-        2>&1
+        >/dev/null
 EOT
 
-# Send all log lines to stdout and save them in $MYSQL_LOGS
-cat >$SERVICE_DIR/log/run <<EOT
-#!/bin/sh
-
-set -e
-. /etc/environment
-
-mkdir -p $MYSQL_LOGS
-/bin/s6-log -b \
-    n20 s5000000 $MYSQL_LOGS \
-    + 1
-EOT
-
-chmod 755 $SERVICE_DIR/{,log/}run
+chmod 755 $SERVICE_DIR/run

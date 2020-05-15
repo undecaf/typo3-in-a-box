@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#
+# Starts syslog
+# =============
+#
+
+set -e
+
+. /usr/local/lib/env.inc
+
+# Load the runtime environment
+load_env
+
+exec s6-envdir ${ENV_DIR} syslogd -O - -t -R $HOST_IP:514 -L -n
