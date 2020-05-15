@@ -16,5 +16,5 @@ mkdir -p $APACHE_LOGS/access $APACHE_LOGS/error
 
 /bin/s6-log -b \
     - '+ (AH[[:digit:]]+|PHP [[:alnum:] ]+): ' n20 s5000000 $APACHE_LOGS/error \
-    f n20 s5000000 $APACHE_LOGS/access \
-    + 1
+    f n20 s5000000 T $APACHE_LOGS/access \
+    + T 1

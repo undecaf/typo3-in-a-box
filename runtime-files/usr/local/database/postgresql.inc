@@ -63,7 +63,7 @@ set -e
 /bin/s6-envdir ${ENV_DIR} \
     /bin/redirfd -cn 2 /dev/stdout \
     su-exec $PG_USER \
-    postgres -D $PG_DATA --listen_addresses='*'
+    postgres -D $PG_DATA --listen_addresses='*' --log_line_prefix=''
 EOT
 
 # Send all log lines to stdout and save them in $PG_LOGS
@@ -75,8 +75,8 @@ set -e
 
 mkdir -p $PG_LOGS
 /bin/s6-log -b \
-    n20 s5000000 $PG_LOGS \
-    + 1
+    n20 s5000000 T $PG_LOGS \
+    + T 1
 EOT
 
 chmod 755 $SERVICE_DIR/{,log/}run
