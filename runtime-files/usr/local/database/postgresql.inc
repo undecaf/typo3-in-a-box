@@ -6,7 +6,8 @@
 #
 # Usage: source THIS_FILE
 #
-# Requires: source ./utils.inc
+# Requires: source /usr/local/lib/utils.inc
+#           source /usr/local/lib/env.inc
 #
 
 # Set up $PG_DATA as a volume (bind-mounted or unbound)
@@ -67,14 +68,11 @@ mkdir -p $SERVICE_DIR
 
 # Let s6 start PostgreSQL as a service
 cat >$SERVICE_DIR/run <<EOT
-#!/bin/bash
+#!/bin/sh
 
-set -e
-. /usr/local/lib/env.inc
-
-/bin/s6-envdir ${ENV_DIR} \
-    /bin/redirfd -cn 2 /dev/stdout \
-    su-exec $PG_USER \
+$(which s6-envdir) ${ENV_DIR} \
+    $(which redirfd) -cn 2 /dev/stdout \
+    $(which su-exec) $PG_USER \
     postgres \
         -D $PG_DATA \
         --log_destination=syslog \

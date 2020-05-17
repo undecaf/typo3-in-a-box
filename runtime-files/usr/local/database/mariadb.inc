@@ -6,7 +6,8 @@
 #
 # Usage: source THIS_FILE
 #
-# Requires: source ./utils.inc
+# Requires: source /usr/local/lib/utils.inc
+#           source /usr/local/lib/env.inc
 #
 
 # Set up $MYSQL_DATA as a volume (bind-mounted or unbound)
@@ -51,24 +52,39 @@ EOT
 fi
 
 SERVICE_DIR=/etc/services.d/30-mariadb
-mkdir -p $SERVICE_DIR
+mkdir -p $SERVICE_DIR/log
 
 # Let s6 start MariaDB as a service
+# and write log lines to stdout
 cat >$SERVICE_DIR/run <<EOT
-#!/bin/bash
+#!/bin/sh
 
-set -e
-. /usr/local/lib/env.inc
-
-exec /bin/s6-envdir ${ENV_DIR} \
-    mysqld_safe \
+exec $(which s6-envdir) ${ENV_DIR} \
+    $(which mysqld) \
         --datadir=$MYSQL_DATA \
         --user=$MYSQL_USER \
-        --syslog \
         --log-warnings=2 \
         --verbose=0 \
         --skip-networking=0 \
-        >/dev/null
+        2>&1
 EOT
 
-chmod 755 $SERVICE_DIR/run
+# Read log lines from stdin, remove the timestamps
+# and send them to syslog as $MYSQL_USER
+cat >$SERVICE_DIR/log/run <<EOT
+#!/bin/sh
+
+$(which su-exec) $MYSQL_USER \
+    $(which gawk) '{ 
+        gsub("^[[:digit:] :-]*", "");
+        switch (\$0) {
+            case /^\\[Note\\]/: { SEVERITY = "NOTICE"; break; }
+            case /^\\[Warning\\]/: { SEVERITY = "WARNING"; break; }
+            case /^\\[/:  { SEVERITY = "ERROR"; break; }
+            default: { SEVERITY = "INFO"; break; }
+        };
+        system("$(which logger) -p local2." SEVERITY " \\"" \$0 "\\"") 
+    }'
+EOT
+
+chmod 755 $SERVICE_DIR/{,log/}run

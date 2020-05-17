@@ -86,7 +86,7 @@ apk add \
 	bash \
     su-exec \
     shadow \
-    syslog-ng \
+    gawk \
 	nano \
     git \
     gettext \

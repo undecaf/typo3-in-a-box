@@ -6,7 +6,7 @@
 #
 # Usage: source THIS_FILE
 #
-# Requires: source ./utils.inc
+# Requires: source /usr/local/lib/utils.inc
 #
 
 # Set up $SQLITE_DATA as a volume (bind-mounted or unbound)
