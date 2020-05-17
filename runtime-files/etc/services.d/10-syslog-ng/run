@@ -1,0 +1,76 @@
+#!/bin/bash
+
+#
+# Configures and starts syslog-ng
+# ===============================
+#
+
+set -e
+
+. /usr/local/lib/utils.inc
+. /usr/local/lib/env.inc
+
+# Load the runtime environment
+load_env
+
+# Remove empty log files installed by syslog-ng
+rm -f /var/log/*.log
+
+# Build the configuration file
+mkdir -p /etc/syslog-ng
+cat >/etc/syslog-ng/typo3.conf <<EOT
+@version:3.22
+
+options {
+    # Create destination directories if missing
+    create_dirs(no);
+    dir_perm(0755);
+
+    # Default owner, group, and permissions for log files
+    owner(root);
+    group(wheel);
+    perm(0640);
+
+    # Log a MARK line every hour
+    mark_freq(3600);
+
+    # Log a STATS line every 12 hours
+    stats_freq(43200);
+
+    # Wait 5s before re-establishing a died connection
+    time_reopen(5);
+
+    # Avoid DNS lookups
+    use_dns(no);
+    dns-cache(no);
+};
+
+
+template t_common {
+    template("\${ISODATE} \${LEVEL} \${MSGHDR}\${MSG}\\n");
+};
+
+rewrite r_remove_mysql_timestamp {
+    subst('^[[:digit:][:space:]:-]*', "", value("MESSAGE"));
+};
+
+source s_local { internal(); system(); };
+
+source s_apache_access { pipe("$APACHE_LOGS/access"); };
+
+source s_apache_error { pipe("$APACHE_LOGS/error"); };
+
+source s_mysql_error { pipe("$MYSQL_LOGS/error" flags(no-parse) program-override("mysql")); };
+
+log { 
+    source(s_local);
+    source(s_apache_access);
+    source(s_apache_error);
+    source(s_mysql_error);
+    rewrite(r_remove_mysql_timestamp);
+    destination { file("/dev/stdout" template(t_common)); };
+    destination { network("$HOST_IP" transport("udp") template(t_common)); };
+};
+EOT
+
+exec $(which syslog-ng) -F -f /etc/syslog-ng/typo3.conf

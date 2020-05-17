@@ -52,12 +52,16 @@ EOT
 fi
 
 SERVICE_DIR=/etc/services.d/30-mariadb
-mkdir -p $SERVICE_DIR/log
+mkdir -p $SERVICE_DIR
 
 # Let s6 start MariaDB as a service
-# and write log lines to stdout
+# and write the error log to a FIFO
 cat >$SERVICE_DIR/run <<EOT
 #!/bin/sh
+
+mkdir -p $MYSQL_LOGS
+mkfifo $MYSQL_LOGS/error
+chown ${MYSQL_USER}: $MYSQL_LOGS $MYSQL_LOGS/error
 
 exec $(which s6-envdir) ${ENV_DIR} \
     $(which mysqld) \
@@ -66,25 +70,7 @@ exec $(which s6-envdir) ${ENV_DIR} \
         --log-warnings=2 \
         --verbose=0 \
         --skip-networking=0 \
-        2>&1
+        2>$MYSQL_LOGS/error
 EOT
 
-# Read log lines from stdin, remove the timestamps
-# and send them to syslog as $MYSQL_USER
-cat >$SERVICE_DIR/log/run <<EOT
-#!/bin/sh
-
-$(which su-exec) $MYSQL_USER \
-    $(which gawk) '{ 
-        gsub("^[[:digit:] :-]*", "");
-        switch (\$0) {
-            case /^\\[Note\\]/: { SEVERITY = "NOTICE"; break; }
-            case /^\\[Warning\\]/: { SEVERITY = "WARNING"; break; }
-            case /^\\[/:  { SEVERITY = "ERROR"; break; }
-            default: { SEVERITY = "INFO"; break; }
-        };
-        system("$(which logger) -p local2." SEVERITY " \\"" \$0 "\\"") 
-    }'
-EOT
-
-chmod 755 $SERVICE_DIR/{,log/}run
+chmod 755 $SERVICE_DIR/run

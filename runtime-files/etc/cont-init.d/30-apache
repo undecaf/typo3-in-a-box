@@ -37,8 +37,10 @@ load_env
 
 log_info "$(httpd -v)"
 
-# Disable the default logging configuration
+# Disable the default logging configuration and create FIFOs
 sed -r -i -e 's/^\s*(Error|Custom)Log\s/#\0/' /etc/apache2/httpd.conf
+mkdir -p $APACHE_LOGS
+mkfifo $APACHE_LOGS/{access,error}
 
 # Disable the default SSL configuration
 mv /etc/apache2/conf.d/ssl.conf /etc/apache2/conf.d/ssl.conf.disabled
