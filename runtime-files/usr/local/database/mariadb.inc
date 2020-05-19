@@ -52,11 +52,24 @@ EOT
 fi
 
 SERVICE_DIR=/etc/services.d/30-mariadb
-mkdir -p $SERVICE_DIR
+mkdir -p $SERVICE_DIR/log
 
-# Let s6 start MariaDB as a service,
-# preprocess the error log and send it to syslog-ng
+# Let s6 start MariaDB as a service
+# and send the error log to stdout
 cat >$SERVICE_DIR/run <<EOT
+#!/bin/sh
+
+exec $(which s6-envdir) ${ENV_DIR} \
+    $(which mysqld) \
+        --datadir=$MYSQL_DATA \
+        --user=$MYSQL_USER \
+        --log-warnings=2 \
+        --verbose=0 \
+        --skip-networking=0 \
+        2>&1
+EOT
+
+cat >$SERVICE_DIR/log/run <<EOT
 #!/bin/bash
 
 set -e
@@ -68,56 +81,49 @@ PRIO_WARN=\$((FACILITY*16+4))
 PRIO_ERROR=\$((FACILITY*16+3))
 PRIO_INFO=\$((FACILITY*16+6))
 
-# Ignores the timestamp, saves optional severity and message
+# Ignores the timestamp, groups optional severity and message
 RE='^[[:digit:] :-]*(\\[([^\\[]+)])?[[:space:]]*(.*)\$'
 
-# Preprocesses MySQL log messages for syslog-ng
-preprocess() {
-    local PRIO
-    local MSG
-    local PROG="mysqld[\$(pidof mysqld)]"
+MYSQLD_PID=   # will be known at the first log line
 
-    while IFS= read -r; do
-        if [[ "\$REPLY" =~ \$RE ]]; then
-            # Extract message
-            MSG=\${BASH_REMATCH[3]}
-
-            # Convert optional MySQL severity to a syslog priority
-            shopt -s nocasematch
-            case "\${BASH_REMATCH[2]}" in
-                not*)
-                    PRIO=\$PRIO_NOTICE
-                    ;;
-                warn*)
-                    PRIO=\$PRIO_WARN
-                    ;;
-                err*)
-                    PRIO=\$PRIO_ERROR
-                    ;;
-                *)
-                    PRIO=\$PRIO_INFO
-                    ;;
-            esac
-
-            echo "<\$PRIO> \$PROG: \$MSG" >>$MYSQL_LOGS/error
-        fi
-    done
-}
-
-# FIFO passing preprocessed log messages to syslog-ng
+# FIFO passing preprocessed log lines to syslog-ng
 mkdir -p $MYSQL_LOGS
 mkfifo $MYSQL_LOGS/error
 chown -R ${MYSQL_USER}: $MYSQL_LOGS
 
-# Start MariaDB
-exec $(which s6-envdir) ${ENV_DIR} \
-    $(which mysqld) \
-        --datadir=$MYSQL_DATA \
-        --user=$MYSQL_USER \
-        --log-warnings=2 \
-        --verbose=0 \
-        --skip-networking=0 \
-        2>&1 | preprocess
+# Preprocess MySQL log lines and pass to syslog-ng
+shopt -s nocasematch
+while IFS= read -r; do
+    if [[ "\$REPLY" =~ \$RE ]]; then
+        # Get the PID of mysqld at the first log line
+        test -n "\$MYSQLD_PID" || MYSQLD_PID=\$(pidof mysqld)
+
+        # Extract the message
+        MSG=\${BASH_REMATCH[3]}
+
+        # Convert optional MySQL severity to a syslog priority
+        case "\${BASH_REMATCH[2]}" in
+            not*)
+                PRIO=\$PRIO_NOTICE
+                ;;
+            warn*)
+                PRIO=\$PRIO_WARN
+                ;;
+            err*)
+                PRIO=\$PRIO_ERROR
+                ;;
+            *)
+                PRIO=\$PRIO_INFO
+                ;;
+        esac
+
+        echo "<\$PRIO> mysqld[\$MYSQLD_PID]: \$MSG" >>$MYSQL_LOGS/error
+
+    else
+        # Unrecognized message format
+        echo "<\$PRIO_ERROR> mysqld: Unrecognized log message format: \$REPLY"
+    fi
+done
 EOT
 
-chmod 755 $SERVICE_DIR/run
+chmod 755 $SERVICE_DIR/{,log/}run
