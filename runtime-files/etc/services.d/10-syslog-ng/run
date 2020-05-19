@@ -50,24 +50,19 @@ template t_common {
     template("\${ISODATE} \${LEVEL} \${MSGHDR}\${MSG}\\n");
 };
 
-rewrite r_remove_mysql_timestamp {
-    subst('^[[:digit:][:space:]:-]*', "", value("MESSAGE"));
-};
-
 source s_local { internal(); system(); };
 
 source s_apache_access { pipe("$APACHE_LOGS/access"); };
 
 source s_apache_error { pipe("$APACHE_LOGS/error"); };
 
-source s_mysql_error { pipe("$MYSQL_LOGS/error" flags(no-parse) program-override("mysql")); };
+source s_mysql_error { pipe("$MYSQL_LOGS/error"); };
 
 log { 
     source(s_local);
     source(s_apache_access);
     source(s_apache_error);
     source(s_mysql_error);
-    rewrite(r_remove_mysql_timestamp);
     destination { file("/dev/stdout" template(t_common)); };
     destination { network("$HOST_IP" transport("udp") template(t_common)); };
 };

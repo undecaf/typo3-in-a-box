@@ -54,15 +54,63 @@ fi
 SERVICE_DIR=/etc/services.d/30-mariadb
 mkdir -p $SERVICE_DIR
 
-# Let s6 start MariaDB as a service
-# and write the error log to a FIFO
+# Let s6 start MariaDB as a service,
+# preprocess the error log and send it to syslog-ng
 cat >$SERVICE_DIR/run <<EOT
-#!/bin/sh
+#!/bin/bash
 
+set -e
+
+PROG="mysqld[\$\$]"
+
+FACILITY=18   # local2
+
+PRIO_NOTICE=\$((FACILITY*16+5))
+PRIO_WARN=\$((FACILITY*16+4))
+PRIO_ERROR=\$((FACILITY*16+3))
+PRIO_INFO=\$((FACILITY*16+6))
+
+# Ignores the timestamp, saves optional severity and message
+RE='^[[:digit:] :-]*(\\[([^\\[]+)])?[[:space:]]*(.*)\$'
+
+# Preprocesses MySQL log messages for syslog-ng
+preprocess() {
+    local PRIO
+    local MSG
+
+    while IFS= read -r; do
+        if [[ "\$REPLY" =~ \$RE ]]; then
+            # Extract message
+            MSG=\${BASH_REMATCH[3]}
+
+            # Convert optional MySQL severity to a syslog priority
+            shopt -s nocasematch
+            case "\${BASH_REMATCH[2]}" in
+                not*)
+                    PRIO=\$PRIO_NOTICE
+                    ;;
+                warn*)
+                    PRIO=\$PRIO_WARN
+                    ;;
+                err*)
+                    PRIO=\$PRIO_ERROR
+                    ;;
+                *)
+                    PRIO=\$PRIO_INFO
+                    ;;
+            esac
+
+            echo "<\$PRIO> \$PROG: \$MSG" >>$MYSQL_LOGS/error
+        fi
+    done
+}
+
+# FIFO passing preprocessed log messages to syslog-ng
 mkdir -p $MYSQL_LOGS
 mkfifo $MYSQL_LOGS/error
-chown ${MYSQL_USER}: $MYSQL_LOGS $MYSQL_LOGS/error
+chown -R ${MYSQL_USER}: $MYSQL_LOGS
 
+# Start MariaDB
 exec $(which s6-envdir) ${ENV_DIR} \
     $(which mysqld) \
         --datadir=$MYSQL_DATA \
@@ -70,7 +118,7 @@ exec $(which s6-envdir) ${ENV_DIR} \
         --log-warnings=2 \
         --verbose=0 \
         --skip-networking=0 \
-        2>$MYSQL_LOGS/error
+        2>&1 | preprocess
 EOT
 
 chmod 755 $SERVICE_DIR/run
