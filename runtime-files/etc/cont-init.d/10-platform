@@ -1,34 +1,105 @@
-#!/bin/bash
+#!/usr/bin/with-contenv /bin/bash
 
 #
-# Initialises global platform settings
-# ====================================
+# Configures the platform and starts logging
+# ==========================================
 #
 
 set -e
 
-. /usr/local/lib/utils.inc
+# Use the build environment values as defaults for the container environment
+. /etc/environment
 . /usr/local/lib/env.inc
+. /usr/local/lib/utils.inc
+
+# Copy the container environment to the runtime environment,
+# removing the leading 'T3_' from variable names
+save_env
 
 # Load the runtime environment
 load_env
 
-# Display version numbers
-log_info "Alpine Linux $(cat /etc/alpine-release)"
 
 # Try to determine the local timezone if none was specified
 if [ -z "$T3_TIMEZONE" ]; then
     T3_TIMEZONE="$(curl -s https://ipapi.co/timezone)"
 fi
-set_var T3_TIMEZONE $T3_TIMEZONE
 
 # Use timezone if specified and supported
-if [ -n "$T3_TIMEZONE" -a -f "/usr/share/zoneinfo/${T3_TIMEZONE}" ]; then
-    cp /usr/share/zoneinfo/${T3_TIMEZONE} /etc/localtime
-    log_info "Timezone: $T3_TIMEZONE"
-else
-    log_info "Timezone: UTC"
+if [ -n "$T3_TIMEZONE" ]; then
+    if [ -f "/usr/share/zoneinfo/${T3_TIMEZONE}" ]; then
+        ln -sf /usr/share/zoneinfo/${T3_TIMEZONE} /etc/localtime
+        set_var TIMEZONE $T3_TIMEZONE
+    else
+        err_exit "Unsupported timezone: $T3_TIMEZONE"
+    fi
 fi
+
+
+# Remove empty log files installed by syslog-ng
+rm -f /var/log/*.log
+
+# Build the configuration file
+mkdir -p /etc/syslog-ng
+cat >/etc/syslog-ng/typo3.conf <<EOT
+@version:3.22
+
+options {
+    # Create destination directories if missing
+    create_dirs(no);
+    dir_perm(0755);
+
+    # Default owner, group, and permissions for log files
+    owner(root);
+    group(wheel);
+    perm(0640);
+
+    # Log a MARK line every hour
+    mark_freq(3600);
+
+    # Log a STATS line every 12 hours
+    stats_freq(43200);
+
+    # Wait 5s before re-establishing a died connection
+    time_reopen(5);
+
+    # Avoid DNS lookups
+    use_dns(no);
+    dns-cache(no);
+};
+
+
+template t_common {
+    template("\${ISODATE} \${LEVEL} \${MSGHDR}\${MSG}\\n");
+};
+
+source s_local { internal(); system(); };
+
+source s_apache_access { pipe("$APACHE_LOGS/access"); };
+
+source s_apache_error { pipe("$APACHE_LOGS/error"); };
+
+source s_mysql_error { pipe("$MYSQL_LOGS/error"); };
+
+log { 
+    source(s_local);
+    source(s_apache_access);
+    source(s_apache_error);
+    source(s_mysql_error);
+    destination { file("/dev/stdout" template(t_common)); };
+    destination { network("$HOST_IP" transport("udp") template(t_common)); };
+};
+EOT
+
+# Since syslog-ng logs also to stdout, it must not daemonize itself
+syslog-ng -F -f /etc/syslog-ng/typo3.conf &
+
+
+# Show OS version
+log_info "Alpine Linux $(cat /etc/alpine-release)"
 
 # Show locale
 log_info "Locale: $LANG"
+
+# Show timezone
+test -n "$T3_TIMEZONE" && log_info "Timezone: $T3_TIMEZONE ($(date +%Z))" || log_info "No timezone set ($(date +%Z))"

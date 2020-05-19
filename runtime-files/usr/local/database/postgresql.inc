@@ -19,8 +19,6 @@ chown -R $PG_USER: $PG_RUN
 
 # Initialize PostgreSQL if necessary
 if [ ! -f $PG_DATA/PG_VERSION ]; then
-    log_info 'Initializing PostgreSQL'
-
     # Initialize PostgreSQL
     PWFILE=$(mktemp -u)
     trap "rm -f $PWFILE" EXIT
@@ -70,9 +68,9 @@ mkdir -p $SERVICE_DIR
 cat >$SERVICE_DIR/run <<EOT
 #!/bin/sh
 
-$(which s6-envdir) ${ENV_DIR} \
-    $(which redirfd) -cn 2 /dev/stdout \
-    $(which su-exec) $PG_USER \
+s6-envdir ${ENV_DIR} \
+    redirfd -cn 2 /dev/stdout \
+    su-exec $PG_USER \
     postgres \
         -D $PG_DATA \
         --log_destination=syslog \

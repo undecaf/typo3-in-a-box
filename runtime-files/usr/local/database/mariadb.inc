@@ -19,8 +19,6 @@ chown -R $MYSQL_USER: $MYSQL_RUN
 
 # Initialize MariaDB if necessary
 if [ ! -d $MYSQL_DATA/mysql ]; then
-    log_info 'Initializing MariaDB'
-
     # Initialize MariaDB and suppress the sermon following the first blank line
     mysql_install_db \
         --user=$MYSQL_USER \
@@ -59,8 +57,8 @@ mkdir -p $SERVICE_DIR/log
 cat >$SERVICE_DIR/run <<EOT
 #!/bin/sh
 
-exec $(which s6-envdir) ${ENV_DIR} \
-    $(which mysqld) \
+exec s6-envdir ${ENV_DIR} \
+    mysqld \
         --datadir=$MYSQL_DATA \
         --user=$MYSQL_USER \
         --log-warnings=2 \
@@ -85,11 +83,6 @@ PRIO_INFO=\$((FACILITY*16+6))
 RE='^[[:digit:] :-]*(\\[([^\\[]+)])?[[:space:]]*(.*)\$'
 
 MYSQLD_PID=   # will be known at the first log line
-
-# FIFO passing preprocessed log lines to syslog-ng
-mkdir -p $MYSQL_LOGS
-mkfifo $MYSQL_LOGS/error
-chown -R ${MYSQL_USER}: $MYSQL_LOGS
 
 # Preprocess MySQL log lines and pass to syslog-ng
 shopt -s nocasematch

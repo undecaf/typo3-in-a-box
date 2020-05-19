@@ -68,4 +68,4 @@ log {
 };
 EOT
 
-exec $(which syslog-ng) -F -f /etc/syslog-ng/typo3.conf
+exec syslog-ng -F -f /etc/syslog-ng/typo3.conf

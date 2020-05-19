@@ -14,9 +14,8 @@ LOG_ERROR=${LOG_INFO/.info/.error}
 
 # --------------------------------------------------------------------------
 
-# Sends a message to syslog with priority $LOG_INFO and also to stdout if 
-# not run by the init process. A separate log entry is created from each
-# message line.
+# Sends a message to syslog with priority $LOG_INFO. A separate log entry
+# is created from each message line.
 #
 # Arguments:
 #   $1   optional message; if omitted then the message is
@@ -26,9 +25,8 @@ log_info() {
     if [ -n "$1" ]; then
         echo "$1" | log_info
     else
-        while read LINE; do
-            test $$ -ne 1 && echo "    $LINE" || true
-            logger -p $LOG_INFO "$LINE"
+        while IFS= read -r; do
+            logger -t $(basename $0) -p $LOG_INFO "$REPLY"
         done
     fi
 }
@@ -36,13 +34,12 @@ log_info() {
 
 # --------------------------------------------------------------------------
 
-# Sends a message to syslog with priority $LOG_ERROR and also to stderr if
-# not run by the init process. Exits with the specified return status
-# (or with 1).
+# Sends a message to syslog with priority $LOG_ERROR. Exits with the
+# specified return status (or with 1).
 #
 err_exit() {
-    test $$ -ne 1 && echo "$1" >&2 || true
-    logger -p $LOG_ERROR "$1"
+    echo "$1" >&2
+    logger -t $(basename $0) -p $LOG_ERROR "$1"
     exit ${2:-1}
 }
 

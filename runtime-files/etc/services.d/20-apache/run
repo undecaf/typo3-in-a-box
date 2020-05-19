@@ -14,4 +14,4 @@ set -e
 load_env
 
 ## Let s6 start Apache as a service
-exec $(which s6-envdir) ${ENV_DIR} httpd -D FOREGROUND
+exec s6-envdir ${ENV_DIR} httpd -D FOREGROUND
