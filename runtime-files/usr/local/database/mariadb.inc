@@ -61,8 +61,6 @@ cat >$SERVICE_DIR/run <<EOT
 
 set -e
 
-PROG="mysqld[\$\$]"
-
 FACILITY=18   # local2
 
 PRIO_NOTICE=\$((FACILITY*16+5))
@@ -77,6 +75,7 @@ RE='^[[:digit:] :-]*(\\[([^\\[]+)])?[[:space:]]*(.*)\$'
 preprocess() {
     local PRIO
     local MSG
+    local PROG="mysqld[\$(pidof mysqld)]"
 
     while IFS= read -r; do
         if [[ "\$REPLY" =~ \$RE ]]; then
