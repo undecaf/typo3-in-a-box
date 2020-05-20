@@ -35,7 +35,7 @@ set -e
 # Load the runtime environment
 load_env
 
-log_info "$(httpd -v)"
+httpd -v | log_info
 
 # Disable the default logging configuration
 sed -r -i -e 's/^\s*(Error|Custom)Log\s/#\0/' /etc/apache2/httpd.conf

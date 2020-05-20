@@ -47,7 +47,8 @@ VOLUME ${TYPO3_ROOT} ${TYPO3_DATADIR}
 
 EXPOSE 80 443 3306 5432
 
-# Customize s6-overlay
+# Customize the s6-overlay
+ENV S6_LOGGING=2
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
 
-ENTRYPOINT ["/init"]
+ENTRYPOINT ["/usr/local/bin/init"]

@@ -35,3 +35,6 @@ export PG_USER=postgres
 export PG_DATA=$TYPO3_DATADIR
 export PG_RUN=/run/postgresql
 export PG_LOGS=$LOGS_BASE/pgsql
+
+# Original stdout at the entrypoint
+export STDOUT=/var/run/stdout

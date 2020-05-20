@@ -11,6 +11,10 @@
 LOG_INFO=local0.info
 LOG_ERROR=${LOG_INFO/.info/.error}
 
+# syslog program name, derived from the name of the current script
+PROGRAM=$(basename $0)
+PROGRAM=${PROGRAM/[0-9]*-/init-}
+
 
 # --------------------------------------------------------------------------
 
@@ -23,10 +27,10 @@ LOG_ERROR=${LOG_INFO/.info/.error}
 #
 log_info() {
     if [ -n "$1" ]; then
-        echo "$1" | log_info
+        logger -t $PROGRAM -p $LOG_INFO "$1"
     else
         while IFS= read -r; do
-            logger -t $(basename $0) -p $LOG_INFO "$REPLY"
+            logger -t $PROGRAM -p $LOG_INFO "$REPLY"
         done
     fi
 }
@@ -39,7 +43,7 @@ log_info() {
 #
 err_exit() {
     echo "$1" >&2
-    logger -t $(basename $0) -p $LOG_ERROR "$1"
+    logger -t $PROGRAM -p $LOG_ERROR "$1"
     exit ${2:-1}
 }
 

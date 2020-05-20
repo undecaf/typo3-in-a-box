@@ -49,7 +49,11 @@ EOT
             )
 fi
 
-SERVICE_DIR=/etc/services.d/30-mariadb
+# Receiving end of stdout/stderr from mysqld
+mkfifo $MYSQL_LOGS/xfer
+chown $MYSQL_USER: $MYSQL_LOGS/xfer
+
+SERVICE_DIR=/etc/services.d/50-mariadb
 mkdir -p $SERVICE_DIR/log
 
 # Let s6 start MariaDB as a service
@@ -64,7 +68,7 @@ exec s6-envdir ${ENV_DIR} \
         --log-warnings=2 \
         --verbose=0 \
         --skip-networking=0 \
-        2>&1
+        >>$MYSQL_LOGS/xfer 2>&1
 EOT
 
 cat >$SERVICE_DIR/log/run <<EOT
@@ -114,9 +118,9 @@ while IFS= read -r; do
 
     else
         # Unrecognized message format
-        echo "<\$PRIO_ERROR> mysqld: Unrecognized log message format: \$REPLY"
+        echo "<\$PRIO_ERROR> mysqld: Unrecognized log message format: \$REPLY" >>$MYSQL_LOGS/error
     fi
-done
+done < $MYSQL_LOGS/xfer
 EOT
 
 chmod 755 $SERVICE_DIR/{,log/}run

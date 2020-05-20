@@ -7,7 +7,6 @@
 
 set -e
 
-. /usr/local/lib/utils.inc
 . /usr/local/lib/env.inc
 
 # Load the runtime environment

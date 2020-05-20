@@ -86,13 +86,12 @@ log {
     source(s_apache_access);
     source(s_apache_error);
     source(s_mysql_error);
-    destination { file("/dev/stdout" template(t_common)); };
+    destination { file("/var/run/stdout" template(t_common)); };
     destination { network("$HOST_IP" transport("udp") template(t_common)); };
 };
 EOT
 
-# Since syslog-ng logs also to stdout, it must not daemonize itself
-syslog-ng -F -f /etc/syslog-ng/typo3.conf &
+syslog-ng -f /etc/syslog-ng/typo3.conf
 
 
 # Show OS version

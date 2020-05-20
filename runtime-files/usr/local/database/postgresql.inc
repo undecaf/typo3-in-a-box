@@ -61,7 +61,7 @@ EOT
 
 fi
 
-SERVICE_DIR=/etc/services.d/30-postgres
+SERVICE_DIR=/etc/services.d/50-postgres
 mkdir -p $SERVICE_DIR
 
 # Let s6 start PostgreSQL as a service
