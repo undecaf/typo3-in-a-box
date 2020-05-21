@@ -39,9 +39,9 @@ fi
 # Remove empty log files installed by syslog-ng
 rm -f /var/log/*.log
 
-# Build the configuration file
+# Build the configuration file (escaping '$' needs an ugly hack)
 mkdir -p /etc/syslog-ng
-cat >/etc/syslog-ng/typo3.conf <<EOT
+D='$' envsubst >/etc/syslog-ng/typo3.conf <<EOT
 @version:3.22
 
 options {
@@ -54,8 +54,8 @@ options {
     group(wheel);
     perm(0640);
 
-    # Log a MARK line every hour
-    mark_freq(3600);
+    # Show timestamps in ms resolution
+    frac_digits(3);
 
     # Log a STATS line every 12 hours
     stats_freq(43200);
@@ -65,12 +65,12 @@ options {
 
     # Avoid DNS lookups
     use_dns(no);
-    dns-cache(no);
+    dns_cache(no);
 };
 
 
 template t_common {
-    template("\${ISODATE} \${LEVEL} \${MSGHDR}\${MSG}\\n");
+    template("[\${D}{R_ISODATE}] \${D}{LEVEL} \${D}{MSGHDR}\${D}{MSG}\\n");
 };
 
 source s_local { internal(); system(); };
@@ -86,7 +86,7 @@ log {
     source(s_apache_access);
     source(s_apache_error);
     source(s_mysql_error);
-    destination { file("/var/run/stdout" template(t_common)); };
+    destination { file("$STDOUT" template(t_common)); };
     destination { network("$HOST_IP" transport("udp") template(t_common)); };
 };
 EOT
