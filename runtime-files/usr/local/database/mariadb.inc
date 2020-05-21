@@ -26,6 +26,56 @@ if [ ! -d $MYSQL_DATA/mysql ]; then
         2>/dev/null \
         | awk '/^[[:blank:]]*$/ { bl = 1 } !bl { print }' | log_info
 
+    # Find a suitable collation for the current locale
+    eval "$(locale)"
+    case "$LC_COLLATE" in
+        hr*)
+            COLLATION=utf8_croatian_ci; ;;
+        cz*)
+            COLLATION=utf8_czech_ci; ;;
+        da*)
+            COLLATION=utf8_danish_ci; ;;
+        et*)
+            COLLATION=utf8_estonian_ci; ;;
+        de*)
+            COLLATION=utf8_german2_ci; ;;
+        hu*)
+            COLLATION=utf8_hungarian_ci; ;;
+        is*)
+            COLLATION=utf8_icelandic_ci; ;;
+        lv*)
+            COLLATION=utf8_latvian_ci; ;;
+        lt*)
+            COLLATION=utf8_lithuanian_ci; ;;
+        my*)
+            COLLATION=utf8_myanmar_ci; ;;
+        fa*)
+            COLLATION=utf8_persian_ci; ;;
+        pl*)
+            COLLATION=utf8_polish_ci; ;;
+        rm*)
+            COLLATION=utf8_roman_ci; ;;
+        ro*)
+            COLLATION=utf8_romanian_ci; ;;
+        si*)
+            COLLATION=utf8_sinhala_ci; ;;
+        sk*)
+            COLLATION=utf8_slovak_ci; ;;
+        sl*)
+            COLLATION=utf8_slovenian_ci; ;;
+        es*)
+            COLLATION=utf8_spanish2_ci; ;;
+        sv*)
+            COLLATION=utf8_swedish_ci; ;;
+        tr*)
+            COLLATION=utf8_turkish_ci; ;;
+        vi*)
+            COLLATION=utf8_vietnamese_ci; ;;
+        *)
+            COLLATION=utf8_general_ci; ;;
+    esac
+    log_info "Collation for server and database '$T3_DB_NAME': $COLLATION"
+
     # Create the TYPO3 database and the users
     mysqld \
         --datadir=$MYSQL_DATA \
@@ -34,7 +84,9 @@ if [ ! -d $MYSQL_DATA/mysql ]; then
         --verbose=0 \
         --skip-networking=0 \
         2>/dev/null \
-        < <(cat <<EOT
+        <<EOT
+SET character_set_server = 'utf8';
+SET collation_server = '${COLLATION}';
 USE mysql;
 FLUSH PRIVILEGES;
 GRANT ALL ON *.* TO 'root'@'%' identified by '$T3_DB_ROOT_PW' WITH GRANT OPTION ;
@@ -42,11 +94,11 @@ GRANT ALL ON *.* TO 'root'@'localhost' identified by '$T3_DB_ROOT_PW' WITH GRANT
 SET PASSWORD FOR 'root'@'localhost'=PASSWORD('$T3_DB_ROOT_PW');
 DROP DATABASE IF EXISTS test;
 FLUSH PRIVILEGES;
-CREATE DATABASE IF NOT EXISTS \`$T3_DB_NAME\` CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS \`$T3_DB_NAME\`;
+ALTER DATABASE \`$T3_DB_NAME\` CHARACTER SET utf8 COLLATE ${COLLATION};
 GRANT ALL ON \`$T3_DB_NAME\`.* TO '$T3_DB_USER'@'%' IDENTIFIED BY '$T3_DB_PW';
 GRANT ALL ON \`$T3_DB_NAME\`.* TO '$T3_DB_USER'@'localhost' IDENTIFIED BY '$T3_DB_PW';
 EOT
-            )
 fi
 
 # Receiving end of stdout/stderr from mysqld
