@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Runtime initialization utils
@@ -6,20 +6,22 @@
 #
 # Usage: source THIS_FILE
 #
+# Requires: /etc/environment, or the runtime environment
+#
 
 # syslog priorities
 LOG_INFO=local0.info
 LOG_ERROR=${LOG_INFO/.info/.error}
 
-# syslog program name, derived from the name of the current script
-PROGRAM=$(basename $0)
-PROGRAM=${PROGRAM/[0-9]*-/init-}
+# syslog program name, derived from the path of the current script in /etc/cont-*.d/
+RE='/etc/cont-([[:alnum:]]+)\.d/.+-([^/]+)$'
+[[ $0 =~ $RE ]] && PROGRAM="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}" || PROGRAM=$(basename $0)
 
 
 # --------------------------------------------------------------------------
 
 # Sends a message to syslog with priority $LOG_INFO. A separate log entry
-# is created from each message line.
+# is created from each message line. Empty message lines are suppressed.
 #
 # Arguments:
 #   $1   optional message; if omitted then the message is
@@ -30,7 +32,7 @@ log_info() {
         logger -t $PROGRAM -p $LOG_INFO "$1"
     else
         while IFS= read -r; do
-            logger -t $PROGRAM -p $LOG_INFO "$REPLY"
+            test -n "$REPLY" && logger -t $PROGRAM -p $LOG_INFO "$REPLY"
         done
     fi
 }
@@ -38,12 +40,20 @@ log_info() {
 
 # --------------------------------------------------------------------------
 
-# Sends a message to syslog with priority $LOG_ERROR. Exits with the
-# specified return status (or with 1).
+# Sends a message to syslog with priority $LOG_ERROR, or to $STDOUT if
+# syslog-ng is not running. Exits with the specified return status.
+#
+# Arguments:
+#   $1    return status (optional, defaults to 1)
 #
 err_exit() {
-    echo "$1" >&2
-    logger -t $PROGRAM -p $LOG_ERROR "$1"
+    if [ -n "$(pidof syslog-ng)" ]; then
+        logger -t $PROGRAM -p $LOG_ERROR "$1"
+    else
+        echo '*** '"$1"' ***' >$STDOUT
+        echo '*** Stopping the container ***' >$STDOUT
+    fi
+
     exit ${2:-1}
 }
 
