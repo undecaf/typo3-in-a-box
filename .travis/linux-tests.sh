@@ -211,12 +211,12 @@ for DB_TYPE in mariadb postgresql; do
     echo "Pinging $DB_TYPE" >&2
     case $DB_TYPE in
         mariadb)
-            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+            verify_logs $SUCCESS_TIMEOUT 'ready for connections'
             verify_cmd_success $SUCCESS_TIMEOUT mysql -h $HOST_IP -P $DB_PORT -D t3 -u t3 --password=t3 -e 'quit' t3
             ;;
 
         postgresql)
-            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+            verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
             verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d t3 -U t3 -q
             ;;
     esac
@@ -235,12 +235,12 @@ for DB_TYPE in mariadb postgresql; do
     echo "Pinging $DB_TYPE" >&2
     case $DB_TYPE in
         mariadb)
-            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+            verify_logs $SUCCESS_TIMEOUT 'ready for connections'
             verify_cmd_success $SUCCESS_TIMEOUT mysql -h $HOST_IP -P $DB_PORT -D $DB_NAME -u $DB_USER --password=$DB_PW -e 'quit' $DB_NAME
             ;;
 
         postgresql)
-            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+            verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
             verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d $DB_NAME -U $DB_USER -q
             ;;
     esac
@@ -307,11 +307,11 @@ sudo rm -rf "$ROOT_VOL" "$DB_VOL"
 if [ -z "$TYPO3_V8" ]; then
     echo 'Testing interoperability of Apache and SQLite' >&2
     t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
-    verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+    verify_logs $SUCCESS_TIMEOUT 'AH00094'
 
     t3_ stop --rm
     t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
-    verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+    verify_logs $SUCCESS_TIMEOUT 'AH00094'
 
     cleanup
     sudo rm -rf "$ROOT_VOL" "$DB_VOL"
@@ -371,15 +371,15 @@ t3_ run --env MODE=dev
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
 
 echo "Verifying MODE check" >&2
-verify_logs $SUCCESS_TIMEOUT '[services.d] done'
-t3_ env --log MODE=abc | grep -q -F 'Unknown mode'
+! t3_ env --log MODE=abc
+verify_logs $SUCCESS_TIMEOUT 'Unknown mode'
 
 cleanup
 
 echo "Verifying mode changes and abbreviations" >&2
 T3_MODE=d t3_ run
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
-verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+verify_logs $SUCCESS_TIMEOUT 'AH00094'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
 grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$' $TEMP_FILE && grep -q '^X-Powered-By: PHP/.*$' $TEMP_FILE
 
@@ -405,7 +405,7 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 cleanup
 
 t3_ run -c
-verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+verify_logs $SUCCESS_TIMEOUT 'AH00094'
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
@@ -428,7 +428,7 @@ cleanup
 
 echo "Verifying setting, changing and unsetting of arbitrary variables"
 t3_ run
-verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+verify_logs $SUCCESS_TIMEOUT 'AH00094'
 
 t3_ env A=foo BC=bar DEF=baz
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="foo"'
