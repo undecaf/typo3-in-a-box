@@ -423,10 +423,6 @@ Options (default values can be overridden by environment variables):
       CTRL-C is typed.
       Default: \$T3_LOGS, or not set.
  
-  --timestamps, -t
-      Shows timestamps in the log output. Ignored if '--logs' is not set.
-      Default: \$T3_TIMESTAMPS, or not set.
-
   --debug, -d
       If this option is present then Docker/Podman commands and output appear
       at the console. Otherwise only 'stderr' is displayed.
@@ -522,10 +518,6 @@ Options (default values can be overridden by environment variables):
       Shows only that many lines from the end of the log, or all lines
       if 0.
       Default: \$T3_TAIL, or not set.
-
-  --timestamps, -t
-      Shows timestamps in the log output.
-      Default: \$T3_TIMESTAMPS, or not set.
 
   --debug, -d
       If this option is present then Docker/Podman commands and output appear
@@ -706,7 +698,6 @@ T3_PORTS=${T3_PORTS:-127.0.0.1:8080,127.0.0.1:8443}
 REMOVE_OPTION=
 FOLLOW_OPTION=${T3_FOLLOW:+--follow}
 SINCE_OPTION=${T3_SINCE:+--since=$T3_SINCE}
-TIMESTAMPS_OPTION=${T3_TIMESTAMPS:+--timestamps}
 TAIL_OPTION=${T3_TAIL:+--tail=$T3_TAIL}
 
 while [ $# -gt 0 ]; do
@@ -857,12 +848,6 @@ while [ $# -gt 0 ]; do
         # Stream log output to console at startup
         run:@(-l|--logs))
             T3_LOGS=on
-            shift
-            ;;
-
-        # Show timestamps in log output
-        @(run|logs):@(-t|--timestamps))
-            TIMESTAMPS_OPTION='--timestamps'
             shift
             ;;
 
@@ -1088,7 +1073,7 @@ case "$CMD" in
         trap - EXIT
 
         # Eventually show logs
-        [ -n "$T3_LOGS" ] && exec_engine logs --follow $TIMESTAMPS_OPTION "$T3_NAME" || true
+        [ -n "$T3_LOGS" ] && exec_engine logs --follow "$T3_NAME" || true
         ;;
 
 
@@ -1118,7 +1103,7 @@ case "$CMD" in
 
 
     logs)
-        exec_engine logs $FOLLOW_OPTION $SINCE_OPTION $TAIL_OPTION $TIMESTAMPS_OPTION "$T3_NAME"
+        exec_engine logs $FOLLOW_OPTION $SINCE_OPTION $TAIL_OPTION "$T3_NAME"
         ;;
 
 
