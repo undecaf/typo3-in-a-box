@@ -88,7 +88,7 @@ source .travis/setenv.inc
 RE='^8\.7.*'
 if [[ "$TYPO3_VER" =~ $RE ]]; then
     export TYPO3_V8=true
-    export T3_DB_TYPE=mariadb
+    export T3_DB_TYPE=postgres
 else
     export TYPO3_V8=
     export T3_DB_TYPE=
@@ -101,6 +101,8 @@ HTTPS_PORT=8443
 DB_PORT=3000
 INSTALL_URL=http://$HOST_IP:$HTTP_PORT/typo3/install.php
 INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
+SYNTAX_ERR_URL=http://$HOST_IP:$HTTP_PORT/syntax-err.php
+RUNTIME_ERR_URL=http://$HOST_IP:$HTTP_PORT/runtime-err.php
 
 # Timeouts in s
 SUCCESS_TIMEOUT=30
@@ -203,6 +205,22 @@ verify_cmd_success $SUCCESS_TIMEOUT curl -Isk $TEST_URL | grep -q '200 OK'
 cleanup
 
 
+# Test PHP error logging
+echo $'\n*************** PHP error logging' >&2
+
+t3_ run
+verify_logs $SUCCESS_TIMEOUT 'AH00094'
+docker cp .travis/$(basename $SYNTAX_ERR_URL) typo3:/var/www/localhost/public/
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $SYNTAX_ERR_URL | grep -q '500 Internal Server Error'
+verify_logs $SUCCESS_TIMEOUT 'syntax error'
+
+docker cp .travis/$(basename $RUNTIME_ERR_URL) typo3:/var/www/localhost/public/
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $RUNTIME_ERR_URL | grep -q '200 OK'
+verify_logs $SUCCESS_TIMEOUT 'Undefined variable'
+
+cleanup
+
+
 # Test databases
 for DB_TYPE in mariadb postgresql; do
     echo $'\n*************** '"$DB_TYPE: connectivity" >&2
@@ -211,12 +229,12 @@ for DB_TYPE in mariadb postgresql; do
     echo "Pinging $DB_TYPE" >&2
     case $DB_TYPE in
         mariadb)
-            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+            verify_logs $SUCCESS_TIMEOUT 'ready for connections'
             verify_cmd_success $SUCCESS_TIMEOUT mysql -h $HOST_IP -P $DB_PORT -D t3 -u t3 --password=t3 -e 'quit' t3
             ;;
 
         postgresql)
-            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+            verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
             verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d t3 -U t3 -q
             ;;
     esac
@@ -227,20 +245,23 @@ done
 DB_NAME=bar
 DB_USER=foo
 DB_PW=123456
+DB_LANG=es
 
 for DB_TYPE in mariadb postgresql; do
-    echo $'\n*************** '"$DB_TYPE: custom credentials" >&2
-    T3_DB_NAME=$DB_NAME T3_DB_USER=$DB_USER T3_DB_PW=$DB_PW t3_ run -D $DB_TYPE -P $HOST_IP:$DB_PORT
+    echo $'\n*************** '"$DB_TYPE: custom credentials and collation" >&2
+    T3_DB_NAME=$DB_NAME T3_DB_USER=$DB_USER T3_DB_PW=$DB_PW t3_ run -D $DB_TYPE -P $HOST_IP:$DB_PORT --env LANG=$DB_LANG
 
     echo "Pinging $DB_TYPE" >&2
     case $DB_TYPE in
         mariadb)
-            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+            verify_logs $SUCCESS_TIMEOUT 'ready for connections'
+            verify_logs $SUCCESS_TIMEOUT 'utf8_spanish2_ci'
             verify_cmd_success $SUCCESS_TIMEOUT mysql -h $HOST_IP -P $DB_PORT -D $DB_NAME -u $DB_USER --password=$DB_PW -e 'quit' $DB_NAME
             ;;
 
         postgresql)
-            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+            verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
+            verify_logs $SUCCESS_TIMEOUT 'spanish'
             verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d $DB_NAME -U $DB_USER -q
             ;;
     esac
@@ -307,11 +328,11 @@ sudo rm -rf "$ROOT_VOL" "$DB_VOL"
 if [ -z "$TYPO3_V8" ]; then
     echo 'Testing interoperability of Apache and SQLite' >&2
     t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
-    verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+    verify_logs $SUCCESS_TIMEOUT 'AH00094'
 
     t3_ stop --rm
     t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
-    verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+    verify_logs $SUCCESS_TIMEOUT 'AH00094'
 
     cleanup
     sudo rm -rf "$ROOT_VOL" "$DB_VOL"
@@ -357,29 +378,34 @@ cleanup
 echo $'\n*************** Container environment settings' >&2
 echo "Verifying timezone and language" >&2
 LOCALE=de_AT.UTF-8
-TZ=Australia/Melbourne
+TZ=Australia/North  # UTC +09:30, does not have DST
 TEMP_FILE=$(mktemp)
 
 T3_LANG=$LOCALE t3_ run --env TIMEZONE=$TZ 
 verify_logs $SUCCESS_TIMEOUT $LOCALE
 verify_logs $SUCCESS_TIMEOUT $TZ
-
+verify_logs $SUCCESS_TIMEOUT '+09:30 '
 cleanup
+
+T3_TIMEZONE=foo t3_ run
+verify_logs $SUCCESS_TIMEOUT 'Unsupported timezone'
+cleanup
+
 
 echo "Verifying developer mode" >&2
 t3_ run --env MODE=dev
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
 
 echo "Verifying MODE check" >&2
-verify_logs $SUCCESS_TIMEOUT '[services.d] done'
-t3_ env --log MODE=abc | grep -q -F 'Unknown mode'
+! t3_ env --log MODE=abc
+verify_logs $SUCCESS_TIMEOUT 'Unknown mode'
 
 cleanup
 
 echo "Verifying mode changes and abbreviations" >&2
 T3_MODE=d t3_ run
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
-verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+verify_logs $SUCCESS_TIMEOUT 'AH00094'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
 grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$' $TEMP_FILE && grep -q '^X-Powered-By: PHP/.*$' $TEMP_FILE
 
@@ -405,7 +431,7 @@ verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/z
 cleanup
 
 t3_ run -c
-verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+verify_logs $SUCCESS_TIMEOUT 'AH00094'
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
@@ -428,7 +454,7 @@ cleanup
 
 echo "Verifying setting, changing and unsetting of arbitrary variables"
 t3_ run
-verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+verify_logs $SUCCESS_TIMEOUT 'AH00094'
 
 t3_ env A=foo BC=bar DEF=baz
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="foo"'

@@ -1104,7 +1104,7 @@ case "$CMD" in
         trap - EXIT
 
         # Eventually show logs
-        [ -n "$T3_LOGS" ] && exec_engine logs --follow "$T3_NAME"
+        [ -n "$T3_LOGS" ] && exec_engine logs --follow "$T3_NAME" || true
         ;;
 
 
