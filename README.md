@@ -250,7 +250,8 @@ $ t3 logs
 ```
 
 For a live view, add option&nbsp;`-f`, or add option&nbsp;`-l`
-to the `t3 run` command; press `Ctrl-C` to stop viewing.
+to the [`t3 run`](#t3-run) or [`t3 env`](#t3-env) commands;
+`Ctrl-C` stops log viewing.
 There are more [`t3 logs` options](#t3-logs) that 
 let you control the amount of information that is shown.
 
@@ -673,8 +674,7 @@ computed relative to the client machine's time.
 
 ### `t3 env`
 
-Modifies the environment of a running TYPO3 container
-and logs the new container state:
+Modifies the environment of a running TYPO3 container:
 
 ```bash
 $ t3 env [option]... [NAME=VALUE | NAME= | NAME]...
@@ -689,6 +689,10 @@ Initial values can be assigned by command [`t3 run`](#t3-run).
 __Container environment variables:__
 this command can be used to change the TYPO3 mode and to modify PHP settings
 in a running container; see [this table](#container-environment-variables) for details.
+
+__Logging:__
+option&nbsp;`-l` (or `T3_LOGS` not empty) shows the
+[log output](#logging) of this command at the console.
 
 ---
 
@@ -759,7 +763,7 @@ that environment variable is not set.
 | `--db-owner`<br>`-O` | `run` | Indicates that the current user should appear as the owner of the database working directory (and its content) at the host.<br>Default: `$T3_DB_OWNER`, or not set. |
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option&nbsp;`--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). Most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. |
-| `--logs`<br>`-l` | `run` | Streams the log output of the new TYPO3 instance to the console until `Ctrl-C` is typed.<br>Default: `$T3_LOGS`, or not set. |
+| `--logs`<br>`-l` | `run`<br>`env` | Streams the log output of the new TYPO3 instance to the console until `Ctrl-C` is typed.<br>Default: `$T3_LOGS`, or not set. |
 | `--since=TIMESTAMP`<br>`-s TIMESTAMP` | `logs` | Shows only log lines since `TIMESTAMP`. This can be a [Unix timestamp](https://stackoverflow.com/questions/20822821/what-is-a-unix-timestamp-and-why-use-it#20823376), a [date formatted timestamp](https://www.w3.org/TR/NOTE-datetime), or a [Go duration string](https://golang.org/pkg/time/#ParseDuration) (e.g. `10m`, `1h30m`) computed relative to the client machine's time.<br>Default: `$T3_SINCE`, or not set. |
 | `--log-host=HOST[:PORT]`<br>`-L HOST[:PORT]` | `run` | Sends the log output to the specified HOST and PORT (default: 514), using the [BSD syslog protocol (RFC3164)](https://www.ietf.org/rfc/rfc3164.txt).<br>Default: `$T3_LOG_HOST`, or not set. |
 | `--follow`<br>`-f` | `logs` | Streams the log output to the console until `Ctrl-C` is typed.<br>Default: `$T3_FOLLOW`, or not set. |

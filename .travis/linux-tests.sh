@@ -372,7 +372,7 @@ verify_logs $SUCCESS_TIMEOUT 'developer mode'
 
 echo "Verifying MODE check" >&2
 verify_logs $SUCCESS_TIMEOUT '[services.d] done'
-t3_ env MODE=abc 2>&1 | grep -q -F 'Unknown mode'
+t3_ env --log MODE=abc | grep -q -F 'Unknown mode'
 
 cleanup
 
@@ -383,23 +383,23 @@ verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
 grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$' $TEMP_FILE && grep -q '^X-Powered-By: PHP/.*$' $TEMP_FILE
 
-t3_ env MODE=pr | grep -q -F 'production mode'
+t3_ env -l MODE=pr | grep -q -F 'production mode'
 verify_cmd_success $FAILURE_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
 ! grep -q '^Server: Apache/' $TEMP_FILE && ! grep -q '^X-Powered-By:' $TEMP_FILE
 
 echo "Verifying developer mode with XDebug" >&2
-t3_ env MODE=x | grep -q -F 'developer mode with XDebug'
+t3_ env -l MODE=x | grep -q -F 'developer mode with XDebug'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
 grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$' $TEMP_FILE && grep -q '^X-Powered-By: PHP/.*$' $TEMP_FILE
 
 echo "Verifying MODE persistence" >&2
-t3_ env PHP_foo=bar | grep -q -F 'developer mode with XDebug'
+t3_ env -l PHP_foo=bar | grep -q -F 'developer mode with XDebug'
 
 echo "Verifying php.ini setting" >&2
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 echo "Verifying settings precedence" >&2
-T3_MODE=dev PHP_foo=xyz t3_ env MODE=x PHP_foo=bar | grep -q -F 'developer mode with XDebug'
+T3_MODE=dev PHP_foo=xyz t3_ env -l MODE=x PHP_foo=bar | grep -q -F 'developer mode with XDebug'
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 cleanup
@@ -410,7 +410,7 @@ verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 echo "Verifying that COMPOSER_EXCLUDE was set"
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
 
-t3_ env COMPOSER_EXCLUDE=$EXCLUDED >$TEMP_FILE
+t3_ env -l COMPOSER_EXCLUDE=$EXCLUDED >$TEMP_FILE
 IFS=: read -ra DIRS <<< "$EXCLUDED"
 for D in "${DIRS[@]}"; do
     grep -q -F "$D" $TEMP_FILE

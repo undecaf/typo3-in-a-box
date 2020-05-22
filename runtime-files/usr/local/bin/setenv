@@ -5,6 +5,8 @@
 # ==============================
 #
 
+set -e
+
 # Update the runtime environment
 . /usr/local/lib/env.inc
 load_env

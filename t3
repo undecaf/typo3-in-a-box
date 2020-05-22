@@ -560,6 +560,10 @@ Options (default values can be overridden by environment variables):
       Same container name as specified for 't3 run'.
       Default: \$T3_NAME, or 'typo3'.
  
+  --logs, -l
+      Shows the log output that resulted from this command.
+      Default: \$T3_LOGS, or not set.
+ 
   --debug, -d
       If this option is present then Docker/Podman commands and output appear
       at the console. Otherwise only 'stderr' is displayed.
@@ -849,8 +853,8 @@ while [ $# -gt 0 ]; do
             shift
             ;;
 
-        # Stream log output to console at startup
-        run:@(-l|--logs))
+        # Show the log output of this command at the console
+        @(run|env):@(-l|--logs))
             T3_LOGS=on
             shift
             ;;
@@ -1100,7 +1104,7 @@ case "$CMD" in
         trap - EXIT
 
         # Eventually show logs
-        [ -n "$T3_LOGS" ] && exec_engine logs --follow "$T3_NAME" || true
+        [ -n "$T3_LOGS" ] && exec_engine logs --follow "$T3_NAME"
         ;;
 
 
@@ -1115,13 +1119,12 @@ case "$CMD" in
             "$T3_NAME" 2>/dev/null)
 
         # Stop and eventually remove the container
-        #stop_container "$T3_NAME"
         if run_engine kill --signal SIGINT "$T3_NAME" && run_engine stop --time 5 "$T3_NAME"; then
             echo '*** '"Container '$T3_NAME' stopped"' ***'
         fi
 
         # Remove the container(s) if so requested
-        [ -n "$REMOVE_OPTION" ] && run_engine container rm "$T3_NAME"
+        [ -n "$REMOVE_OPTION" ] && run_engine container rm "$T3_NAME" || true
 
         # Wait until the container was removed eventually
         $SLEEP 1
@@ -1135,7 +1138,11 @@ case "$CMD" in
 
 
     env)
-        exec_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
+        [ -z "$T3_LOGS" ] && exec_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
+
+        CMD_START=$(date -u +%FT%TZ)
+        run_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
+        exec_engine logs --since $CMD_START "$T3_NAME"
         ;;
 
 
