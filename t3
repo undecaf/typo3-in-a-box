@@ -415,13 +415,17 @@ Options (default values can be overridden by environment variables):
       Sets the (initial) value of a container environment variable. Most variables
       can be changed afterwards by '$SCRIPT env'. This option may appear
       multiple times.
-      Defaults: \$T3_TIMEZONE, \$T3_LANG, \$T3_MODE, \$T3_COMPOSER_EXCLUDE,
-                \$T3_PHP_..., \$T3_php_...
+      Defaults: \$T3_MODE, \$T3_COMPOSER_EXCLUDE, \$T3_PHP_..., \$T3_php_...
  
   --logs, -l
       Streams the log output of the new TYPO3 instance to the console until 
       CTRL-C is typed.
       Default: \$T3_LOGS, or not set.
+ 
+  --log-host=HOST[:PORT], -L HOST[:PORT]
+      Sends the log output to the specified HOST and PORT (default: 514),
+      using the BSD syslog protocol (RFC3164).
+      Default: \$T3_LOG_HOST, or not set.
  
   --debug, -d
       If this option is present then Docker/Podman commands and output appear
@@ -851,6 +855,16 @@ while [ $# -gt 0 ]; do
             shift
             ;;
 
+        # Send log output to a BSD syslog host
+        run:@(-L|--log-host))
+            shift
+            ;&
+
+        run:--log-host=*)
+            T3_LOG_HOST="${1#--log-host=}"
+            shift
+            ;;
+
         # Stream log output to console
         logs:@(-f|--follow))
             FOLLOW_OPTION='--follow'
@@ -948,6 +962,19 @@ RE='^((.+),(.+))?$'
 [[ "$T3_CERTFILES" =~ $RE ]] || err_exit "Invalid option value: '$T3_CERTFILES'"
 KEY_FILE=${BASH_REMATCH[2]}
 CERT_FILE=${BASH_REMATCH[3]}
+
+# Parse BSD syslog host option
+if [ -n "$T3_LOG_HOST" ]; then
+    RE='^([^: ]+)(:([[:digit:]]+))?$'
+    [[ "$T3_LOG_HOST" =~ $RE ]] || err_exit "Invalid option value: '$T3_LOG_HOST'"
+    LOG_HOST_IP=${BASH_REMATCH[1]}
+    LOG_HOST_PORT=${BASH_REMATCH[3]}
+    LOG_HOST_PORT=${LOG_HOST_PORT:-514}
+
+    ENV_OPTIONS="$ENV_OPTIONS \
+        --env LOG_HOST_IP=$LOG_HOST_IP \
+        --env LOG_HOST_PORT=$LOG_HOST_PORT"
+fi
 
 # Initialize container environment variables, keep the 'T3_' prefix
 RE='^(T3_('$RE_CONT_ENV'))=(.*)$'
