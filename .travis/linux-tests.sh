@@ -88,7 +88,7 @@ source .travis/setenv.inc
 RE='^8\.7.*'
 if [[ "$TYPO3_VER" =~ $RE ]]; then
     export TYPO3_V8=true
-    export T3_DB_TYPE=mariadb
+    export T3_DB_TYPE=postgres
 else
     export TYPO3_V8=
     export T3_DB_TYPE=
