@@ -82,7 +82,7 @@ source s_apache_error { pipe("$APACHE_LOGS/error"); };
 source s_mysql_error { pipe("$MYSQL_LOGS/error"); };
 
 template t_container {
-    template("[\${D}{R_YEAR}-\${D}{R_MONTH}-\${D}{R_DAY} \${D}{R_HOUR}:\${D}{R_MIN}:\${D}{R_SEC}.\${D}{R_MSEC} \${D}{R_TZOFFSET}] \${D}{LEVEL} \${D}{MSGHDR}\${D}{MSG}\\n");
+    template("\${D}{R_ISODATE} \${D}{LEVEL} \${D}{MSGHDR}\${D}{MSG}\\n");
 };
 
 log { 
