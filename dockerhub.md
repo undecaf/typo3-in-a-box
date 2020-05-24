@@ -86,12 +86,12 @@ As their version numbers suggest, images in this repository should be
 considered still as unstable.
 
 -   `latest`: most recent image of the most recent TYPO3 version 
-    (currently [`10.4.2`](https://packagist.org/packages/typo3/cms#v10.4.2))
+    (currently [`10.4.3`](https://packagist.org/packages/typo3/cms#v10.4.3))
 -   `8.7-latest`, `9.5-latest`, `10.4-latest`:  
     most recent image of the most recent TYPO3&nbsp;8.7/9.5/10.4
     revision (currently [`8.7.32`](https://packagist.org/packages/typo3/cms#v8.7.32),
     [`9.5.18`](https://packagist.org/packages/typo3/cms#v9.5.18) and
-    [`10.4.2`](https://packagist.org/packages/typo3/cms#v10.4.2))
+    [`10.4.3`](https://packagist.org/packages/typo3/cms#v10.4.3))
 -   `8.7-dev`, `9.5-dev`, `10.4-dev`:  
     weekly builds of the most recent _development image_ of the most
     recent TYPO3&nbsp;8.7/9.5/10.4 _development version_ (currently
