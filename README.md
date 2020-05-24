@@ -218,26 +218,45 @@ a custom SSL certificate.
 ### Logging
 
 Events at startup and during operation of Apache, PHP, MariaDB and 
-PostgreSQL are logged in `syslog` format. These logs are captured
-by the container engine and can be viewed at the host:
+PostgreSQL are logged by the container and are captured by the
+container engine. Logs can be viewed at the host like so:
 
 ```bash
 $ t3 logs
-Sep 20 07:02:45 typo3 syslog.info syslogd started: BusyBox v1.30.1
-Sep 20 07:02:45 typo3 local0.info root: TYPO3 10.0, container image tags: 10.0-latest (built on Fri, 20 Sep 2019 07:02:43 +0000)
-Sep 20 07:02:45 typo3 local0.info root: Alpine Linux 3.10.2
-Sep 20 07:02:45 typo3 local0.info root: Server version: Apache/2.4.41 (Unix) Server built:   Aug 20 2019 08:54:21
-Sep 20 07:02:45 typo3 local0.info root: PHP 7.3.9 (cli) (built: Aug 30 2019 00:12:57) ( NTS ) Copyright (c) 1997-2018 The PHP Group Zend Engine v3.3.9, Copyright (c) 1998-2018 Zend Technologies
+[2020-05-22 09:14:26.970 +02:00] notice syslog-ng[331]: syslog-ng starting up; version='3.22.1'
+[2020-05-22 09:14:26.973 +02:00] info init-system[336]: Alpine Linux 3.11.6
+[2020-05-22 09:14:26.974 +02:00] info init-system[337]: Locale: C.UTF-8
+[2020-05-22 09:14:26.976 +02:00] info init-system[339]: Timezone: Europe/Vienna (CEST)
+[2020-05-22 09:14:27.058 +02:00] info init-typo3[437]: Setting up /var/www/localhost
+[2020-05-22 09:14:27.060 +02:00] info init-typo3[439]: Unpacking /var/www/typo3-root.tar.gz into /var/www/localhost
+[2020-05-22 09:14:29.721 +02:00] info init-typo3[450]: TYPO3 10.4, container image tags: 10.4-latest (created on Fri, 22 May 2020 09:14:29 +0200)
+[2020-05-22 09:14:29.725 +02:00] info init-typo3[453]: TYPO3 extensions have to be added/removed by the TYPO3 Extension Manager
+[2020-05-22 09:14:29.831 +02:00] info init-apache[553]: Server version: Apache/2.4.43 (Unix)
+[2020-05-22 09:14:29.841 +02:00] info init-apache[554]: Server built:   Apr  1 2020 19:19:31
+[2020-05-22 09:14:30.542 +02:00] info init-apache[565]: Created a self-signed SSL certificate, CN=typo3.poseidon
+[2020-05-22 09:14:30.673 +02:00] info init-php[672]: Apache/TYPO3 in production mode
+[2020-05-22 09:14:30.679 +02:00] info init-php[678]: XDebug disabled
+[2020-05-22 09:14:30.711 +02:00] info init-php[681]: PHP 7.3.18 (cli) (built: May 15 2020 16:10:31) ( NTS )
+[2020-05-22 09:14:30.712 +02:00] info init-php[682]: Copyright (c) 1997-2018 The PHP Group
+[2020-05-22 09:14:30.713 +02:00] info init-php[683]: Zend Engine v3.3.18, Copyright (c) 1998-2018 Zend Technologies
   ...
-Sep 20 08:56:56 typo3 local1.notice httpd: 10.0.2.2 "GET /typo3/install.php HTTP/1.1" 200 1155
-Sep 20 08:56:56 typo3 local1.notice httpd: 10.0.2.2 "GET /typo3/sysext/backend/Resources/Public/Css/backend.css?b0cad3b70147b08404c246aecb97120be7a854d2 HTTP/1.1" 200 305919
-Sep 20 08:56:56 typo3 local1.notice httpd: 10.0.2.2 "GET /typo3/sysext/install/Resources/Public/JavaScript/RequireJSConfig.js?b0cad3b70147b08404c246aecb97120be7a854d2 HTTP/1.1" 200 901
+[2020-05-22 09:16:37.963 +02:00] notice httpd[1023]: 10.0.2.2 "GET / HTTP/1.1" 302 -
+[2020-05-22 09:16:38.337 +02:00] notice httpd[1023]: 10.0.2.2 "GET /typo3/install.php HTTP/1.1" 200 1155
+[2020-05-22 09:16:38.435 +02:00] notice httpd[1023]: 10.0.2.2 "GET /typo3/sysext/backend/Resources/Public/Css/backend.css?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 304 -
+[2020-05-22 09:16:38.435 +02:00] notice httpd[1023]: 10.0.2.2 "GET /typo3/sysext/install/Resources/Public/JavaScript/RequireJSConfig.js?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 200 979
+[2020-05-22 09:16:38.436 +02:00] notice httpd[1024]: 10.0.2.2 "GET /typo3/sysext/core/Resources/Public/JavaScript/Contrib/require.js?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 200 17781
+[2020-05-22 09:16:38.507 +02:00] notice httpd[1024]: 10.0.2.2 "GET /typo3/sysext/install/Resources/Public/Icons/favicon.ico?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 200 16958
   ...
 ```
 
-For a live view, add option&nbsp;`-f` (press `Ctrl-C` to close 
-such a view). There are more [`t3 logs` options](#t3-logs) that 
+For a live view, add option&nbsp;`-f`, or add option&nbsp;`-l`
+to the [`t3 run`](#t3-run) or [`t3 env`](#t3-env) commands;
+`Ctrl-C` stops log viewing.
+There are more [`t3 logs` options](#t3-logs) that 
 let you control the amount of information that is shown.
+
+Logs can also be sent to an external BSD syslog server using 
+`t3 run` option `-L`.
 
 ---
 
@@ -599,9 +618,10 @@ The container environment can be changed at runtime by command [`t3 env`](#t3-en
 
 __Logging:__
 option&nbsp;`-l` (or `T3_LOGS` not empty) shows the
-[log output of the TYPO3 container](#t3-logs) live at the console (`Ctrl-C` stops
-the live view). Add option&nbsp;`-t` (or `T3_TIMESTAMPS` not empty) to show 
-container timestamps, too.
+[log output of the TYPO3 container](#logging) live at the console (`Ctrl-C` stops
+the live view).
+
+Option&nbsp;`-L` (or `T3_LOG_HOST`) sends log events to a BSD syslog server.
 
 __Extra options to be passed to the Docker/Podman `create` command:__
 must be placed at the end of the command line and should be separated from `t3`
@@ -642,11 +662,7 @@ __Latest log lines:__
 option&nbsp;`-l LINES` (`T3_LINES=LINES`) shows only that many lines fom the end
 of the log, or all lines if 0.
 
-__Timestamps:__
-the container engine adds its own timestamp to each log line. By default, these
-timestamps are not shown. Option&nbsp;`-t` (or `T3_TIMESTAMPS` not empty) makes them
-visible.
-
+__Log lines since a timestamp:__
 To shows only log lines since a timestamp, specify `-s TIMESTAMP`
 (or set `T3_SINCE=TIMESTAMP`). `TIMESTAMP` can be
 a [Unix timestamp](https://stackoverflow.com/questions/20822821/what-is-a-unix-timestamp-and-why-use-it#20823376),
@@ -658,23 +674,25 @@ computed relative to the client machine's time.
 
 ### `t3 env`
 
-Modifies the environment of a running TYPO3 container by setting
-[container environment variables](#container-environment-variables):
+Modifies the environment of a running TYPO3 container:
 
 ```bash
-$ t3 env [option]... [NAME=VALUE]...
+$ t3 env [option]... [NAME=VALUE | NAME= | NAME]...
 ```
 
-If no `NAME=VALUE` pairs were specified then this command shows the current
-enrivonment.
-
-__Container environment variables:__
-control the time zone and language inside the container, TYPO3 mode, PHP settings and Composer operation; see [this table](#container-environment-variables) for details.
-
-Use option&nbsp;`NAME=VALUE` to assign a value to a container environment variable.
-This option may appear multiple times.
+Use option&nbsp;`NAME=VALUE` to assign a value to an environment variable.
+`NAME=` sets the variable to an empty value, and `NAME` (without an `=`)
+unsets (deletes) the variable.
 
 Initial values can be assigned by command [`t3 run`](#t3-run).
+
+__Container environment variables:__
+this command can be used to change the TYPO3 mode and to modify PHP settings
+in a running container; see [this table](#container-environment-variables) for details.
+
+__Logging:__
+option&nbsp;`-l` (or `T3_LOGS` not empty) shows the
+[log output](#logging) of this command at the console.
 
 ---
 
@@ -745,9 +763,9 @@ that environment variable is not set.
 | `--db-owner`<br>`-O` | `run` | Indicates that the current user should appear as the owner of the database working directory (and its content) at the host.<br>Default: `$T3_DB_OWNER`, or not set. |
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option&nbsp;`--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). Most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. |
-| `--logs`<br>`-l` | `run` | Streams the log output of the new TYPO3 instance to the console until `Ctrl-C` is typed.<br>Default: `$T3_LOGS`, or not set. |
-| `--timestamps`<br>`-t` | `run`<br>`logs` | Shows timestamps in the log output.<br>Default: `$T3_TIMESTAMPS`, or not set. |
+| `--logs`<br>`-l` | `run`<br>`env` | Streams the log output of the new TYPO3 instance to the console until `Ctrl-C` is typed.<br>Default: `$T3_LOGS`, or not set. |
 | `--since=TIMESTAMP`<br>`-s TIMESTAMP` | `logs` | Shows only log lines since `TIMESTAMP`. This can be a [Unix timestamp](https://stackoverflow.com/questions/20822821/what-is-a-unix-timestamp-and-why-use-it#20823376), a [date formatted timestamp](https://www.w3.org/TR/NOTE-datetime), or a [Go duration string](https://golang.org/pkg/time/#ParseDuration) (e.g. `10m`, `1h30m`) computed relative to the client machine's time.<br>Default: `$T3_SINCE`, or not set. |
+| `--log-host=HOST[:PORT]`<br>`-L HOST[:PORT]` | `run` | Sends the log output to the specified HOST and PORT (default: 514), using the [BSD syslog protocol (RFC3164)](https://www.ietf.org/rfc/rfc3164.txt).<br>Default: `$T3_LOG_HOST`, or not set. |
 | `--follow`<br>`-f` | `logs` | Streams the log output to the console until `Ctrl-C` is typed.<br>Default: `$T3_FOLLOW`, or not set. |
 | `--tail=LINES`<br>`-l LINES` | `logs` | Shows only that many lines from the end of the log, or all lines if 0.<br>Default: `$T3_TAIL`, or not set. |
 | `--rm`<br>`-R` | `stop` | Causes the TYPO3 container to be removed after being stopped. |
@@ -784,8 +802,8 @@ they can define the environment of a particular TYPO3 instance for all `t3` comm
 | `T3_DB_PW` | Password of the TYPO3 database; effective only for MariaDB and PostgreSQL. | `t3` |
 | `T3_DB_ROOT_PW` | Password of the MariaDB root user; effective only for MariaDB and PostgreSQL. | `toor` |
 | `T3_LOGS` | If non-empty then the log output of a new TYPO3 instance is being streamed to the console until `Ctrl-C` is typed. | empty |
-| `T3_TIMESTAMPS` | Shows timestamps in the log output if non-empty. | empty |
 | `T3_SINCE` | Shows only log lines since `$T3_SINCE`. This can be a [Unix timestamp](https://stackoverflow.com/questions/20822821/what-is-a-unix-timestamp-and-why-use-it#20823376), a [date formatted timestamp](https://www.w3.org/TR/NOTE-datetime), or a [Go duration string](https://golang.org/pkg/time/#ParseDuration) (e.g. `10m`, `1h30m`) computed relative to the client machine's time. | empty |
+| `T3_LOG_HOST` | Sends the log output to the specified HOST and PORT (default: 514), using the [BSD syslog protocol (RFC3164)](https://www.ietf.org/rfc/rfc3164.txt). | empty |
 | `T3_FOLLOW` | If non-empty then the log output is being streamed to the console until `Ctrl-C` is typed. | empty |
 | `T3_TIMEZONE`<br>`T3_LANG`<br>`T3_MODE`<br>`T3_COMPOSER_EXCLUDE`<br>`T3_PHP_...` | Initial values for [container environment variables](#container-environment-variables) `TIMEZONE`, `LANG`, `MODE`, `COMPOSER_EXCLUDE` and `PHP_...`. | empty |
 
@@ -803,7 +821,7 @@ the `t3 env` command.
 | Name | Description | Built-in default |
 |------|-------------|------------------|
 | `TIMEZONE` | Sets the TYPO3 container timezone (e.g. `Europe/Vienna`). |Timezone of your current location, or else UTC. |
-| `LANG` | Sets the language used for PostgreSQL collation and sorting. | `C.UTF-8` |
+| `LANG` | Sets the TYPO3 container locale and the default collation for MariaDB and PostgreSQL databases. | `C.UTF-8` |
 | `MODE`| <dl><dt>`prod`</dt><dd>selects production mode: TYPO3 operating in „Production Mode“, no Apache/PHP signature headers, PHP settings as per     [`php.ini-production`](https://github.com/php/php-src/blob/master/php.ini-production)</dd><dt>`dev`</dt><dd>selects development mode: TYPO3 in „Development Mode“, verbose Apache/PHP signature headers, PHP settings as recommended by [`php.ini-development`](https://github.com/php/php-src/blob/master/php.ini-development)</dd><dt>`xdebug`</dt><dd>selects development mode as above and also enables [XDebug](https://xdebug.org/)</dd></dl> | `prod` |
 | `COMPOSER_EXCLUDE` | Colon-separated list of _subdirectories_ of `/var/www/localhost` which are to be excluded from the effects of [Composer operations](#composer).<br>This is intended e.g. to protect the current version of an extension you are developing from being overwritten by an older version stored in a repository.<br>These directories need to exist only by the time Composer is invoked. | empty |
 | `PHP_...` | Environment variables prefixed with `PHP_` become `php.ini` settings with the prefix removed, e.g. `--env PHP_post_max_size=5M` becomes `post_max_size=5M`. These settings override prior settings and `MODE`. | none |
@@ -821,6 +839,8 @@ the `t3 env` command.
 -   the [Alpine Linux](https://alpinelinux.org/), [TYPO3](https://typo3.org/),
     [MariaDB](https://mariadb.org/) and [PostgreSQL](https://www.postgresql.org/)
     communities
+-   the authors of the [s6 project](http://skarnet.org/software/s6/) and the
+    [s6-overlay](https://github.com/just-containers/s6-overlay) for container images
 -   Derick Rethans for [Xdebug](https://xdebug.org/)
 -   Martin Pärtel for [bindfs](https://bindfs.org/) and the makers of
     [osxfuse](https://github.com/osxfuse/osxfuse)

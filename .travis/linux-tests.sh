@@ -125,10 +125,11 @@ source .travis/messages.inc
 
 # Test basic container and volume status
 echo $'\n*************** Basic container and volume status' >&2
+
+echo "Verifying running container and existing volumes"
 t3_ run
 verify_containers_running typo3
 verify_volumes_exist typo3-root typo3-data
-verify_logs $SUCCESS_TIMEOUT "TYPO3 $TYPO3_VER"
 
 verify_error 'Cannot run container' ./t3 run
 
@@ -139,6 +140,7 @@ verify_volumes_exist typo3-root typo3-data
 
 cleanup
 
+echo "Verifying removed container and retained volumes"
 t3_ run
 
 t3_ stop --rm
@@ -147,7 +149,13 @@ verify_volumes_exist typo3-root typo3-data
 
 docker volume prune --force >/dev/null
 
+echo "Verifying t3 argument passthrough"
 t3_ run --label foo=bar
+test "$(docker inspect --format '{{.Config.Labels.foo}}' typo3)" = 'bar'
+
+cleanup
+
+t3_ run -- --label foo=bar
 test "$(docker inspect --format '{{.Config.Labels.foo}}' typo3)" = 'bar'
 
 cleanup
@@ -158,15 +166,8 @@ echo $'\n*************** Logging' >&2
 
 echo "Verifying TYPO3 version and log output"
 t3_ run
-sleep $SUCCESS_TIMEOUT    # for TYPO3 8.7, MariaDB startup will take that long
-
-t3_ logs -f >$TEMP_FILE &
-PID=$!
-t3_ env
-sleep $FAILURE_TIMEOUT
-kill $PID
-grep -q 'typo3 local0.info root: Apache/TYPO3' $TEMP_FILE
-grep -q "typo3 local0.info root: TYPO3 $TYPO3_VER" $TEMP_FILE
+verify_logs $SUCCESS_TIMEOUT ' Apache/TYPO3'
+verify_logs $SUCCESS_TIMEOUT " TYPO3 $TYPO3_VER"
 cleanup
 
 
@@ -210,13 +211,13 @@ for DB_TYPE in mariadb postgresql; do
     echo "Pinging $DB_TYPE" >&2
     case $DB_TYPE in
         mariadb)
+            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
             verify_cmd_success $SUCCESS_TIMEOUT mysql -h $HOST_IP -P $DB_PORT -D t3 -u t3 --password=t3 -e 'quit' t3
-            verify_logs $SUCCESS_TIMEOUT 'mysqld: ready for connections'
             ;;
 
         postgresql)
+            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
             verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d t3 -U t3 -q
-            verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
             ;;
     esac
 
@@ -234,13 +235,13 @@ for DB_TYPE in mariadb postgresql; do
     echo "Pinging $DB_TYPE" >&2
     case $DB_TYPE in
         mariadb)
+            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
             verify_cmd_success $SUCCESS_TIMEOUT mysql -h $HOST_IP -P $DB_PORT -D $DB_NAME -u $DB_USER --password=$DB_PW -e 'quit' $DB_NAME
-            verify_logs $SUCCESS_TIMEOUT 'mysqld: ready for connections'
             ;;
 
         postgresql)
+            verify_logs $SUCCESS_TIMEOUT '[services.d] done'
             verify_cmd_success $SUCCESS_TIMEOUT pg_isready -h $HOST_IP -p $DB_PORT -d $DB_NAME -U $DB_USER -q
-            verify_logs $SUCCESS_TIMEOUT 'ready to accept connections'
             ;;
     esac
 
@@ -306,11 +307,11 @@ sudo rm -rf "$ROOT_VOL" "$DB_VOL"
 if [ -z "$TYPO3_V8" ]; then
     echo 'Testing interoperability of Apache and SQLite' >&2
     t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
-    verify_logs $SUCCESS_TIMEOUT 'SQLite ready'
+    verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 
     t3_ stop --rm
     t3_ run -v "$ROOT_VOL" -V "$DB_VOL" -O -D sqlite
-    verify_logs $SUCCESS_TIMEOUT 'SQLite ready'
+    verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 
     cleanup
     sudo rm -rf "$ROOT_VOL" "$DB_VOL"
@@ -348,7 +349,7 @@ cleanup
 
 t3_ run -c
 verify_logs $SUCCESS_TIMEOUT 'Composer Mode'
-verify_cmd_success $SUCCESS_TIMEOUT t3_ composer show | grep -q -F 'typo3/cms-'
+verify_cmd_success $SUCCESS_TIMEOUT t3_ composer show | grep -q -F 'typo3/cms-core'
 cleanup
 
 
@@ -370,44 +371,46 @@ t3_ run --env MODE=dev
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
 
 echo "Verifying MODE check" >&2
-t3_ env MODE=abc 2>&1 | grep -q -F 'Unknown mode'
+verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+t3_ env --log MODE=abc | grep -q -F 'Unknown mode'
 
 cleanup
 
 echo "Verifying mode changes and abbreviations" >&2
 T3_MODE=d t3_ run
 verify_logs $SUCCESS_TIMEOUT 'developer mode'
+verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
 grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$' $TEMP_FILE && grep -q '^X-Powered-By: PHP/.*$' $TEMP_FILE
 
-t3_ env MODE=pr | grep -q -F 'production mode'
+t3_ env -l MODE=pr | grep -q -F 'production mode'
 verify_cmd_success $FAILURE_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
 ! grep -q '^Server: Apache/' $TEMP_FILE && ! grep -q '^X-Powered-By:' $TEMP_FILE
 
 echo "Verifying developer mode with XDebug" >&2
-t3_ env MODE=x | grep -q -F 'developer mode with XDebug'
+t3_ env -l MODE=x | grep -q -F 'developer mode with XDebug'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL >$TEMP_FILE
 grep -q '^Server: Apache/.* PHP/.* OpenSSL/.*$' $TEMP_FILE && grep -q '^X-Powered-By: PHP/.*$' $TEMP_FILE
 
 echo "Verifying MODE persistence" >&2
-t3_ env PHP_foo=bar | grep -q -F 'developer mode with XDebug'
+t3_ env -l PHP_foo=bar | grep -q -F 'developer mode with XDebug'
 
 echo "Verifying php.ini setting" >&2
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 echo "Verifying settings precedence" >&2
-T3_MODE=dev PHP_foo=xyz t3_ env MODE=x PHP_foo=bar | grep -q -F 'developer mode with XDebug'
+T3_MODE=dev PHP_foo=xyz t3_ env -l MODE=x PHP_foo=bar | grep -q -F 'developer mode with XDebug'
 verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 cleanup
 
 t3_ run -c
-sleep $SUCCESS_TIMEOUT    # for TYPO3 8.7, MariaDB startup will take that long
+verify_logs $SUCCESS_TIMEOUT '[services.d] done'
 
 echo "Verifying that COMPOSER_EXCLUDE was set"
 EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
 
-t3_ env COMPOSER_EXCLUDE=$EXCLUDED >$TEMP_FILE
+t3_ env -l COMPOSER_EXCLUDE=$EXCLUDED >$TEMP_FILE
 IFS=: read -ra DIRS <<< "$EXCLUDED"
 for D in "${DIRS[@]}"; do
     grep -q -F "$D" $TEMP_FILE
@@ -423,8 +426,21 @@ done
 
 cleanup
 
-echo "Verifying that COMPOSER_EXCLUDE was set"
-EXCLUDED=public/typo3/sysext/core:public/typo3/sysext/setup
+echo "Verifying setting, changing and unsetting of arbitrary variables"
+t3_ run
+verify_logs $SUCCESS_TIMEOUT '[services.d] done'
+
+t3_ env A=foo BC=bar DEF=baz
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="foo"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC="bar"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF="baz"'
+
+t3_ env A=42 BC= DEF
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="42"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC=""'
+! verify_cmd_success $FAILURE_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF='
+cleanup
+
 
 # Test certificates
 HOST_NAME=dev.under.test

@@ -1,5 +1,14 @@
 #!/bin/sh
 
+#
+# Builds the platform (but does not configure it yet)
+# ===================================================
+#
+
+set -e
+
+. /usr/local/lib/proxy.inc
+
 # Show what is being built
 echo $'\n*************** '"Building TYPO3 $TYPO3_VER, container image tags: $DEPLOY_TAGS, commit: $COMMIT"
 
@@ -22,6 +31,13 @@ EOF
 mv -f $E /etc/environment
 chmod 644 /etc/environment
 
+# Set up the build environment
+. /etc/environment
+
+# Install certificates for a caching proxy, if present
+# (irrelevant for apk as apk uses HTTP and has additional checksums)
+install_proxy_certs
+
 # Add extra repositories
 mkdir -p /etc/apk
 cat >>/etc/apk/repositories <<EOF
@@ -41,7 +57,7 @@ git clone https://gitlab.com/rilian-la-te/$MUSL_LOCALES
 
 cd $MUSL_LOCALES
 cmake -DLOCALE_PROFILE=OFF -DCMAKE_INSTALL_PREFIX:PATH=/usr . >/dev/null
-make
+make >/dev/null
 make install
 
 cd ..
@@ -50,15 +66,15 @@ apk -q del .$MUSL_LOCALES
 
 # Build bindfs, see https://github.com/mpartel/bindfs, 
 # https://github.com/gliderlabs/docker-alpine/issues/268#issuecomment-297043078
-BINDFS=bindfs-1.14.3
+BINDFS=bindfs-$BINDFS_VER
 
 apk add fuse
 apk -q --no-cache --virtual .$BINDFS add curl git pkgconfig build-base fuse-dev linux-headers
-curl https://bindfs.org/downloads/$BINDFS.tar.gz | tar -xz
+curl -s -L https://bindfs.org/downloads/$BINDFS.tar.gz | tar -xz
 
 cd $BINDFS
 ./configure >/dev/null
-make
+make >/dev/null
 make install
 
 cd ..
@@ -70,6 +86,7 @@ apk add \
 	bash \
     su-exec \
     shadow \
+    syslog-ng \
 	nano \
     git \
     gettext \
@@ -79,6 +96,10 @@ apk add \
 	openssl \
     rsync \
     jq
+
+# Install s6-overlay
+curl -s -L https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VER}/s6-overlay-amd64.tar.gz \
+    | tar -xz -C /
 
 # Install Apache and PHP
 apk add \
@@ -144,9 +165,6 @@ apk add \
 apk add \
     mariadb \
     postgresql
-
-# Set up the runtime environment
-. /etc/environment
 
 # Leave a marker in $TYPO3_DATADIR so that bind mounts can be detected
 mkdir -p $TYPO3_DATADIR

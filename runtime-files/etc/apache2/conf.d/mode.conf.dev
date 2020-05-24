@@ -19,3 +19,5 @@ ServerTokens Full
 ServerSignature On
 
 SetEnv TYPO3_CONTEXT Development
+
+LogLevel notice

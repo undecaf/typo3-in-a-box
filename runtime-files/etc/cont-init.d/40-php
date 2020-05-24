@@ -1,0 +1,83 @@
+#!/bin/bash
+
+#
+# Configures PHP and XDebug
+# =========================
+#
+
+set -e
+
+. /usr/local/lib/utils.inc
+. /usr/local/lib/env.inc
+
+# Load the runtime environment
+load_env
+
+# Select developer/XDebug/production mode, accept abbreviations and ignore case
+while true; do
+    if [[ -n $MODE && dev == ${MODE,,}* ]]; then
+        log_info "Apache/TYPO3 in developer mode"
+        EXT=dev
+        XDEBUG=
+        break
+    fi
+
+    if [[ -n $MODE && xdebug == ${MODE,,}* ]]; then
+        log_info "Apache/TYPO3 in developer mode with XDebug support"
+        EXT=dev
+        XDEBUG=y
+        break
+    fi
+
+    if [[ -z $MODE || prod == ${MODE,,}* ]]; then
+        log_info "Apache/TYPO3 in production mode"
+        EXT=prod
+        XDEBUG=
+        break
+    fi
+
+    err_exit "Unknown mode: '$MODE'"
+done
+
+ln -sf /etc/apache2/conf.d/mode.conf.${EXT} /etc/apache2/conf.d/zz_mode.conf
+ln -sf /etc/php7/mode.${EXT}.template /etc/php7/conf.d/zz_50_mode.ini
+
+# Insert php.ini setting overrides
+printenv \
+    | awk -F '=' \
+        -e 'BEGIN { IGNORECASE = 1 }' \
+        -e '$1 ~ /^PHP_/ { gsub("^PHP_", "", $1); gsub(/"/, "\\\"", $2); printf "%s=\"%s\"\n", $1, $2; }' \
+    > /etc/php7/conf.d/zz_99_overrides.ini
+
+if [ -s /etc/php7/conf.d/zz_99_overrides.ini ]; then
+    while read -r LINE; do
+    	log_info "php.ini override: $LINE"
+    done </etc/php7/conf.d/zz_99_overrides.ini
+fi
+
+# Enable/disable XDebug support
+if [ -n "$XDEBUG" ]; then
+    # Connect back only if host IP not specified
+    export REMOTE_HOST=$HOST_IP
+    test -n "$HOST_IP" && set_var REMOTE_CONNECT_BACK 0 || set_var REMOTE_CONNECT_BACK 1
+
+	cat /etc/php7/xdebug.ini.template | envsubst > /etc/php7/conf.d/xdebug.ini
+	log_info "XDebug enabled"
+    while read -r LINE; do
+        log_info "php.ini XDebug: $LINE"
+    done < <(grep -E '^xdebug\.remote_(host|connect_back)=' /etc/php7/conf.d/xdebug.ini)
+
+else
+	truncate -s 0 /etc/php7/conf.d/xdebug.ini
+	log_info "XDebug disabled"
+fi
+
+# Show the list of directories to be excluded from Composer operations
+if [ -n "$COMPOSER_EXCLUDE" ]; then
+    IFS=: read -ra DIRS <<< "$COMPOSER_EXCLUDE"
+    for D in "${DIRS[@]}"; do
+        log_info "Excluded from Composer: $D"
+    done
+fi
+
+php --version | log_info

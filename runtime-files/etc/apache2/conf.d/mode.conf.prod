@@ -17,3 +17,5 @@ ServerTokens Prod
 # Set to one of:  On | Off | EMail
 #
 ServerSignature Off
+
+LogLevel warn

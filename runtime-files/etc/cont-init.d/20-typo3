@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#
+# Sets up the TYPO3 volume and configures Composer/Extension Manager mode
+# =======================================================================
+#
+
+set -e
+
+. /usr/local/lib/utils.inc
+. /usr/local/lib/env.inc
+
+# Load the runtime environment
+load_env
+
+# Set up $TYPO3_ROOT as a volume (bind-mounted or unbound)
+setup_volume $TYPO3_ROOT $APACHE_USER "$T3_OWNER" $TYPO3_ROOT_GZ
+
+# Log version info, trying to get the actual TYPO3 version from composer.lock
+RE='^([0-9]+\.){2,}[0-9]+'
+if CURRENT_TYPO3_VER=$(jq --raw-output '[.packages|.[]|{(.name): .version}]|add|."typo3/cms-core"' $TYPO3_ROOT/composer.lock 2>/dev/null) \
+        && [[ "$CURRENT_TYPO3_VER" =~ $RE ]]; then
+    TYPO3_VER=$CURRENT_TYPO3_VER
+fi
+
+log_info "TYPO3 ${TYPO3_VER}, container image tags: $DEPLOY_TAGS (created on $(date --reference ${TYPO3_ROOT} --rfc-2822))"
+
+# Deactivate Composer Mode if so requested
+if [ -n "$T3_COMPOSER_MODE" ]; then
+    if [ -f $TYPO3_ROOT/composer.json ] && \
+            grep -q -E 'define *\( *'"'TYPO3_COMPOSER_MODE'"' *, *TRUE *\)' $TYPO3_ROOT/vendor/typo3/autoload-include.php; then
+        log_info 'TYPO3 extensions have to be added/removed by Composer (Composer Mode)'
+
+    else
+        err_exit 'Cannot enable Composer Mode: it is already disabled in an existing volume'
+    fi
+
+else
+    sed -E \
+        -e "s/define *\( *'TYPO3_COMPOSER_MODE' *, *TRUE *\) *;/define('TYPO3_COMPOSER_MODE', FALSE);/" \
+        -i $TYPO3_ROOT/vendor/typo3/autoload-include.php
+    rm -rf $TYPO3_ROOT/composer.* $APACHE_HOME/.composer
+    log_info 'TYPO3 extensions have to be added/removed by the TYPO3 Extension Manager'
+fi

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#
+# Starts Apache
+# =============
+#
+
+set -e
+
+. /usr/local/lib/env.inc
+
+# Load the runtime environment
+load_env
+
+## Let s6 start Apache as a service
+exec s6-envdir ${ENV_DIR} httpd -D FOREGROUND

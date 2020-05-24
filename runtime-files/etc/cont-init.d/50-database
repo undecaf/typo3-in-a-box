@@ -1,0 +1,24 @@
+#!/bin/bash
+
+#
+# Sets up the selected database service
+# =====================================
+#
+
+set -e
+
+. /usr/local/lib/utils.inc
+. /usr/local/lib/env.inc
+
+# Load the runtime environment
+load_env
+
+# Accept abbreviated database types, ignore case
+for DB_FILE in /usr/local/database/*.inc; do
+    DB_TYPE=$(basename ${DB_FILE%.*})
+
+    # Use the matching include file to initialize the selected database
+    [[ ${DB_TYPE} == ${T3_DB_TYPE,,}* ]] && { . $DB_FILE && exit || err_exit "Initializing '$DB_TYPE' failed"; }
+done
+
+err_exit "Unknown database type: '$T3_DB_TYPE'"

@@ -1,4 +1,19 @@
-#!/bin/sh
+#!/bin/bash
 
-# Restart Apache with the specified environment settings
-env "$@" /usr/local/bin/init httpd -k graceful
+#
+# Update PHP and XDebug settings
+# ==============================
+#
+
+set -e
+
+# Update the runtime environment
+. /usr/local/lib/env.inc
+load_env
+save_env "$@"
+
+# Update settings and log
+/etc/cont-init.d/40-php
+
+# Restart Apache with the updated environment
+exec s6-envdir ${ENV_DIR} httpd -k graceful

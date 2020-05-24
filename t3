@@ -38,6 +38,8 @@ DF=$(which df)
 DIRNAME=$(which dirname)
 GREP=$(which grep)
 HOSTNAME=$(which hostname)
+IFCONFIG=$(which ifconfig)
+IP=$(which ip)
 LS=$(which ls)
 MKDIR=$(which mkdir)
 PRINTENV=$(which printenv)
@@ -65,7 +67,7 @@ test_macos() {
 #   $1  basename of shell command
 #
 test_shell() {
-    [ "$(basename $($PS -p $$ -o comm=))" = "$1" ]
+    [ "$($BASENAME $($PS -p $$ -o comm=))" = "$1" ]
 }
 
 
@@ -89,9 +91,20 @@ if test_shell 'zsh'; then
     # Do not execute EXIT traps on exit from shell functions
     setopt POSIX_TRAPS
 
+    # Echoes the first active local network IPv4 address (or nothing) to stdout
+    host_ip() {
+        $IFCONFIG -au inet 2>/dev/null | $AWK '$1 == "inet" { if( $2 !~ "127\." ) { print $2; exit } }' || true
+    }
+
 else
     # Allow '@()', '*()' etc. for parenthesized globbing expressions
     shopt -s extglob
+
+    # Echoes the first active local network IPv4 address (or nothing) to stdout
+    host_ip() {
+        local RE='src +([[:digit:]\.]+)'
+        [[ $($IP -4 route get 1.0.0.0 2>/dev/null) =~ $RE ]] && echo ${BASH_REMATCH[1]} || true
+    }
 fi
 
 
@@ -206,7 +219,7 @@ make_dir() {
 #   $1  path or basename
 #
 is_path() {
-    [ "$1" != "$(basename "$1")" ]
+    [ "$1" != "$($BASENAME "$1")" ]
 }
 
 
@@ -222,7 +235,7 @@ is_path() {
 canonicalize() {
     (
         cd "$(dirname "$1")"
-        echo "$(pwd -P)/$(basename "$1")"
+        echo "$(pwd -P)/$($BASENAME "$1")"
     )
 }
 
@@ -402,18 +415,18 @@ Options (default values can be overridden by environment variables):
       Sets the (initial) value of a container environment variable. Most variables
       can be changed afterwards by '$SCRIPT env'. This option may appear
       multiple times.
-      Defaults: \$T3_TIMEZONE, \$T3_LANG, \$T3_MODE, \$T3_COMPOSER_EXCLUDE,
-                \$T3_PHP_..., \$T3_php_...
+      Defaults: \$T3_MODE, \$T3_COMPOSER_EXCLUDE, \$T3_PHP_..., \$T3_php_...
  
   --logs, -l
       Streams the log output of the new TYPO3 instance to the console until 
       CTRL-C is typed.
       Default: \$T3_LOGS, or not set.
  
-  --timestamps, -t
-      Shows timestamps in the log output. Ignored if '--logs' is not set.
-      Default: \$T3_TIMESTAMPS, or not set.
-
+  --log-host=HOST[:PORT], -L HOST[:PORT]
+      Sends the log output to the specified HOST and PORT (default: 514),
+      using the BSD syslog protocol (RFC3164).
+      Default: \$T3_LOG_HOST, or not set.
+ 
   --debug, -d
       If this option is present then Docker/Podman commands and output appear
       at the console. Otherwise only 'stderr' is displayed.
@@ -510,10 +523,6 @@ Options (default values can be overridden by environment variables):
       if 0.
       Default: \$T3_TAIL, or not set.
 
-  --timestamps, -t
-      Shows timestamps in the log output.
-      Default: \$T3_TIMESTAMPS, or not set.
-
   --debug, -d
       If this option is present then Docker/Podman commands and output appear
       at the console. Otherwise only 'stderr' is displayed.
@@ -550,6 +559,10 @@ Options (default values can be overridden by environment variables):
   --name=NAME, -n NAME
       Same container name as specified for 't3 run'.
       Default: \$T3_NAME, or 'typo3'.
+ 
+  --logs, -l
+      Shows the log output that resulted from this command.
+      Default: \$T3_LOGS, or not set.
  
   --debug, -d
       If this option is present then Docker/Podman commands and output appear
@@ -693,7 +706,6 @@ T3_PORTS=${T3_PORTS:-127.0.0.1:8080,127.0.0.1:8443}
 REMOVE_OPTION=
 FOLLOW_OPTION=${T3_FOLLOW:+--follow}
 SINCE_OPTION=${T3_SINCE:+--since=$T3_SINCE}
-TIMESTAMPS_OPTION=${T3_TIMESTAMPS:+--timestamps}
 TAIL_OPTION=${T3_TAIL:+--tail=$T3_TAIL}
 
 while [ $# -gt 0 ]; do
@@ -841,15 +853,19 @@ while [ $# -gt 0 ]; do
             shift
             ;;
 
-        # Stream log output to console at startup
-        run:@(-l|--logs))
+        # Show the log output of this command at the console
+        @(run|env):@(-l|--logs))
             T3_LOGS=on
             shift
             ;;
 
-        # Show timestamps in log output
-        @(run|logs):@(-t|--timestamps))
-            TIMESTAMPS_OPTION='--timestamps'
+        # Send log output to a BSD syslog host
+        run:@(-L|--log-host))
+            shift
+            ;&
+
+        run:--log-host=*)
+            T3_LOG_HOST="${1#--log-host=}"
             shift
             ;;
 
@@ -921,16 +937,16 @@ ENGINE_NAME=$($BASENAME $T3_ENGINE)
 ENGINE_VERSION=$($T3_ENGINE --version)
 
 # Options that differ between container engines
+HOST_IP_ENV=
 case $ENGINE_NAME in
     docker)
-        HOST_IP_ENV=
         SUDO_PREFIX=$SUDO
         ;;
 
     podman)
-        # hostname -I is not supported under macOS, therefore:
-        HOST_IP_ENV="HOST_IP=$(ifconfig | $GREP 'inet ' | $GREP -v '127.0.0.1' | $AWK '{ print $2; }' | head -n 1)"
-        ENV_OPTIONS="$ENV_OPTIONS --env $HOST_IP_ENV"
+        # Obtain the first active local network IPv4 address
+        # XDebug will not work if there is no active local IPv4 address
+        HOST_IP=$(host_ip) && HOST_IP_ENV="--env HOST_IP=$HOST_IP"
         SUDO_PREFIX=
         ;;
 esac
@@ -950,6 +966,19 @@ RE='^((.+),(.+))?$'
 [[ "$T3_CERTFILES" =~ $RE ]] || err_exit "Invalid option value: '$T3_CERTFILES'"
 KEY_FILE=${BASH_REMATCH[2]}
 CERT_FILE=${BASH_REMATCH[3]}
+
+# Parse BSD syslog host option
+if [ -n "$T3_LOG_HOST" ]; then
+    RE='^([^: ]+)(:([[:digit:]]+))?$'
+    [[ "$T3_LOG_HOST" =~ $RE ]] || err_exit "Invalid option value: '$T3_LOG_HOST'"
+    LOG_HOST_IP=${BASH_REMATCH[1]}
+    LOG_HOST_PORT=${BASH_REMATCH[3]}
+    LOG_HOST_PORT=${LOG_HOST_PORT:-514}
+
+    ENV_OPTIONS="$ENV_OPTIONS \
+        --env LOG_HOST_IP=$LOG_HOST_IP \
+        --env LOG_HOST_PORT=$LOG_HOST_PORT"
+fi
 
 # Initialize container environment variables, keep the 'T3_' prefix
 RE='^(T3_('$RE_CONT_ENV'))=(.*)$'
@@ -1057,6 +1086,7 @@ case "$CMD" in
             $HTTP_OPTIONS \
             $DB_PORT_OPTION \
             $ENV_OPTIONS \
+            $HOST_IP_ENV \
             "$@" \
             $REPO
 
@@ -1074,7 +1104,7 @@ case "$CMD" in
         trap - EXIT
 
         # Eventually show logs
-        [ -n "$T3_LOGS" ] && exec_engine logs --follow $TIMESTAMPS_OPTION "$T3_NAME" || true
+        [ -n "$T3_LOGS" ] && exec_engine logs --follow "$T3_NAME"
         ;;
 
 
@@ -1089,13 +1119,12 @@ case "$CMD" in
             "$T3_NAME" 2>/dev/null)
 
         # Stop and eventually remove the container
-        #stop_container "$T3_NAME"
         if run_engine kill --signal SIGINT "$T3_NAME" && run_engine stop --time 5 "$T3_NAME"; then
             echo '*** '"Container '$T3_NAME' stopped"' ***'
         fi
 
         # Remove the container(s) if so requested
-        [ -n "$REMOVE_OPTION" ] && run_engine container rm "$T3_NAME"
+        [ -n "$REMOVE_OPTION" ] && run_engine container rm "$T3_NAME" || true
 
         # Wait until the container was removed eventually
         $SLEEP 1
@@ -1104,12 +1133,16 @@ case "$CMD" in
 
 
     logs)
-        exec_engine logs $FOLLOW_OPTION $SINCE_OPTION $TAIL_OPTION $TIMESTAMPS_OPTION "$T3_NAME"
+        exec_engine logs $FOLLOW_OPTION $SINCE_OPTION $TAIL_OPTION "$T3_NAME"
         ;;
 
 
     env)
-        exec_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
+        [ -z "$T3_LOGS" ] && exec_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
+
+        CMD_START=$(date -u +%FT%TZ)
+        run_engine exec "$T3_NAME" setenv $HOST_IP_ENV "$@"
+        exec_engine logs --since $CMD_START "$T3_NAME"
         ;;
 
 
