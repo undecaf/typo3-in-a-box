@@ -255,7 +255,7 @@ to the [`t3 run`](#t3-run) or [`t3 env`](#t3-env) commands;
 There are more [`t3 logs` options](#t3-logs) that 
 let you control the amount of information that is shown.
 
-Logs can also be sent to an external BSD syslog server by
+Logs can also be sent to an external BSD syslog host by
 [`t3 run`](#t3-run) option `-L`.
 
 ---
