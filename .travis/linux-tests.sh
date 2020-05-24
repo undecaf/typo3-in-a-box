@@ -369,7 +369,7 @@ verify_logs $SUCCESS_TIMEOUT 'Extension Manager'
 cleanup
 
 t3_ run -c
-verify_logs $SUCCESS_TIMEOUT 'Composer Mode'
+verify_logs $((SUCCESS_TIMEOUT*2)) 'Composer Mode'
 verify_cmd_success $SUCCESS_TIMEOUT t3_ composer show | grep -q -F 'typo3/cms-core'
 cleanup
 
