@@ -32,7 +32,7 @@ You can use your favorite IDE at the host to
 fiddle with host permissions.
 
 [Secure connections](https://github.com/undecaf/typo3-in-a-box#https-connections),
-[logging](https://github.com/undecaf/typo3-in-a-box#logging),
+[logging (also to an external syslog host)](https://github.com/undecaf/typo3-in-a-box#logging),
 [Composer Mode](https://docs.typo3.org/m/typo3/guide-installation/master/en-us/ExtensionInstallation/Index.html#install-extension-with-composer),
 [remote debugging with XDebug](https://github.com/undecaf/typo3-in-a-box#debugging-with-xdebug) and
 [database access](https://github.com/undecaf/typo3-in-a-box#accessing-the-typo3-database) are supported.
@@ -90,7 +90,7 @@ considered still as unstable.
 -   `8.7-latest`, `9.5-latest`, `10.4-latest`:  
     most recent image of the most recent TYPO3&nbsp;8.7/9.5/10.4
     revision (currently [`8.7.32`](https://packagist.org/packages/typo3/cms#v8.7.32),
-    [`9.5.17`](https://packagist.org/packages/typo3/cms#v9.5.17) and
+    [`9.5.18`](https://packagist.org/packages/typo3/cms#v9.5.18) and
     [`10.4.2`](https://packagist.org/packages/typo3/cms#v10.4.2))
 -   `8.7-dev`, `9.5-dev`, `10.4-dev`:  
     weekly builds of the most recent _development image_ of the most

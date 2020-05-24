@@ -32,7 +32,7 @@ You can use your favorite IDE at the host to
 fiddle with host permissions.
 
 [Secure connections](#https-connections),
-[logging](#logging),
+[logging (also to an external syslog host)](#logging),
 [Composer Mode](https://docs.typo3.org/m/typo3/guide-installation/master/en-us/ExtensionInstallation/Index.html#install-extension-with-composer),
 [remote debugging with XDebug](#debugging-with-xdebug) and
 [database access](#accessing-the-typo3-database) are supported.
@@ -223,29 +223,29 @@ container engine. Logs can be viewed at the host like so:
 
 ```bash
 $ t3 logs
-[2020-05-22 09:14:26.970 +02:00] notice syslog-ng[331]: syslog-ng starting up; version='3.22.1'
-[2020-05-22 09:14:26.973 +02:00] info init-system[336]: Alpine Linux 3.11.6
-[2020-05-22 09:14:26.974 +02:00] info init-system[337]: Locale: C.UTF-8
-[2020-05-22 09:14:26.976 +02:00] info init-system[339]: Timezone: Europe/Vienna (CEST)
-[2020-05-22 09:14:27.058 +02:00] info init-typo3[437]: Setting up /var/www/localhost
-[2020-05-22 09:14:27.060 +02:00] info init-typo3[439]: Unpacking /var/www/typo3-root.tar.gz into /var/www/localhost
-[2020-05-22 09:14:29.721 +02:00] info init-typo3[450]: TYPO3 10.4, container image tags: 10.4-latest (created on Fri, 22 May 2020 09:14:29 +0200)
-[2020-05-22 09:14:29.725 +02:00] info init-typo3[453]: TYPO3 extensions have to be added/removed by the TYPO3 Extension Manager
-[2020-05-22 09:14:29.831 +02:00] info init-apache[553]: Server version: Apache/2.4.43 (Unix)
-[2020-05-22 09:14:29.841 +02:00] info init-apache[554]: Server built:   Apr  1 2020 19:19:31
-[2020-05-22 09:14:30.542 +02:00] info init-apache[565]: Created a self-signed SSL certificate, CN=typo3.poseidon
-[2020-05-22 09:14:30.673 +02:00] info init-php[672]: Apache/TYPO3 in production mode
-[2020-05-22 09:14:30.679 +02:00] info init-php[678]: XDebug disabled
-[2020-05-22 09:14:30.711 +02:00] info init-php[681]: PHP 7.3.18 (cli) (built: May 15 2020 16:10:31) ( NTS )
-[2020-05-22 09:14:30.712 +02:00] info init-php[682]: Copyright (c) 1997-2018 The PHP Group
-[2020-05-22 09:14:30.713 +02:00] info init-php[683]: Zend Engine v3.3.18, Copyright (c) 1998-2018 Zend Technologies
+2020-05-22T09:14:26.970+02:00 notice syslog-ng[331]: syslog-ng starting up; version='3.22.1'
+2020-05-22T09:14:26.973+02:00 info init-system[336]: Alpine Linux 3.11.6
+2020-05-22T09:14:26.974+02:00 info init-system[337]: Locale: C.UTF-8
+2020-05-22T09:14:26.976+02:00 info init-system[339]: Timezone: Europe/Vienna (CEST)
+2020-05-22T09:14:27.058+02:00 info init-typo3[437]: Setting up /var/www/localhost
+2020-05-22T09:14:27.060+02:00 info init-typo3[439]: Unpacking /var/www/typo3-root.tar.gz into /var/www/localhost
+2020-05-22T09:14:29.721+02:00 info init-typo3[450]: TYPO3 10.4, container image tags: 10.4-latest (created on Fri, 22 May 2020 09:14:29 +0200)
+2020-05-22T09:14:29.725+02:00 info init-typo3[453]: TYPO3 extensions have to be added/removed by the TYPO3 Extension Manager
+2020-05-22T09:14:29.831+02:00 info init-apache[553]: Server version: Apache/2.4.43 (Unix)
+2020-05-22T09:14:29.841+02:00 info init-apache[554]: Server built:   Apr  1 2020 19:19:31
+2020-05-22T09:14:30.542+02:00 info init-apache[565]: Created a self-signed SSL certificate, CN=typo3.poseidon
+2020-05-22T09:14:30.673+02:00 info init-php[672]: Apache/TYPO3 in production mode
+2020-05-22T09:14:30.679+02:00 info init-php[678]: XDebug disabled
+2020-05-22T09:14:30.711+02:00 info init-php[681]: PHP 7.3.18 (cli) (built: May 15 2020 16:10:31) ( NTS )
+2020-05-22T09:14:30.712+02:00 info init-php[682]: Copyright (c) 1997-2018 The PHP Group
+2020-05-22T09:14:30.713+02:00 info init-php[683]: Zend Engine v3.3.18, Copyright (c) 1998-2018 Zend Technologies
   ...
-[2020-05-22 09:16:37.963 +02:00] notice httpd[1023]: 10.0.2.2 "GET / HTTP/1.1" 302 -
-[2020-05-22 09:16:38.337 +02:00] notice httpd[1023]: 10.0.2.2 "GET /typo3/install.php HTTP/1.1" 200 1155
-[2020-05-22 09:16:38.435 +02:00] notice httpd[1023]: 10.0.2.2 "GET /typo3/sysext/backend/Resources/Public/Css/backend.css?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 304 -
-[2020-05-22 09:16:38.435 +02:00] notice httpd[1023]: 10.0.2.2 "GET /typo3/sysext/install/Resources/Public/JavaScript/RequireJSConfig.js?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 200 979
-[2020-05-22 09:16:38.436 +02:00] notice httpd[1024]: 10.0.2.2 "GET /typo3/sysext/core/Resources/Public/JavaScript/Contrib/require.js?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 200 17781
-[2020-05-22 09:16:38.507 +02:00] notice httpd[1024]: 10.0.2.2 "GET /typo3/sysext/install/Resources/Public/Icons/favicon.ico?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 200 16958
+2020-05-22T09:16:37.963+02:00 notice httpd[1023]: 10.0.2.2 "GET / HTTP/1.1" 302 -
+2020-05-22T09:16:38.337+02:00 notice httpd[1023]: 10.0.2.2 "GET /typo3/install.php HTTP/1.1" 200 1155
+2020-05-22T09:16:38.435+02:00 notice httpd[1023]: 10.0.2.2 "GET /typo3/sysext/backend/Resources/Public/Css/backend.css?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 304 -
+2020-05-22T09:16:38.435+02:00 notice httpd[1023]: 10.0.2.2 "GET /typo3/sysext/install/Resources/Public/JavaScript/RequireJSConfig.js?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 200 979
+2020-05-22T09:16:38.436+02:00 notice httpd[1024]: 10.0.2.2 "GET /typo3/sysext/core/Resources/Public/JavaScript/Contrib/require.js?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 200 17781
+2020-05-22T09:16:38.507+02:00 notice httpd[1024]: 10.0.2.2 "GET /typo3/sysext/install/Resources/Public/Icons/favicon.ico?f36884d8ba61158da46060b3bbf5b387fb38293f HTTP/1.1" 200 16958
   ...
 ```
 
@@ -255,8 +255,8 @@ to the [`t3 run`](#t3-run) or [`t3 env`](#t3-env) commands;
 There are more [`t3 logs` options](#t3-logs) that 
 let you control the amount of information that is shown.
 
-Logs can also be sent to an external BSD syslog server using 
-`t3 run` option `-L`.
+Logs can also be sent to an external BSD syslog server by
+[`t3 run`](#t3-run) option `-L`.
 
 ---
 
