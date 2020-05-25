@@ -1138,7 +1138,7 @@ case "$CMD" in
         fi
 
         # Kill the process showing the log and suppress the termination message
-        [ -n "$LOGS_PID" ] && $KILL $LOGS_PID 2>/dev/null && wait $LOGS_PID 2>/dev/null
+        [ -n "$LOGS_PID" ] && $KILL $LOGS_PID 2>/dev/null && wait $LOGS_PID 2>/dev/null || true
 
         # Remove the container if so requested
         [ -n "$REMOVE_OPTION" ] && run_engine container rm "$T3_NAME" || true
