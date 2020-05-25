@@ -166,11 +166,14 @@ cleanup
 # Test logging
 echo $'\n*************** Logging' >&2
 
-echo "Verifying TYPO3 version and log output"
+echo "Verifying TYPO3 version and logging at startup and shutdown"
 t3_ run
 verify_logs $SUCCESS_TIMEOUT ' Apache/TYPO3'
 verify_logs $SUCCESS_TIMEOUT " TYPO3 $TYPO3_VER"
-cleanup
+
+verify_cmd_success $SUCCESS_TIMEOUT t3_ stop -R -l | grep -q 'syslog-ng shutting down'
+
+docker volume prune --force >/dev/null
 
 
 # Test HTTP and HTTPS connectivity

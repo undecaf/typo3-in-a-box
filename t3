@@ -40,6 +40,7 @@ GREP=$(which grep)
 HOSTNAME=$(which hostname)
 IFCONFIG=$(which ifconfig)
 IP=$(which ip)
+KILL=$(which kill)
 LS=$(which ls)
 MKDIR=$(which mkdir)
 PRINTENV=$(which printenv)
@@ -468,6 +469,10 @@ Options (default values can be overridden by environment variables):
       Same container name as specified for 't3 run'.
       Default: \$T3_NAME, or 'typo3'.
  
+  --logs, -l
+      Shows the log output that resulted from this command.
+      Default: \$T3_LOGS, or not set.
+ 
   --debug, -d
       If this option is present then Docker/Podman commands and output appear
       at the console. Otherwise only 'stderr' is displayed.
@@ -854,7 +859,7 @@ while [ $# -gt 0 ]; do
             ;;
 
         # Show the log output of this command at the console
-        @(run|env):@(-l|--logs))
+        @(run|stop|env):@(-l|--logs))
             T3_LOGS=on
             shift
             ;;
@@ -1118,12 +1123,24 @@ case "$CMD" in
             --format='{{range .Mounts}}{{if eq .Destination "'$T3_ROOTDIR'" "'$T3_DATADIR'"}}{{printf "%s " '$NAME_PROP'}}{{end}}{{end}}' \
             "$T3_NAME" 2>/dev/null)
 
-        # Stop and eventually remove the container
-        if run_engine kill --signal SIGINT "$T3_NAME" && run_engine stop --time 5 "$T3_NAME"; then
+        # Start showing the log if so requested
+        if [ -n "$T3_LOGS" ]; then
+            CMD_START=$(date -u +%FT%TZ)
+            $T3_ENGINE logs --follow --since $CMD_START "$T3_NAME" &
+            LOGS_PID=$!
+        else
+            LOGS_PID=
+        fi
+
+        # Stop the container
+        if run_engine stop "$T3_NAME"; then
             echo '*** '"Container '$T3_NAME' stopped"' ***'
         fi
 
-        # Remove the container(s) if so requested
+        # Kill the process showing the log and suppress the termination message
+        [ -n "$LOGS_PID" ] && $KILL $LOGS_PID 2>/dev/null && wait $LOGS_PID 2>/dev/null
+
+        # Remove the container if so requested
         [ -n "$REMOVE_OPTION" ] && run_engine container rm "$T3_NAME" || true
 
         # Wait until the container was removed eventually

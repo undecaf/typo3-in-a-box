@@ -621,7 +621,7 @@ option&nbsp;`-l` (or `T3_LOGS` not empty) shows the
 [log output of the TYPO3 container](#logging) live at the console (`Ctrl-C` stops
 the live view).
 
-Option&nbsp;`-L` (or `T3_LOG_HOST`) sends log events to a BSD syslog server.
+Option&nbsp;`-L` (or `T3_LOG_HOST`) sends log events to a BSD syslog server until the container is stopped.
 
 __Extra options to be passed to the Docker/Podman `create` command:__
 must be placed at the end of the command line and should be separated from `t3`
@@ -636,6 +636,10 @@ Stops a TYPO3 container if it is running and optionally removes it:
 ```bash
 $ t3 stop [option]...
 ```
+
+__Logging:__
+option&nbsp;`-l` (or `T3_LOGS` not empty) shows the
+log output during shutdown at the console.
 
 __Remove stopped container:__
 add option&nbsp;`-R` if the TYPO3 container should be removed after being stopped.
@@ -763,7 +767,7 @@ that environment variable is not set.
 | `--db-owner`<br>`-O` | `run` | Indicates that the current user should appear as the owner of the database working directory (and its content) at the host.<br>Default: `$T3_DB_OWNER`, or not set. |
 | `--db-port=PORT`<br>`-P PORT` | `run` | Host interface (optional) and port where to publish the database port; requires option&nbsp;`--db-type`.<br> Defaults: `$T3_DB_PORT`, or `127.0.0.1:3306` for MariaDB and `127.0.0.1:5432` for PostgreSQL. |
 | `--env NAME=VALUE` | `run` | Sets the (initial) value of a [container environment variable](#container-environment-variables), eventually overriding the corresponding [host environment variable](#host-environment-variables). Most variables can be changed afterwards by `t3 env`.<br>This option may appear multiple times. |
-| `--logs`<br>`-l` | `run`<br>`env` | Streams the log output of the new TYPO3 instance to the console until `Ctrl-C` is typed.<br>Default: `$T3_LOGS`, or not set. |
+| `--logs`<br>`-l` | `run`<br>`stop`<br>`env` | Shows the log output of the TYPO3 instance at the console; stopped by `Ctrl-C`.<br>Default: `$T3_LOGS`, or not set. |
 | `--since=TIMESTAMP`<br>`-s TIMESTAMP` | `logs` | Shows only log lines since `TIMESTAMP`. This can be a [Unix timestamp](https://stackoverflow.com/questions/20822821/what-is-a-unix-timestamp-and-why-use-it#20823376), a [date formatted timestamp](https://www.w3.org/TR/NOTE-datetime), or a [Go duration string](https://golang.org/pkg/time/#ParseDuration) (e.g. `10m`, `1h30m`) computed relative to the client machine's time.<br>Default: `$T3_SINCE`, or not set. |
 | `--log-host=HOST[:PORT]`<br>`-L HOST[:PORT]` | `run` | Sends the log output to the specified HOST and PORT (default: 514), using the [BSD syslog protocol (RFC3164)](https://www.ietf.org/rfc/rfc3164.txt).<br>Default: `$T3_LOG_HOST`, or not set. |
 | `--follow`<br>`-f` | `logs` | Streams the log output to the console until `Ctrl-C` is typed.<br>Default: `$T3_FOLLOW`, or not set. |
@@ -801,7 +805,7 @@ they can define the environment of a particular TYPO3 instance for all `t3` comm
 | `T3_DB_USER` | Name of the TYPO3 database owner; effective only for MariaDB and PostgreSQL. | `t3` |
 | `T3_DB_PW` | Password of the TYPO3 database; effective only for MariaDB and PostgreSQL. | `t3` |
 | `T3_DB_ROOT_PW` | Password of the MariaDB root user; effective only for MariaDB and PostgreSQL. | `toor` |
-| `T3_LOGS` | If non-empty then the log output of a new TYPO3 instance is being streamed to the console until `Ctrl-C` is typed. | empty |
+| `T3_LOGS` | If non-empty then the log output of the TYPO3 instance is shown at the console; stopped by `Ctrl-C`. | empty |
 | `T3_SINCE` | Shows only log lines since `$T3_SINCE`. This can be a [Unix timestamp](https://stackoverflow.com/questions/20822821/what-is-a-unix-timestamp-and-why-use-it#20823376), a [date formatted timestamp](https://www.w3.org/TR/NOTE-datetime), or a [Go duration string](https://golang.org/pkg/time/#ParseDuration) (e.g. `10m`, `1h30m`) computed relative to the client machine's time. | empty |
 | `T3_LOG_HOST` | Sends the log output to the specified HOST and PORT (default: 514), using the [BSD syslog protocol (RFC3164)](https://www.ietf.org/rfc/rfc3164.txt). | empty |
 | `T3_FOLLOW` | If non-empty then the log output is being streamed to the console until `Ctrl-C` is typed. | empty |
