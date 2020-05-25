@@ -250,8 +250,7 @@ $ t3 logs
 ```
 
 For a live view, add option&nbsp;`-f`, or add option&nbsp;`-l`
-to the [`t3 run`](#t3-run) or [`t3 env`](#t3-env) commands;
-`Ctrl-C` stops log viewing.
+to other `t3` commands; `Ctrl-C` stops log viewing.
 There are more [`t3 logs` options](#t3-logs) that 
 let you control the amount of information that is shown.
 
