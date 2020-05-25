@@ -171,7 +171,8 @@ t3_ run
 verify_logs $SUCCESS_TIMEOUT ' Apache/TYPO3'
 verify_logs $SUCCESS_TIMEOUT " TYPO3 $TYPO3_VER"
 
-verify_cmd_success $SUCCESS_TIMEOUT t3_ stop -R -l | grep -q 'syslog-ng shutting down'
+verify_cmd_success $SUCCESS_TIMEOUT t3_ stop -R -l >$TEMP_FILE
+grep -q 'syslog-ng shutting down' $TEMP_FILE
 
 docker volume prune --force >/dev/null
 
