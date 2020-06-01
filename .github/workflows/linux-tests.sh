@@ -132,7 +132,7 @@ source .github/workflows/messages.inc
 echo $'\n*************** Basic container and volume status' >&2
 
 echo "Verifying running container and existing volumes"
-t3_ run -d
+t3_ run
 verify_containers_running typo3
 verify_volumes_exist typo3-root typo3-data
 
@@ -217,11 +217,11 @@ echo $'\n*************** PHP error logging' >&2
 
 t3_ run
 verify_logs $SUCCESS_TIMEOUT 'AH00094'
-docker cp .travis/$(basename $SYNTAX_ERR_URL) typo3:/var/www/localhost/public/
+docker cp .github/workflows/$(basename $SYNTAX_ERR_URL) typo3:/var/www/localhost/public/
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $SYNTAX_ERR_URL | grep -q '500 Internal Server Error'
 verify_logs $SUCCESS_TIMEOUT 'syntax error'
 
-docker cp .travis/$(basename $RUNTIME_ERR_URL) typo3:/var/www/localhost/public/
+docker cp .github/workflows/$(basename $RUNTIME_ERR_URL) typo3:/var/www/localhost/public/
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $RUNTIME_ERR_URL | grep -q '200 OK'
 verify_logs $SUCCESS_TIMEOUT 'Undefined variable'
 
