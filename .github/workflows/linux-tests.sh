@@ -429,11 +429,11 @@ echo "Verifying MODE persistence" >&2
 t3_ env -l PHP_foo=bar | grep -q -F 'developer mode with XDebug'
 
 echo "Verifying php.ini setting" >&2
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 echo "Verifying settings precedence" >&2
 T3_MODE=dev PHP_foo=xyz t3_ env -l MODE=x PHP_foo=bar | grep -q -F 'developer mode with XDebug'
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 cleanup
 
@@ -464,14 +464,14 @@ t3_ run
 verify_logs $SUCCESS_TIMEOUT 'AH00094'
 
 t3_ env A=foo BC=bar DEF=baz
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="foo"'
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC="bar"'
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF="baz"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="foo"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC="bar"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF="baz"'
 
 t3_ env A=42 BC= DEF
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="42"'
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC=""'
-! verify_cmd_success $FAILURE_TIMEOUT docker exec -it typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF='
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="42"'
+verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC=""'
+! verify_cmd_success $FAILURE_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF='
 cleanup
 
 
