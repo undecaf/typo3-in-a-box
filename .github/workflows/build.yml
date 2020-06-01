@@ -6,20 +6,20 @@ on:
 
 jobs:
   build:
-    name: Build images
+    name: Build, test and deploy a particular image version
     runs-on: ubuntu-18.04
     env:
       MAJOR_VER: 10
+    #   MOST_RECENT: true
       
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Build image
         run:  $GITHUB_WORKSPACE/.github/workflows/build.sh
-    #   - name: Test under Linux
-    #     run:  $GITHUB_WORKSPACE/.github/workflows/linux-tests.sh
+      - name: Test under Linux
+        run:  $GITHUB_WORKSPACE/.github/workflows/linux-tests.sh
       - name: Deploy to Docker Hub
         env:
-          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
           REGISTRY_PASS: ${{ secrets.REGISTRY_PASS }}
         run:  $GITHUB_WORKSPACE/.github/workflows/push.sh
