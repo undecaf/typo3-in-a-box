@@ -1,0 +1,20 @@
+name: Build, test and deploy typo3-in-a-box container images
+on:
+  push:
+    branches:
+      - github-workflow
+
+jobs:
+  build:
+    name: Build images
+    runs-on: ubuntu-18.04
+    env:
+      MAJOR_VER: 10
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build image
+        run:  $GITHUB_WORKSPACE/.github/workflows/build.sh
+      - name: Test Image under Linux
+        run:  $GITHUB_WORKSPACE/.github/workflows/linux-tests.sh
