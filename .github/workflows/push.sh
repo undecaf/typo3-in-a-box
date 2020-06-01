@@ -1,9 +1,11 @@
 #!/bin/bash
 
+set -e
+
 # Set environment variables for the current job
 source .github/workflows/setenv.inc
 
-echo $'\n*************** '"Deploying $PRIMARY_IMG to $DEPLOY_TAGS"
+echo $'\n*************** '"Deploying $PRIMARY_IMG as $DEPLOY_TAGS"
 
 # Tag primary image with all applicable tags and push them simultaneously
 for T in $DEPLOY_TAGS; do 
@@ -12,9 +14,9 @@ done
 
 # Push all local tags
 docker login --username undecaf --password "$REGISTRY_PASS"
-docker push $TRAVIS_REPO_SLUG
+docker push $GITHUB_REPOSITORY
 
 # Update bages at MicroBadger only for the most recent build version
-test -n "$MOST_RECENT" \
-    && curl -X POST https://hooks.microbadger.com/images/undecaf/typo3-in-a-box/$MICROBADGER_WEBHOOK \
-    || true
+if [ -n "$MOST_RECENT" ]; then
+    curl -X POST https://hooks.microbadger.com/images/$GITHUB_REPOSITORY/$MICROBADGER_WEBHOOK
+fi

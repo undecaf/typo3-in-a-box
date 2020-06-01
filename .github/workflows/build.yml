@@ -9,6 +9,7 @@ jobs:
     name: Build, test and deploy a particular image version
     runs-on: ubuntu-18.04
     env:
+      T3_ENGINE: podman
       MAJOR_VER: 10
     #   MOST_RECENT: true
       

@@ -19,21 +19,21 @@ t3_() {
 # Returns success if all specified containers exist.
 verify_containers_exist() {
     echo "verify_containers_exist: $@" >&2
-    docker container inspect "$@" &>/dev/null \
+    $T3_ENGINE container inspect "$@" &>/dev/null \
         || { echo "verify_containers_exist failed: $@" >&2; return 1; }
 }
 
 # Returns success if all specified containers are running.
 verify_containers_running() {
     echo "verify_containers_running: $@" >&2
-    ! docker container inspect --format='{{.State.Status}}' "$@" | grep -v -q 'running' \
+    ! $T3_ENGINE container inspect --format='{{.State.Status}}' "$@" | grep -v -q 'running' \
         || { echo "verify_containers_running failed: $@" >&2; return 1; }
 }
 
 # Returns success if all specified volumes exist.
 verify_volumes_exist() {
     echo "verify_volumes_exist: $@" >&2
-    docker volume inspect "$@" &>/dev/null \
+    $T3_ENGINE volume inspect "$@" &>/dev/null \
         || { echo "verify_volumes_exist failed: $@" >&2; return 1; }
 }
 
@@ -65,7 +65,7 @@ verify_logs() {
     local STEP=2
     local T=$1
 
-    while ! docker logs "${3:-typo3}" 2>&1 | grep -q -F "$2"; do
+    while ! $T3_ENGINE logs "${3:-typo3}" 2>&1 | grep -q -F "$2"; do
         sleep $STEP
         T=$((T-STEP))
         test $T -gt 0 || { echo "verify_logs failed: '$2'" >&2; return 1; }
@@ -77,15 +77,12 @@ verify_logs() {
 # Cleans up container and volumes after a test
 cleanup() {
     t3_ stop --rm
-    docker volume prune --force >/dev/null
+    $T3_ENGINE volume prune --force >/dev/null
 }
 
 
 # Set environment variables for the current job
 source .github/workflows/setenv.inc
-
-# Make sure t3 runs Docker
-export T3_ENGINE=docker
 
 # TYPO3 v8.7 cannot use SQLite
 RE='^8\.7.*'
@@ -152,16 +149,16 @@ t3_ stop --rm
 ! verify_containers_exist typo3
 verify_volumes_exist typo3-root typo3-data
 
-docker volume prune --force >/dev/null
+$T3_ENGINE volume prune --force >/dev/null
 
 echo "Verifying t3 argument passthrough"
 t3_ run --label foo=bar
-test "$(docker inspect --format '{{.Config.Labels.foo}}' typo3)" = 'bar'
+test "$($T3_ENGINE inspect --format '{{.Config.Labels.foo}}' typo3)" = 'bar'
 
 cleanup
 
 t3_ run -- --label foo=bar
-test "$(docker inspect --format '{{.Config.Labels.foo}}' typo3)" = 'bar'
+test "$($T3_ENGINE inspect --format '{{.Config.Labels.foo}}' typo3)" = 'bar'
 
 cleanup
 
@@ -177,7 +174,7 @@ verify_logs $SUCCESS_TIMEOUT " TYPO3 $TYPO3_VER"
 verify_cmd_success $SUCCESS_TIMEOUT t3_ stop -R -l >$TEMP_FILE
 grep -q 'syslog-ng shutting down' $TEMP_FILE
 
-docker volume prune --force >/dev/null
+$T3_ENGINE volume prune --force >/dev/null
 
 
 # Test HTTP and HTTPS connectivity
@@ -217,11 +214,11 @@ echo $'\n*************** PHP error logging' >&2
 
 t3_ run
 verify_logs $SUCCESS_TIMEOUT 'AH00094'
-docker cp .github/workflows/$(basename $SYNTAX_ERR_URL) typo3:/var/www/localhost/public/
+$T3_ENGINE cp .github/workflows/$(basename $SYNTAX_ERR_URL) typo3:/var/www/localhost/public/
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $SYNTAX_ERR_URL | grep -q '500 Internal Server Error'
 verify_logs $SUCCESS_TIMEOUT 'syntax error'
 
-docker cp .github/workflows/$(basename $RUNTIME_ERR_URL) typo3:/var/www/localhost/public/
+$T3_ENGINE cp .github/workflows/$(basename $RUNTIME_ERR_URL) typo3:/var/www/localhost/public/
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $RUNTIME_ERR_URL | grep -q '200 OK'
 verify_logs $SUCCESS_TIMEOUT 'Undefined variable'
 
@@ -283,13 +280,13 @@ HOST_NAME=dev.under.test
 
 echo $'\n*************** Custom container name and hostname' >&2
 t3_ run
-test "$(docker exec typo3 hostname)" = typo3.${HOSTNAME}
+test "$($T3_ENGINE exec typo3 hostname)" = typo3.${HOSTNAME}
 cleanup
 
 T3_NAME=$CONT_NAME t3_ run -H $HOST_NAME
-test "$(docker exec $CONT_NAME hostname)" = $HOST_NAME
+test "$($T3_ENGINE exec $CONT_NAME hostname)" = $HOST_NAME
 t3_ stop -n $CONT_NAME --rm
-docker volume prune --force >/dev/null
+$T3_ENGINE volume prune --force >/dev/null
 
 
 # Test volume names, working directories and ownership
@@ -301,12 +298,12 @@ echo 'Testing volume names and persistence' >&2
 T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
 verify_volumes_exist $(basename "$ROOT_VOL") $(basename "$DB_VOL")
 verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
-FINGERPRINT="$(docker exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)"
+FINGERPRINT="$($T3_ENGINE exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)"
 
 t3_ stop --rm
 T3_ROOT=$(basename "$ROOT_VOL") t3_ run -V $(basename "$DB_VOL")
 verify_logs $SUCCESS_TIMEOUT 'SSL certificate'
-test "$FINGERPRINT" = "$(docker exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)"
+test "$FINGERPRINT" = "$($T3_ENGINE exec typo3 openssl x509 -noout -in /var/www/localhost/.ssl/server.pem -fingerprint -sha256)"
 
 cleanup
 
@@ -429,11 +426,11 @@ echo "Verifying MODE persistence" >&2
 t3_ env -l PHP_foo=bar | grep -q -F 'developer mode with XDebug'
 
 echo "Verifying php.ini setting" >&2
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
+verify_cmd_success $SUCCESS_TIMEOUT $T3_ENGINE exec -t typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 echo "Verifying settings precedence" >&2
 T3_MODE=dev PHP_foo=xyz t3_ env -l MODE=x PHP_foo=bar | grep -q -F 'developer mode with XDebug'
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
+verify_cmd_success $SUCCESS_TIMEOUT $T3_ENGINE exec -t typo3 cat /etc/php7/conf.d/zz_99_overrides.ini | grep -q -F 'foo="bar"'
 
 cleanup
 
@@ -464,14 +461,14 @@ t3_ run
 verify_logs $SUCCESS_TIMEOUT 'AH00094'
 
 t3_ env A=foo BC=bar DEF=baz
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="foo"'
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC="bar"'
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF="baz"'
+verify_cmd_success $SUCCESS_TIMEOUT $T3_ENGINE exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="foo"'
+verify_cmd_success $SUCCESS_TIMEOUT $T3_ENGINE exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC="bar"'
+verify_cmd_success $SUCCESS_TIMEOUT $T3_ENGINE exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF="baz"'
 
 t3_ env A=42 BC= DEF
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="42"'
-verify_cmd_success $SUCCESS_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC=""'
-! verify_cmd_success $FAILURE_TIMEOUT docker exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF='
+verify_cmd_success $SUCCESS_TIMEOUT $T3_ENGINE exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' A="42"'
+verify_cmd_success $SUCCESS_TIMEOUT $T3_ENGINE exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' BC=""'
+! verify_cmd_success $FAILURE_TIMEOUT $T3_ENGINE exec -t typo3 /bin/bash -c '. /root/.bashrc; export' | grep -q -F ' DEF='
 cleanup
 
 
