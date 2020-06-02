@@ -5,7 +5,7 @@ on:
       - github-workflow
 env:
   MAJOR_VER: 10
-  IMG_NAME: image-10
+  IMG_NAME: image-10.tar
   IMG_FILE: image-10.tar
 #  MOST_RECENT: true
   
@@ -19,7 +19,7 @@ jobs:
       - name: Build image
         run:  $GITHUB_WORKSPACE/.github/workflows/build.sh
       - name: Save image
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: ${{ env.IMG_NAME }}
           path: ${{ env.IMG_FILE }}
@@ -32,9 +32,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Load image
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2
         with:
           name: ${{ env.IMG_NAME }}
+          path: ${{ env.GITHUB_WORKSPACE }}
       - name: Test image under Linux
         run:  $GITHUB_WORKSPACE/.github/workflows/linux-tests.sh
 
@@ -44,9 +45,10 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - name: Load image
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2
         with:
           name: ${{ env.IMG_NAME }}
+          path: ${{ env.GITHUB_WORKSPACE }}
       - name: Deploy image to Docker Hub
         env:
           REGISTRY_PASS: ${{ secrets.REGISTRY_PASS }}
