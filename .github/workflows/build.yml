@@ -6,7 +6,7 @@ on:
 env:
   MAJOR_VER: 10
   IMG_NAME: image-10
-  IMG_NAME: image-10.tar
+  IMG_FILE: image-10.tar
 #  MOST_RECENT: true
   
 jobs:
@@ -22,7 +22,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: ${{ env.IMG_NAME }}
-          path: ${{ env.IMG_NAME }}
+          path: ${{ env.IMG_FILE }}
 
   test:
     name: Test image
