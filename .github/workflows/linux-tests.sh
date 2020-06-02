@@ -84,6 +84,9 @@ cleanup() {
 # Set environment variables for the current job
 source .github/workflows/setenv.inc
 
+# Load the image
+$T3_ENGINE load --input $IMAGE --quiet
+
 # TYPO3 v8.7 cannot use SQLite
 RE='^8\.7.*'
 if [[ "$TYPO3_VER" =~ $RE ]]; then

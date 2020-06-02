@@ -5,7 +5,7 @@ set -e
 # Set environment variables for the current job
 source .github/workflows/setenv.inc
 
-echo $'\n*************** '"Deploying $PRIMARY_IMG as $DEPLOY_TAGS"
+echo $'\n*************** '"Deploying $PRIMARY_IMG tagged as $DEPLOY_TAGS"
 
 # Tag primary image with all applicable tags and push them simultaneously
 for T in $DEPLOY_TAGS; do 

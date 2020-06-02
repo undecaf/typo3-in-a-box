@@ -5,7 +5,7 @@ cd $GITHUB_WORKSPACE
 # Set environment variables for the current job
 source .github/workflows/setenv.inc
 
-echo $'\n*************** '"Building image for tags: $DEPLOY_TAGS"
+echo $'\n*************** '"Building $PRIMARY_IMG for tags $DEPLOY_TAGS"
 
 set -x
 
@@ -18,3 +18,5 @@ docker build \
     --tag $PRIMARY_IMG \
     "$@" \
     .
+
+docker save --output $IMAGE
