@@ -3,57 +3,50 @@ on:
   push:
     branches:
       - github-workflow
-
+env:
+  WORKFLOWS: ${{ env.GITHUB_WORKSPACE }}/.github/workflows
+  MAJOR_VER: 10
+  IMG_NAME: image-${{ env.MAJOR_VER }}
+  IMG_PATH: ${{ env.GITHUB_WORKSPACE }}/image-${{ env.MAJOR_VER }}.tar
+#  MOST_RECENT: true
+  
 jobs:
   build:
     name: Build image
-    runs-on: ubuntu-18.04
-    env:
-      MAJOR_VER: 10
-    #   MOST_RECENT: true
-      
+    runs-on: ubuntu-18.04    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Build image
-        run:  $GITHUB_WORKSPACE/.github/workflows/build.sh
+        run:  ${{ env.WORKFLOWS }}/build.sh
       - name: Save image
         uses: actions/upload-artifact@v1
         with:
-          name: image-$MAJOR_VER
-          path: $GITHUB_WORKSPACE/image-$MAJOR_VER.tar
+          name: ${{ env.IMG_NAME }}
+          path: ${{ env.IMG_PATH }}
 
   test:
     name: Test image
     runs-on: ubuntu-18.04
-    env:
-      T3_ENGINE: podman
-      MAJOR_VER: 10
-    #   MOST_RECENT: true
-      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Load image
         uses: actions/download-artifact@v1
         with:
-          name: image-$MAJOR_VER
+          name: ${{ env.IMG_NAME }}
       - name: Test image under Linux
-        run:  $GITHUB_WORKSPACE/.github/workflows/linux-tests.sh
+        run:  ${{ env.WORKFLOWS }}/linux-tests.sh
 
   deploy:
     name: Deploy image
     runs-on: ubuntu-18.04
-    env:
-      MAJOR_VER: 10
-    #   MOST_RECENT: true
-      
     steps:
       - name: Load image
         uses: actions/download-artifact@v1
         with:
-          name: image-$MAJOR_VER
+          name: ${{ env.IMG_NAME }}
       - name: Deploy image to Docker Hub
         env:
           REGISTRY_PASS: ${{ secrets.REGISTRY_PASS }}
-        run:  $GITHUB_WORKSPACE/.github/workflows/push.sh
+        run:  ${{ env.WORKFLOWS }}/push.sh

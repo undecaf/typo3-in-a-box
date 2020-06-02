@@ -84,8 +84,8 @@ cleanup() {
 # Set environment variables for the current job
 source .github/workflows/setenv.inc
 
-# Load the image
-$T3_ENGINE load --input $IMG_ARTIFACT --quiet
+# Load the image that was saved by the build job
+$T3_ENGINE load --input $IMG_PATH --quiet
 
 # TYPO3 v8.7 cannot use SQLite
 RE='^8\.7.*'

@@ -7,6 +7,9 @@ source .github/workflows/setenv.inc
 
 echo $'\n*************** '"Deploying $PRIMARY_IMG tagged as $DEPLOY_TAGS"
 
+# Load the image that was saved by the build job
+docker load --input $IMG_PATH --quiet
+
 # Tag primary image with all applicable tags and push them simultaneously
 for T in $DEPLOY_TAGS; do 
     docker tag $PRIMARY_IMG $GITHUB_REPOSITORY:$T
