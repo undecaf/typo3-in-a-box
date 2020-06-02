@@ -83,6 +83,7 @@ cleanup() {
 
 # Set environment variables for the current job
 source .github/workflows/setenv.inc
+export T3_ENGINE=${T3_ENGINE:-docker}
 
 # Load the image that was saved by the build job
 $T3_ENGINE load --input $IMG_PATH --quiet
