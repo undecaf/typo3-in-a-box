@@ -5,8 +5,8 @@ on:
       - github-workflow
 env:
   MAJOR_VER: 10
-  IMG_NAME: image-${{ env.MAJOR_VER }}
-  IMG_PATH: ${{ env.GITHUB_WORKSPACE }}/image-${{ env.MAJOR_VER }}.tar
+  IMG_NAME: image-10
+  IMG_PATH: image-10.tar
 #  MOST_RECENT: true
   
 jobs:
