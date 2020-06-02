@@ -4,7 +4,6 @@ on:
     branches:
       - github-workflow
 env:
-  WORKFLOWS: ${{ env.GITHUB_WORKSPACE }}/.github/workflows
   MAJOR_VER: 10
   IMG_NAME: image-${{ env.MAJOR_VER }}
   IMG_PATH: ${{ env.GITHUB_WORKSPACE }}/image-${{ env.MAJOR_VER }}.tar
@@ -18,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Build image
-        run:  ${{ env.WORKFLOWS }}/build.sh
+        run:  $GITHUB_WORKSPACE/.github/workflows/build.sh
       - name: Save image
         uses: actions/upload-artifact@v1
         with:
@@ -36,7 +35,7 @@ jobs:
         with:
           name: ${{ env.IMG_NAME }}
       - name: Test image under Linux
-        run:  ${{ env.WORKFLOWS }}/linux-tests.sh
+        run:  $GITHUB_WORKSPACE/.github/workflows/linux-tests.sh
 
   deploy:
     name: Deploy image
@@ -49,4 +48,4 @@ jobs:
       - name: Deploy image to Docker Hub
         env:
           REGISTRY_PASS: ${{ secrets.REGISTRY_PASS }}
-        run:  ${{ env.WORKFLOWS }}/push.sh
+        run:  $GITHUB_WORKSPACE/.github/workflows/push.sh
