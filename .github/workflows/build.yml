@@ -44,6 +44,8 @@ jobs:
     needs: test
     runs-on: ubuntu-18.04
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
       - name: Load image
         uses: actions/download-artifact@v2
         with:
