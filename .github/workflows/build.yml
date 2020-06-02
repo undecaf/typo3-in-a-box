@@ -20,9 +20,9 @@ jobs:
         run:  $GITHUB_WORKSPACE/.github/workflows/build.sh
       - name: Save TYPO3 v$MAJOR_VER image
         uses: actions/upload-artifact@v1
-          with:
-            name: image-$MAJOR_VER
-            path: $IMAGE
+        with:
+          name: image-$MAJOR_VER
+          path: $IMAGE
 
   test:
     name: Test image
@@ -38,8 +38,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Load TYPO3 v$MAJOR_VER image
         uses: actions/download-artifact@v1
-          with:
-            name: image-$MAJOR_VER
+        with:
+          name: image-$MAJOR_VER
       - name: Test TYPO3 v$MAJOR_VER image under Linux
         run:  $GITHUB_WORKSPACE/.github/workflows/linux-tests.sh
 
@@ -54,8 +54,8 @@ jobs:
     steps:
       - name: Load TYPO3 v$MAJOR_VER image
         uses: actions/download-artifact@v1
-          with:
-            name: image-$MAJOR_VER
+        with:
+          name: image-$MAJOR_VER
       - name: Deploy TYPO3 v$MAJOR_VER image to Docker Hub
         env:
           REGISTRY_PASS: ${{ secrets.REGISTRY_PASS }}
