@@ -85,7 +85,7 @@ cleanup() {
 source .github/workflows/setenv.inc
 
 # Load the image
-$T3_ENGINE load --input $IMAGE --quiet
+$T3_ENGINE load --input $IMG_ARTIFACT --quiet
 
 # TYPO3 v8.7 cannot use SQLite
 RE='^8\.7.*'

@@ -10,19 +10,18 @@ jobs:
     runs-on: ubuntu-18.04
     env:
       MAJOR_VER: 10
-      IMAGE: $GITHUB_WORKSPACE/image-$MAJOR_VER
     #   MOST_RECENT: true
       
     steps:
-      - name: Checkout $GITHUB_REPOSITORY
+      - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Build TYPO3 v$MAJOR_VER image
+      - name: Build image
         run:  $GITHUB_WORKSPACE/.github/workflows/build.sh
-      - name: Save TYPO3 v$MAJOR_VER image
+      - name: Save image
         uses: actions/upload-artifact@v1
         with:
           name: image-$MAJOR_VER
-          path: $IMAGE
+          path: $GITHUB_WORKSPACE/image-$MAJOR_VER.tar
 
   test:
     name: Test image
@@ -31,16 +30,15 @@ jobs:
       T3_ENGINE: podman
       MAJOR_VER: 10
     #   MOST_RECENT: true
-      IMAGE: $GITHUB_WORKSPACE/image-$MAJOR_VER
       
     steps:
-      - name: Checkout $GITHUB_REPOSITORY
+      - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Load TYPO3 v$MAJOR_VER image
+      - name: Load image
         uses: actions/download-artifact@v1
         with:
           name: image-$MAJOR_VER
-      - name: Test TYPO3 v$MAJOR_VER image under Linux
+      - name: Test image under Linux
         run:  $GITHUB_WORKSPACE/.github/workflows/linux-tests.sh
 
   deploy:
@@ -49,14 +47,13 @@ jobs:
     env:
       MAJOR_VER: 10
     #   MOST_RECENT: true
-      IMAGE: $GITHUB_WORKSPACE/image-$MAJOR_VER
       
     steps:
-      - name: Load TYPO3 v$MAJOR_VER image
+      - name: Load image
         uses: actions/download-artifact@v1
         with:
           name: image-$MAJOR_VER
-      - name: Deploy TYPO3 v$MAJOR_VER image to Docker Hub
+      - name: Deploy image to Docker Hub
         env:
           REGISTRY_PASS: ${{ secrets.REGISTRY_PASS }}
         run:  $GITHUB_WORKSPACE/.github/workflows/push.sh

@@ -19,4 +19,4 @@ docker build \
     "$@" \
     .
 
-docker save --output $IMAGE
+docker save --output $IMG_ARTIFACT $PRIMARY_IMG

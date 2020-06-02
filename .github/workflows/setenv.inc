@@ -56,7 +56,7 @@ export DEPLOY_TAGS=$(echo "$PRIMARY_TAG $DEPLOY_TAGS" | awk '{ $1 = $1; gsub(/ /
 
 # Image-under-test
 export PRIMARY_IMG=$GITHUB_REPOSITORY:$PRIMARY_TAG
-
+export IMG_ARTIFACT=$GITHUB_WORKSPACE/image-$MAJOR_VER.tar
 
 cat <<EOF
 +-----------------------------------------------
@@ -69,5 +69,6 @@ cat <<EOF
 | PRIMARY_IMG:   '$PRIMARY_IMG'
 | PRIMARY_TAG:   '$PRIMARY_TAG'
 | DEPLOY_TAGS:   '$DEPLOY_TAGS'
+| IMG_ARTIFACT:  '$IMG_ARTIFACT'
 +-----------------------------------------------
 EOF
