@@ -19,4 +19,4 @@ docker build \
     "$@" \
     .
 
-docker save --output $IMG_PATH $PRIMARY_IMG
+docker save --output $IMG_PATH $PRIMARY_IMG >/dev/null

@@ -6,7 +6,7 @@ on:
 env:
   MAJOR_VER: 10
   IMG_NAME: image-10
-  IMG_PATH: image-10.tar
+  IMG_NAME: image-10.tar
 #  MOST_RECENT: true
   
 jobs:
@@ -22,10 +22,11 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: ${{ env.IMG_NAME }}
-          path: ${{ env.IMG_PATH }}
+          path: ${{ env.IMG_NAME }}
 
   test:
     name: Test image
+    needs: build
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout repository
@@ -39,6 +40,7 @@ jobs:
 
   deploy:
     name: Deploy image
+    needs: test
     runs-on: ubuntu-18.04
     steps:
       - name: Load image

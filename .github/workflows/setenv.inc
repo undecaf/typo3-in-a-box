@@ -8,8 +8,8 @@
 #   MAJOR_VER          major version number (required)
 #   GITHUB_REF         Git tag or Git ref (optional)
 #   GITHUB_SHA         commit hash (optional)
-#   IMG_PATH           Github workspace-relative file name of image
-#                      to be saved between jobs (required)
+#   IMG_NAME           file name of image to be saved between jobs,
+#                      relative to the Github workspace (required)
 #
 
 # Prints the MAJOR.MINOR version of a tag to stdout.
@@ -58,7 +58,7 @@ export DEPLOY_TAGS=$(echo "$PRIMARY_TAG $DEPLOY_TAGS" | awk '{ $1 = $1; gsub(/ /
 
 # Image-under-test
 export PRIMARY_IMG=$GITHUB_REPOSITORY:$PRIMARY_TAG
-export IMG_PATH=$GITHUB_WORKSPACE/$IMG_PATH
+export IMG_PATH=$GITHUB_WORKSPACE/$IMG_NAME
 
 cat <<EOF
 +-----------------------------------------------
