@@ -41,17 +41,19 @@ verify_volumes_exist() {
 # within some period of time ($1 in s).
 verify_cmd_success() {
     local STEP=2
-    local T=$1
+    local T=0
     shift
 
     echo "verify_cmd_success: $@" >&2
 
     while ! "$@"; do
         sleep $STEP
-        T=$((T-STEP))
-        test $T -gt 0 \
+        T=$((T+STEP))
+        test $T -lt $1 \
             || { echo "verify_cmd_success failed: $@" >&2; return 1; }
     done
+
+    echo "verify_cmd_success: $T s" >&2
 
     return 0
 }
@@ -63,13 +65,16 @@ verify_logs() {
     echo "verify_logs: '$2'" >&2
 
     local STEP=2
-    local T=$1
+    local T=0
 
     while ! $T3_ENGINE logs "${3:-typo3}" 2>&1 | grep -q -F "$2"; do
         sleep $STEP
-        T=$((T-STEP))
-        test $T -gt 0 || { echo "verify_logs failed: '$2'" >&2; return 1; }
+        T=$((T+STEP))
+        test $T -lt $1 \
+            || { echo "verify_logs failed: '$2'" >&2; $T3_ENGINE logs "${3:-typo3}" >&2; return 1; }
     done
+
+    echo "verify_logs: $T s" >&2
 
     return 0
 }
@@ -83,10 +88,6 @@ cleanup() {
 
 # Set environment variables for the current job
 source .github/workflows/setenv.inc
-export T3_ENGINE=${T3_ENGINE:-docker}
-
-# Load the image that was saved by the build job
-$T3_ENGINE load --input $IMG_PATH --quiet
 
 # TYPO3 v8.7 cannot use SQLite
 RE='^8\.7.*'
@@ -110,7 +111,7 @@ RUNTIME_ERR_URL=http://$HOST_IP:$HTTP_PORT/runtime-err.php
 
 # Timeouts in s
 SUCCESS_TIMEOUT=30
-FAILURE_TIMEOUT=5
+FAILURE_TIMEOUT=15
 
 # Used to capture output
 TEMP_FILE=$(mktemp)
@@ -118,11 +119,14 @@ TEMP_FILE=$(mktemp)
 
 echo $'\n*************** Testing '"TYPO3 v$TYPO3_VER, image $PRIMARY_IMG" >&2
 
-# Clean up Docker on exit
+# Clean up container engine on exit
 trap 'set +e; cleanup;' EXIT
 
 # Exit with error status if any verification fails
 set -e
+
+# Load the image under test
+$T3_ENGINE load --input $IMG_PATH --quiet
 
 
 # Test help and error handling

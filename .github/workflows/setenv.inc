@@ -60,11 +60,15 @@ export DEPLOY_TAGS=$(echo "$PRIMARY_TAG $DEPLOY_TAGS" | awk '{ $1 = $1; gsub(/ /
 export PRIMARY_IMG=$GITHUB_REPOSITORY:$PRIMARY_TAG
 export IMG_PATH=$GITHUB_WORKSPACE/$IMG_FILE
 
+# Select container engine
+export T3_ENGINE=${T3_ENGINE:-docker}
+
 cat <<EOF
 +-----------------------------------------------
 | GITHUB_REF:    '$GITHUB_REF'
 | GITHUB_SHA:    '$GITHUB_SHA'
 |
+| T3_ENGINE:     '$T3_ENGINE'
 | MAJOR_VER:     '$MAJOR_VER'
 | TYPO3_VER:     '$TYPO3_VER'
 |
