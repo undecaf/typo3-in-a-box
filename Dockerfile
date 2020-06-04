@@ -1,4 +1,4 @@
-FROM alpine:3.12
+FROM alpine:3.11
 
 # Build command arguments
 ARG BUILD_DATE
@@ -9,7 +9,7 @@ ARG TYPO3_VER=10.4
 
 # External package versions (update as appropriate)
 ARG BINDFS_VER=1.14.6
-ARG S6_OVERLAY_VER=1.22.1.0
+ARG S6_OVERLAY_VER=2.0.0.1
 
 # Build _constants_ (do not change)
 ARG APACHE_HOME=/var/www
