@@ -1,6 +1,7 @@
 .vscode
 .images
 /local
+/runtime-files/var
 /t3-composer
 /typo3-root
 /typo3-data

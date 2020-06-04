@@ -12,6 +12,7 @@ build_test: &build_test
     apt:
       packages:
         - rng-tools
+        - pandoc
   script:
     - .travis/build.sh
     - .travis/linux-tests.sh
