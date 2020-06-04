@@ -35,7 +35,8 @@ pandoc \
   --include-in-header $STYLES \
   --include-before-body $BEFORE_BODY \
   --include-after-body $AFTER_BODY \
-  --from gfm \
+  --from markdown \
+  --to html5 \
   --output $README \
   ./README.md
 
