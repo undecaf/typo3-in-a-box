@@ -4,7 +4,7 @@ set -e
 
 # Set environment variables for the current job
 source .travis/setenv.inc
-export T3_ENGINE=${T3_ENGINE:-podman}
+export T3_ENGINE=${T3_ENGINE:-docker}
 
 
 echo $'\n*************** '"Building README snapshot"
