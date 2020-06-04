@@ -40,18 +40,21 @@ verify_volumes_exist() {
 # Returns success if the specified command ($2, $3, ...) succeeds 
 # within some period of time ($1 in s).
 verify_cmd_success() {
+    local TIMEOUT=$1
     local STEP=2
-    local T=$1
+    local T=0
     shift
 
     echo "verify_cmd_success: $@" >&2
 
     while ! "$@"; do
         sleep $STEP
-        T=$((T-STEP))
-        test $T -gt 0 \
+        T=$((T+STEP))
+        test $T -lt $TIMEOUT \
             || { echo "verify_cmd_success failed: $@" >&2; return 1; }
     done
+
+    echo "verify_cmd_success: $T s" >&2
 
     return 0
 }
@@ -63,13 +66,16 @@ verify_logs() {
     echo "verify_logs: '$2'" >&2
 
     local STEP=2
-    local T=$1
+    local T=0
 
     while ! docker logs "${3:-typo3}" 2>&1 | grep -q -F "$2"; do
         sleep $STEP
-        T=$((T-STEP))
-        test $T -gt 0 || { echo "verify_logs failed: '$2'" >&2; return 1; }
+        T=$((T+STEP))
+        test $T -lt $1 \
+            || { echo "verify_logs failed: '$2'" >&2; docker logs "${3:-typo3}" >&2; return 1; }
     done
+
+    echo "verify_logs: $T s" >&2
 
     return 0
 }
