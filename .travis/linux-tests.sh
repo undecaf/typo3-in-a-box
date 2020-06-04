@@ -40,6 +40,7 @@ verify_volumes_exist() {
 # Returns success if the specified command ($2, $3, ...) succeeds 
 # within some period of time ($1 in s).
 verify_cmd_success() {
+    local TIMEOUT=$1
     local STEP=2
     local T=0
     shift
@@ -49,7 +50,7 @@ verify_cmd_success() {
     while ! "$@"; do
         sleep $STEP
         T=$((T+STEP))
-        test $T -lt $1 \
+        test $T -lt $TIMEOUT \
             || { echo "verify_cmd_success failed: $@" >&2; return 1; }
     done
 
