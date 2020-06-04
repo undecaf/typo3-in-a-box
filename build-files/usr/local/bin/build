@@ -173,10 +173,5 @@ touch $TYPO3_DATADIR/$UNBOUND_MARKER
 chmod 755 /usr/local/bin/*
 chmod 755 /etc/php7
 
-# Provide a document whichs links to the current Github README.md
-# Keep the document out of the VOLUME so that it stays in sync with the image
-mkdir -p $TYPO3_DOCROOT
-ln -s $APACHE_HOME/readme.html $TYPO3_DOCROOT/
-
 # Clean up (must be the last command in this file)
 rm -rf /var/cache/apk/* $0
