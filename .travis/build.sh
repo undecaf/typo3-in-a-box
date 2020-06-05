@@ -31,7 +31,7 @@ mkdir -p $(dirname $README)
 
 pandoc \
   --self-contained \
-  --metadata pagetitle=$TRAVIS_REPO_SLUG \
+  --metadata pagetitle='TYPO3 in a box' \
   --include-in-header $STYLES \
   --include-before-body $BEFORE_BODY \
   --include-after-body $AFTER_BODY \
