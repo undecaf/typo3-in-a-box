@@ -1,4 +1,4 @@
-# TYPO3 in a box ‒ a versatile TYPO3 8.7/9.5/10.4 image
+# TYPO3 in a box ‒ versatile TYPO3 8.7/9.5/10.4 images
 
 [![Build Status](https://travis-ci.com/undecaf/typo3-in-a-box.svg?branch=master)](https://travis-ci.com/undecaf/typo3-in-a-box)
 [![Latest release](https://img.shields.io/github/release/undecaf/typo3-in-a-box.svg)](https://github.com/undecaf/typo3-in-a-box)
@@ -156,7 +156,7 @@ $ t3 run   # abbreviated: t3 r
 [Podman](https://podman.io/) engines
 automatically, depending on which one is installed. If both are, Podman in
 [rootless mode](https://opensource.com/article/19/2/how-does-rootless-podman-work)
-will be preferred.
+is preferred unless option `-e docker` has been added to the command.
 
 To stop and remove the container, enter
 
@@ -826,7 +826,7 @@ the `t3 env` command.
 | `TIMEZONE` | Sets the TYPO3 container timezone (e.g. `Europe/Vienna`). |Timezone of your current location, or else UTC. |
 | `LANG` | Sets the TYPO3 container locale and the default collation for MariaDB and PostgreSQL databases. | `C.UTF-8` |
 | `MODE`| <dl><dt>`prod`</dt><dd>selects production mode: TYPO3 operating in „Production Mode“, no Apache/PHP signature headers, PHP settings as per     [`php.ini-production`](https://github.com/php/php-src/blob/master/php.ini-production)</dd><dt>`dev`</dt><dd>selects development mode: TYPO3 in „Development Mode“, verbose Apache/PHP signature headers, PHP settings as recommended by [`php.ini-development`](https://github.com/php/php-src/blob/master/php.ini-development)</dd><dt>`xdebug`</dt><dd>selects development mode as above and also enables [XDebug](https://xdebug.org/)</dd></dl> | `prod` |
-| `COMPOSER_EXCLUDE` | Colon-separated list of _subdirectories_ of `/var/www/localhost` which are to be excluded from the effects of [Composer operations](#composer).<br>This is intended e.g. to protect the current version of an extension you are developing from being overwritten by an older version stored in a repository.<br>These directories need to exist only by the time Composer is invoked. | empty |
+| `COMPOSER_EXCLUDE` | Colon-separated list of _subdirectories_ of `/var/www/localhost` which are to be excluded from the effects of [Composer operations](#composer).<br>This is intended e.g. to protect the current version of an extension you are developing from being overwritten by an older version from a repository.<br>These directories need to exist only by the time Composer is invoked. | empty |
 | `PHP_...` | Environment variables prefixed with `PHP_` become `php.ini` settings with the prefix removed, e.g. `--env PHP_post_max_size=5M` becomes `post_max_size=5M`. These settings override prior settings and `MODE`. | none |
 
 ---

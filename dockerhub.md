@@ -1,4 +1,4 @@
-# TYPO3 in a box ‒ a versatile TYPO3 8.7/9.5/10.4 image
+# TYPO3 in a box ‒ versatile TYPO3 8.7/9.5/10.4 images
 
 [![Build Status](https://travis-ci.com/undecaf/typo3-in-a-box.svg?branch=master)](https://travis-ci.com/undecaf/typo3-in-a-box)
 [![Latest release](https://img.shields.io/github/release/undecaf/typo3-in-a-box.svg)](https://github.com/undecaf/typo3-in-a-box)
@@ -48,7 +48,7 @@ Your personal extension directories can be
 ## [Contents](https://github.com/undecaf/typo3-in-a-box#contents)
 
 The size of the documentation exceeds the Docker Hub length limit of 25&nbsp;KB.
-Please visit the [Git repository](https://github.com/undecaf/typo3-in-a-box#typo3-in-a-box--a-versatile-typo3-8795104-image) for an extensive description of this project.
+Please visit the [Git repository](https://github.com/undecaf/typo3-in-a-box#typo3-in-a-box--versatile-typo3-8795104-images) for an extensive description of this project.
 
 -   [Running TYPO3](https://github.com/undecaf/typo3-in-a-box#running-typo3)
     -   [Quick start](https://github.com/undecaf/typo3-in-a-box#quick-start)

@@ -107,6 +107,7 @@ HTTPS_PORT=8443
 DB_PORT=3000
 INSTALL_URL=http://$HOST_IP:$HTTP_PORT/typo3/install.php
 INSTALL_URL_SECURE=https://$HOST_IP:$HTTPS_PORT/typo3/install.php
+README_URL=http://$HOST_IP:$HTTP_PORT/readme.html
 SYNTAX_ERR_URL=http://$HOST_IP:$HTTP_PORT/syntax-err.php
 RUNTIME_ERR_URL=http://$HOST_IP:$HTTP_PORT/runtime-err.php
 
@@ -190,6 +191,9 @@ t3_ run
 echo "Getting $INSTALL_URL and $INSTALL_URL_SECURE" >&2
 verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '200 OK'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Isk $INSTALL_URL_SECURE | grep -q '200 OK'
+
+echo "Getting $README_URL" >&2
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $README_URL | grep -q '200 OK'
 
 cleanup
 

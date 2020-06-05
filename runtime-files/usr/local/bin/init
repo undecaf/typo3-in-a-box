@@ -4,7 +4,7 @@
 
 # Save stdout before s6-overlay redirects it
 exec {fd}>&1
-ln -s /dev/fd/$fd $STDOUT
+ln -sf /dev/fd/$fd $STDOUT
 
 # Start s6
 exec /init
