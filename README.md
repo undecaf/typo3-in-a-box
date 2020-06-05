@@ -1,4 +1,4 @@
-# TYPO3 in a box ‒ a versatile TYPO3 8.7/9.5/10.4 image
+# TYPO3 in a box ‒ versatile TYPO3 8.7/9.5/10.4 images
 
 [![Build Status](https://travis-ci.com/undecaf/typo3-in-a-box.svg?branch=master)](https://travis-ci.com/undecaf/typo3-in-a-box)
 [![Latest release](https://img.shields.io/github/release/undecaf/typo3-in-a-box.svg)](https://github.com/undecaf/typo3-in-a-box)
