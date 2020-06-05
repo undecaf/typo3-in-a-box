@@ -193,7 +193,7 @@ verify_cmd_success $SUCCESS_TIMEOUT curl -Is $INSTALL_URL | grep -q '200 OK'
 verify_cmd_success $SUCCESS_TIMEOUT curl -Isk $INSTALL_URL_SECURE | grep -q '200 OK'
 
 echo "Getting $README_URL" >&2
-verify_cmd_success $SUCCESS_TIMEOUT curl -Is $README_URL | diff -s - runtime-files/var/www/localhost/readme.html >/dev/null
+verify_cmd_success $SUCCESS_TIMEOUT curl -Is $README_URL | grep -q '200 OK'
 
 cleanup
 
