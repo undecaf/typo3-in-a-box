@@ -22,7 +22,7 @@ load_env
 
 # Try to determine the local timezone if none was specified
 if [ -z "$T3_TIMEZONE" ]; then
-    T3_TIMEZONE="$(curl -s https://ipapi.co/timezone)"
+    T3_TIMEZONE="$(curl -s https://ipapi.co/timezone)" || log_info 'No timezone specified, and unable to determine timezone automatically'
 fi
 
 # Use timezone if specified and supported
