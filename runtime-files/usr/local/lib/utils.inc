@@ -169,3 +169,10 @@ setup_volume() {
             $1 $1
     fi
 }
+
+
+# --------------------------------------------------------------------------
+
+# Log filename and line number on errors
+#
+trap 'err_exit "$0 failed at line $LINENO" $?' ERR
