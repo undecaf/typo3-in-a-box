@@ -41,7 +41,7 @@ httpd -v | log_info
 sed -r -i -e 's/^\s*(Error|Custom)Log\s/#\0/' /etc/apache2/httpd.conf
 
 # Disable the default SSL configuration
-mv /etc/apache2/conf.d/ssl.conf /etc/apache2/conf.d/ssl.conf.disabled
+rm -f /etc/apache2/conf.d/ssl.conf
 
 # Ensure that a private key file and a certificate file are available
 mkdir -p $(dirname $APACHE_CERT)
