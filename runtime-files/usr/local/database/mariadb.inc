@@ -78,6 +78,7 @@ esac
 log_info "Collation for server and database '$T3_DB_NAME': $COLLATION"
 
 # Create the TYPO3 database and the users unless they exist already
+log_info "Ensuring that '$T3_DB_NAME' exists, granting all rights to '$T3_DB_USER'"
 mysqld \
     --datadir=$MYSQL_DATA \
     --user=$MYSQL_USER \
@@ -90,16 +91,15 @@ SET character_set_server = 'utf8';
 SET collation_server = '${COLLATION}';
 USE mysql;
 FLUSH PRIVILEGES;
-GRANT ALL ON *.* TO 'root'@'%' identified by '$T3_DB_ROOT_PW' WITH GRANT OPTION ;
-GRANT ALL ON *.* TO 'root'@'localhost' identified by '$T3_DB_ROOT_PW' WITH GRANT OPTION;
+GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY '$T3_DB_ROOT_PW' WITH GRANT OPTION ;
+GRANT ALL ON *.* TO 'root'@'localhost' IDENTIFIED BY '$T3_DB_ROOT_PW' WITH GRANT OPTION;
 SET PASSWORD FOR 'root'@'localhost'=PASSWORD('$T3_DB_ROOT_PW');
 DROP DATABASE IF EXISTS test;
 FLUSH PRIVILEGES;
 CREATE DATABASE IF NOT EXISTS \`$T3_DB_NAME\`;
 ALTER DATABASE \`$T3_DB_NAME\` CHARACTER SET utf8 COLLATE ${COLLATION};
-GRANT ALL ON \`$T3_DB_NAME\`.* TO '$T3_DB_USER'@'%' IDENTIFIED BY '$T3_DB_PW';
-GRANT ALL ON \`$T3_DB_NAME\`.* TO '$T3_DB_USER'@'localhost' IDENTIFIED BY '$T3_DB_PW';
-SET PASSWORD FOR '$T3_DB_USER'@'localhost'=PASSWORD('$T3_DB_PW');
+GRANT ALL ON \`$T3_DB_NAME\`.* TO '$T3_DB_USER'@'%';
+GRANT ALL ON \`$T3_DB_NAME\`.* TO '$T3_DB_USER'@'localhost';
 FLUSH PRIVILEGES;
 EOT
 
