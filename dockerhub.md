@@ -4,8 +4,8 @@
 [![Latest release](https://img.shields.io/github/release/undecaf/typo3-in-a-box.svg)](https://github.com/undecaf/typo3-in-a-box)
 ![Image Size](https://img.shields.io/endpoint?url=https%3A%2F%2Fdocker-size.modus-operandi.workers.dev%2Fundecaf%2Ftypo3-in-a-box%2Ftags%2Flatest)
 
-This project provides a ready-to-run and extensive
-[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.4 installation as a single container image.
+This project provides ready-to-run and extensive
+[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.4 installations as single container images.
 It is widely configurable, and thus it addresses TYPO3 editors and administrators
 as well as integrators and extension developers. Builds of the TYPO3 development
 branches are available, too.
@@ -17,7 +17,7 @@ and has [SQLite](https://www.sqlite.org/), [MariaDB](https://mariadb.org/) and
 [PostgreSQL](https://www.postgresql.org/) built in to choose from.
 It is available at [Docker Hub](https://hub.docker.com/r/undecaf/typo3-in-a-box),
 uses well below 500&nbsp;MB disk space and can run in
-[Docker](https://www.docker.com/) and [Podman](https://podman.io/).
+[Docker](https://www.docker.com/) and rootless [Podman](https://podman.io/).
 No additional container is required, and only a browser is needed
 at the host to get going.
 
@@ -86,12 +86,12 @@ As their version numbers suggest, images in this repository should be
 considered still as unstable.
 
 -   `latest`: most recent image of the most recent TYPO3 version 
-    (currently [`10.4.3`](https://packagist.org/packages/typo3/cms#v10.4.3))
+    (currently [`10.4.4`](https://packagist.org/packages/typo3/cms#v10.4.4))
 -   `8.7-latest`, `9.5-latest`, `10.4-latest`:  
     most recent image of the most recent TYPO3&nbsp;8.7/9.5/10.4
     revision (currently [`8.7.32`](https://packagist.org/packages/typo3/cms#v8.7.32),
-    [`9.5.18`](https://packagist.org/packages/typo3/cms#v9.5.18) and
-    [`10.4.3`](https://packagist.org/packages/typo3/cms#v10.4.3))
+    [`9.5.19`](https://packagist.org/packages/typo3/cms#v9.5.19) and
+    [`10.4.4`](https://packagist.org/packages/typo3/cms#v10.4.4))
 -   `8.7-dev`, `9.5-dev`, `10.4-dev`:  
     weekly builds of the most recent _development image_ of the most
     recent TYPO3&nbsp;8.7/9.5/10.4 _development version_ (currently
