@@ -21,12 +21,12 @@ ARG http_proxy
 ARG https_proxy
 
 LABEL \
-    org.opencontainers.image.title="Versatile TYPO3 8.7/9.5/10.4 images" \
+    org.opencontainers.image.title="Versatile TYPO3 8.7/9.5/10.4/11.0 images" \
 	org.opencontainers.image.description="TYPO3, Apache, PHP, Composer, ImageMagick; SQLite, MariaDB and PostgreSQL databases" \
 	org.opencontainers.image.version="${PRIMARY_TAG}" \
 	org.opencontainers.image.revision="${COMMIT}" \
 	org.opencontainers.image.url="https://hub.docker.com/r/undecaf/typo3-in-a-box" \
-	org.opencontainers.image.documentation="https://github.com/undecaf/typo3-in-a-box/#typo3-in-a-box--versatile-typo3-8795104-images" \
+	org.opencontainers.image.documentation="https://github.com/undecaf/typo3-in-a-box/#typo3-in-a-box--versatile-typo3-8795104110-images" \
 	org.opencontainers.image.source="https://github.com/undecaf/typo3-in-a-box" \
 	org.opencontainers.image.authors="Ferdinand Kasper <fkasper@modus-operandi.at>" \
 	org.opencontainers.image.created="${BUILD_DATE}"

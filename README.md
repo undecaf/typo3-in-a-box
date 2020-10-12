@@ -1,11 +1,11 @@
-# TYPO3 in a box ‒ versatile TYPO3 8.7/9.5/10.4 images
+# TYPO3 in a box ‒ versatile TYPO3 8.7/9.5/10.4/11.0 images
 
 [![Build Status](https://travis-ci.com/undecaf/typo3-in-a-box.svg?branch=master)](https://travis-ci.com/undecaf/typo3-in-a-box)
 [![Latest release](https://img.shields.io/github/release/undecaf/typo3-in-a-box.svg)](https://github.com/undecaf/typo3-in-a-box)
 ![Image Size](https://img.shields.io/endpoint?url=https%3A%2F%2Fdocker-size.modus-operandi.workers.dev%2Fundecaf%2Ftypo3-in-a-box%2Ftags%2Flatest)
 
 This project provides ready-to-run and extensive
-[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.4 installations as single container images.
+[TYPO3](https://typo3.org/)&nbsp;8.7/9.5/10.4/11.0 installations as single container images.
 It is widely configurable, and thus it addresses TYPO3 editors and administrators
 as well as integrators and extension developers. Builds of the TYPO3 development
 branches are available, too.
