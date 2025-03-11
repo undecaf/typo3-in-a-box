@@ -1,3 +1,5 @@
+## :warning: This repository is no longer being maintained and has been archived.
+
 # TYPO3 in a box ‒ versatile TYPO3 8.7/9.5/10.4 images
 
 [![Build Status](https://travis-ci.com/undecaf/typo3-in-a-box.svg?branch=master)](https://travis-ci.com/undecaf/typo3-in-a-box)
